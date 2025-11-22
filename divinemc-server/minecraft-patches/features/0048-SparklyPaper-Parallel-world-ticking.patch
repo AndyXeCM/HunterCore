@@ -349,7 +349,7 @@ index c5b95557dc148cfc91c031bf0789001868a60cbd..6ea62fbffda38e477ef8e119608fc937
          }
      }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 0b1ea5c5248f0b54ba7b01d7bc89e1547ad2a89a..27a63526c4fde0a716eb9ac3f8f4d0fd84b550dc 100644
+index e17060524fee0751042aa835e3d7fa04f5dd9b1d..a6d7afbca70e9c7df14df2f7f74788a1326be98e 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -186,7 +186,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -1355,10 +1355,10 @@ index 3efebec19a1b4fefd6071247c614693e44bc3eb4..e71eb14879afc59298c87714062f7c4e
      // CraftBukkit end
  }
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index 529f8a3a4db2effaa91d5b95244717dc44d4c6f4..0e505ad2ce4c8b79df95f08ca948c9687e07fa4c 100644
+index 2d4807134e071254ce882e0bc4988242894c5d2f..40500e24156049e09a9970b120556f8aa49ffcaf 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
-@@ -374,6 +374,7 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -372,6 +372,7 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
      @Nullable
      @Override
      public BlockState setBlockState(BlockPos pos, BlockState state, int flags) {

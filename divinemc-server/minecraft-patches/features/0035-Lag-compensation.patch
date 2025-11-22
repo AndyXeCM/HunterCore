@@ -25,7 +25,7 @@ index 9180e8cdd4bfad33f8dcda0ac8785defff4a1dad..9a3bd9f646889f43393c3cf54f5bcfa3
          this.tickCount++;
          this.tickRateManager.tick();
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 3275a8a3a57a6d836170efbf12bc1257282703c8..f038c8fe7fa84457dcee2276bbbdb7ec8533d430 100644
+index f0d46211593acffc448cbfb87a91734cd2cec70b..641e87ee647cbf66b3ed7ea3a1aa7c633fab4336 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -224,6 +224,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -248,10 +248,10 @@ index f9794da266b5f08f01f88184d3bcca9d8371e44f..a6c99a119a923dd890169888ff4e9852
      }
  
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index a403b61e0300ecfff55f10009ecd3ad57f543808..529f8a3a4db2effaa91d5b95244717dc44d4c6f4 100644
+index 606c33d67fc7612b25ca23fe34769d3b179ebbd6..2d4807134e071254ce882e0bc4988242894c5d2f 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
-@@ -959,6 +959,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -953,6 +953,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
              this.ticker = ticker;
          }
  
@@ -271,8 +271,8 @@ index a403b61e0300ecfff55f10009ecd3ad57f543808..529f8a3a4db2effaa91d5b95244717dc
          @Override
          public void tick() {
              if (!this.blockEntity.isRemoved() && this.blockEntity.hasLevel()) {
-@@ -969,7 +982,11 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
-                         profilerFiller.push(this::getType);
+@@ -961,7 +974,11 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+                     try {
                          BlockState blockState = LevelChunk.this.getBlockState(blockPos);
                          if (this.blockEntity.getType().isValid(blockState)) {
 -                            this.ticker.tick(LevelChunk.this.level, this.blockEntity.getBlockPos(), blockState, this.blockEntity);

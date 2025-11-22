@@ -71,7 +71,7 @@ index 2b8d394dc30d459127289a1afeee0780003f4c79..2fd2712550a9b8ac79974f113ebcea5d
          }
      }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 14790f65b00ede0c063c567f524674270ca58b5c..f0ad8c869e22c7c10e59e88effd4b0ebffb3f62c 100644
+index f166cf47d32ba4743fae5a7a76086334daa740cd..27990abd9c9f9e696988509fffca9bf2077cd520 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -2520,6 +2520,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -2358,10 +2358,10 @@ index a6c99a119a923dd890169888ff4e9852f6e27855..754a4c463c3706512fc42fd3ad32841f
      }
  
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index acddfe7fdd4305ba832af62d607a06213b29469d..d0c6cbb27237dca9028ec66f95886bcbeaf05dc2 100644
+index 5470b02a382a2c8a855a0f6b696c72f9b5b0c0b4..e83b75ee844b0619e39a8c3fd5920c4c7424cce4 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
-@@ -933,12 +933,14 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -927,12 +927,14 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
                      (pos, ticker1) -> {
                          TickingBlockEntity tickingBlockEntity = this.createTicker(blockEntity, ticker);
                          if (ticker1 != null) {
