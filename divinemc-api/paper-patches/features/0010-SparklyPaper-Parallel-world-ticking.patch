@@ -10,7 +10,7 @@ Original project: https://github.com/SparklyPower/SparklyPaper
 This patch provides an API for performance monitoring plugins.
 
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index a17790d2da3008927b79814629e073b2091ce421..01feb47feaa977647d1b6cbf0e10589148f61414 100644
+index 485af1c80e5e1cefbce3849a108a1acee1f81cf4..0e3d693aad335350e64b374fb978c74770632e67 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
 @@ -2894,4 +2894,15 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
@@ -30,10 +30,10 @@ index a17790d2da3008927b79814629e073b2091ce421..01feb47feaa977647d1b6cbf0e105891
 +    // DivineMC end - Parallel world ticking
  }
 diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
-index 07390a45222a593768d1338b4739131e915869a5..84afc14168351cf8f5c9ca3b32f7885b3c2a2522 100644
+index 7822416f5cc4e453338f9257d5aa24e3ec4341a2..0ec03a25ae53ed2b542301ba829e4e2b9a201f72 100644
 --- a/src/main/java/org/bukkit/World.java
 +++ b/src/main/java/org/bukkit/World.java
-@@ -4739,4 +4739,23 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
+@@ -4745,4 +4745,23 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
              }
          }
      }

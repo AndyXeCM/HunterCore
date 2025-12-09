@@ -1,6 +1,6 @@
 --- a/net/minecraft/stats/ServerStatsCounter.java
 +++ b/net/minecraft/stats/ServerStatsCounter.java
-@@ -98,12 +_,6 @@
+@@ -109,12 +_,6 @@
          this.dirty.add(stat);
      }
  
@@ -10,10 +10,10 @@
 -        return set;
 -    }
 -
-     public void parseLocal(DataFixer fixerUpper, String json) {
-         try {
-             JsonElement jsonElement = StrictJsonParser.parse(json);
-@@ -139,9 +_,11 @@
+     public void parse(DataFixer fixerUpper, JsonElement json) {
+         Dynamic<JsonElement> dynamic = new Dynamic<>(JsonOps.INSTANCE, json);
+         dynamic = DataFixTypes.STATS.updateToCurrentVersion(fixerUpper, dynamic, NbtUtils.getDataVersion(dynamic, 1343));
+@@ -140,9 +_,11 @@
      public void sendStats(ServerPlayer player) {
          Object2IntMap<Stat<?>> map = new Object2IntOpenHashMap<>();
  

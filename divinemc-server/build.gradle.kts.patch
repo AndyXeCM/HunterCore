@@ -7,8 +7,8 @@
 +val bxTeamMavenPublicUrl = "https://repo.bxteam.org/snapshots/"
  
  dependencies {
-     mache("io.papermc:mache:1.21.10+build.9")
-@@ -26,6 +_,7 @@
+     mache("io.papermc:mache:1.21.11-rc3+build.1")
+@@ -25,6 +_,7 @@
  
      // Purpur start - Rebrand
      val purpur = forks.register("purpur") {
@@ -16,7 +16,7 @@
          upstream.patchDir("paperServer") {
              upstreamPath = "paper-server"
              excludes = setOf("src/minecraft", "patches", "build.gradle.kts")
-@@ -33,9 +_,27 @@
+@@ -32,9 +_,27 @@
              outputDir = rootDirectory.dir("paper-server")
          }
      }
@@ -43,9 +43,9 @@
 +    // DivineMC end - Rebrand
 +
      spigot {
-         enabled = true
+         enabled = false
          buildDataRef = "42d18d4c4653ffc549778dbe223f6994a031d69e"
-@@ -59,6 +_,7 @@
+@@ -62,6 +_,7 @@
      libraryRepositories.addAll(
          "https://repo.maven.apache.org/maven2/",
          paperMavenPublicUrl,
@@ -85,7 +85,7 @@
 +        exclude(group="org.yaml", module="snakeyaml")
 +    }
 +    implementation("com.github.luben:zstd-jni:1.5.7-3")
-+    implementation("org.lz4:lz4-java:1.8.0")
++    implementation("at.yawk.lz4:lz4-java:1.10.1")
 +    implementation("net.openhft:zero-allocation-hashing:0.16")
 +    implementation("org.agrona:agrona:2.2.4")
 +    implementation("net.objecthunter:exp4j:0.4.8")
@@ -134,8 +134,8 @@
      runtimeOnly("com.lmax:disruptor:3.4.4")
      implementation("com.googlecode.json-simple:json-simple:1.1.1") { // change to runtimeOnly once Timings is removed
          isTransitive = false // includes junit
-@@ -196,11 +_,11 @@
-     testImplementation("io.github.classgraph:classgraph:4.8.179") // For mob goal test
+@@ -197,11 +_,11 @@
+     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
      testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
      testImplementation("org.junit.platform:junit-platform-suite-engine:1.12.2")
 -    testImplementation("org.hamcrest:hamcrest:2.2")
@@ -150,7 +150,7 @@
  
      implementation("net.neoforged:srgutils:1.0.9") // Mappings handling
      implementation("net.neoforged:AutoRenamingTool:2.0.3") // Remap plugins
-@@ -216,30 +_,42 @@
+@@ -217,30 +_,42 @@
      implementation("me.lucko:spark-paper:1.10.152")
  }
  

@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -1026,6 +_,7 @@
+@@ -1029,6 +_,7 @@
          player.connection.send(new ClientboundSetChunkCacheRadiusPacket(level.spigotConfig.viewDistance));
          player.connection.send(new ClientboundSetSimulationDistancePacket(level.spigotConfig.simulationDistance));
          // Paper end

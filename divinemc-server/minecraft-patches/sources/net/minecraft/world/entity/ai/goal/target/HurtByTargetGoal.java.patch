@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal.java
 +++ b/net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal.java
-@@ -114,6 +_,7 @@
+@@ -113,6 +_,7 @@
      }
  
      protected void alertOther(Mob mob, LivingEntity target) {

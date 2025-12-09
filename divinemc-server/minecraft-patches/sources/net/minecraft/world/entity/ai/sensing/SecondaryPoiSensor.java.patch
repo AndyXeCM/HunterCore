@@ -12,4 +12,4 @@
 +        // DivineMC end - lithium: skip useless secondary poi sensor
          // Purpur start - Option for Villager Clerics to farm Nether Wart - make sure clerics don't wander to soul sand when the option is off
          Brain<?> brain = entity.getBrain();
-         if (!level.purpurConfig.villagerClericsFarmWarts && entity.getVillagerData().profession().is(net.minecraft.world.entity.npc.VillagerProfession.CLERIC)) {
+         if (!level.purpurConfig.villagerClericsFarmWarts && entity.getVillagerData().profession().is(net.minecraft.world.entity.npc.villager.VillagerProfession.CLERIC)) {

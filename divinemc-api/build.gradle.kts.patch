@@ -1,6 +1,6 @@
 --- a/purpur-api/build.gradle.kts
 +++ b/purpur-api/build.gradle.kts
-@@ -9,11 +_,11 @@
+@@ -11,11 +_,11 @@
      withJavadocJar()
  }
  
@@ -15,7 +15,7 @@
  
  val apiAndDocs: Configuration by configurations.creating {
      attributes {
-@@ -40,9 +_,9 @@
+@@ -42,9 +_,9 @@
  
  dependencies {
      // api dependencies are listed transitively to API consumers
@@ -27,7 +27,7 @@
      api("org.joml:joml:1.10.8") {
          isTransitive = false // https://github.com/JOML-CI/JOML/issues/352
      }
-@@ -50,6 +_,7 @@
+@@ -52,6 +_,7 @@
      api("org.apache.logging.log4j:log4j-api:$log4jVersion")
      api("org.slf4j:slf4j-api:$slf4jVersion")
      api("com.mojang:brigadier:1.3.10")
@@ -35,7 +35,7 @@
  
      // Deprecate bungeecord-chat in favor of adventure
      api("net.md-5:bungeecord-chat:$bungeeCordChatVersion") {
-@@ -64,29 +_,35 @@
+@@ -66,29 +_,35 @@
      apiAndDocs("net.kyori:adventure-text-serializer-plain")
      apiAndDocs("net.kyori:adventure-text-logger-slf4j")
  
@@ -81,7 +81,7 @@
  }
  
  val generatedDir: java.nio.file.Path = rootProject.layout.projectDirectory.dir("paper-api/src/generated/java").asFile.toPath()
-@@ -100,17 +_,21 @@
+@@ -102,17 +_,21 @@
          java {
              srcDir(generatedDir)
              srcDir(file("../paper-api/src/main/java"))
@@ -103,24 +103,7 @@
          }
      }
  }
-@@ -158,6 +_,16 @@
-     }
- }
- 
-+// DivineMC start - Hide unnecessary compilation warnings
-+tasks.withType<JavaCompile> {
-+    val compilerArgs = options.compilerArgs
-+    compilerArgs.add("-Xlint:-module")
-+    compilerArgs.add("-Xlint:-removal")
-+    compilerArgs.add("-Xlint:-dep-ann")
-+    compilerArgs.add("--add-modules=jdk.incubator.vector")
-+}
-+// DivineMC end - Hide unnecessary compilation warnings
-+
- tasks.jar {
-     from(generateApiVersioningFile.map { it.outputs.files.singleFile }) {
-         into("META-INF/maven/${project.group}/${project.name}")
-@@ -176,14 +_,13 @@
+@@ -194,14 +_,13 @@
  val services = objects.newInstance<Services>()
  
  tasks.withType<Javadoc>().configureEach {
@@ -137,7 +120,7 @@
          "https://www.javadocs.dev/org.jetbrains/annotations/$annotationsVersion/",
          "https://www.javadocs.dev/org.joml/joml/1.10.8/",
          "https://www.javadocs.dev/com.google.code.gson/gson/2.11.0",
-@@ -197,7 +_,7 @@
+@@ -215,7 +_,7 @@
          "https://jd.advntr.dev/text-logger-slf4j/$adventureVersion/",
          "https://www.javadocs.dev/org.slf4j/slf4j-api/$slf4jVersion/",
          "https://logging.apache.org/log4j/2.x/javadoc/log4j-api/",
@@ -146,13 +129,25 @@
      )
      options.tags("apiNote:a:API Note:")
  
-@@ -221,6 +_,9 @@
+@@ -239,7 +_,20 @@
              into("build/docs/javadoc")
          }
      }
+-}
 +
 +    options.addStringOption("Xdoclint:none", "-quiet") // DivineMC - Hide unnecessary javadoc warnings
 +    options.addStringOption("-add-modules", "jdk.incubator.vector") // DivineMC - Required for simd
- }
++}
++
++// DivineMC start - Hide unnecessary compilation warnings
++tasks.withType<JavaCompile> {
++    val compilerArgs = options.compilerArgs
++    compilerArgs.add("-Xlint:-module")
++    compilerArgs.add("-Xlint:-removal")
++    compilerArgs.add("-Xlint:-dep-ann")
++    compilerArgs.add("--add-modules=jdk.incubator.vector")
++}
++// DivineMC end - Hide unnecessary compilation warnings
  
  tasks.test {
+     useJUnitPlatform()

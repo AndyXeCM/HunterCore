@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/TripWireHookBlock.java
 +++ b/net/minecraft/world/level/block/TripWireHookBlock.java
-@@ -187,7 +_,6 @@
+@@ -186,7 +_,6 @@
              if (!cancelledEmitterHook) { // Paper - Call BlockRedstoneEvent
              emitState(level, pos, flag2, flag3, flag, flag1);
              if (!attaching) {
@@ -8,7 +8,7 @@
                  level.setBlock(pos, blockState1.setValue(FACING, direction), Block.UPDATE_ALL);
                  if (shouldNotifyNeighbours) {
                      notifyNeighbors(block, level, pos, direction);
-@@ -200,10 +_,18 @@
+@@ -199,10 +_,18 @@
                      BlockPos blockPos1 = pos.relative(direction, i2);
                      BlockState blockState2 = blockStates[i2];
                      if (blockState2 != null) {

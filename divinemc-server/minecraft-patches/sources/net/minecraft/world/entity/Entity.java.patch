@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -375,6 +_,7 @@
+@@ -376,6 +_,7 @@
      public boolean isTemporarilyActive;
      public long activatedImmunityTick = Integer.MIN_VALUE;
      public @Nullable Boolean immuneToFire = null; // Purpur - Fire immune API
@@ -8,7 +8,7 @@
  
      public void inactiveTick() {
      }
-@@ -1130,6 +_,7 @@
+@@ -1145,6 +_,7 @@
      // Paper end - detailed watchdog information
  
      public void move(MoverType type, Vec3 movement) {
@@ -16,7 +16,7 @@
          final Vec3 originalMovement = movement; // Paper - Expose pre-collision velocity
          // Paper start - detailed watchdog information
          ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot move an entity off-main");
-@@ -2625,6 +_,7 @@
+@@ -2649,6 +_,7 @@
              }
  
              this.addAdditionalSaveData(output, includeAll); // CraftBukkit - pass on includeAll
@@ -24,7 +24,7 @@
              if (this.isVehicle()) {
                  ValueOutput.ValueOutputList valueOutputList = output.childrenList("Passengers");
  
-@@ -2733,6 +_,7 @@
+@@ -2757,6 +_,7 @@
                  this.tags.clear();
                  input.read("Tags", TAG_LIST_CODEC).ifPresent(this.tags::addAll);
                  this.readAdditionalSaveData(input);
@@ -32,7 +32,7 @@
                  if (this.repositionEntityAfterLoad()) {
                      this.reapplyPosition();
                  }
-@@ -4264,6 +_,7 @@
+@@ -4284,6 +_,7 @@
      }
  
      public boolean canTeleport(Level fromLevel, Level toLevel) {
@@ -40,7 +40,7 @@
          if (!this.isAlive() || !this.valid) return false; // Paper - Fix item duplication and teleport issues
          if (fromLevel.dimension() == Level.END && toLevel.dimension() == Level.OVERWORLD) {
              for (Entity entity : this.getPassengers()) {
-@@ -4493,6 +_,7 @@
+@@ -4512,6 +_,7 @@
      }
  
      public final void setBoundingBox(AABB bb) {

@@ -9,7 +9,7 @@
      protected final CollectingNeighborUpdater neighborUpdater;
      private final List<TickingBlockEntity> pendingBlockEntityTickers = Lists.newArrayList();
      private boolean tickingBlockEntities;
-@@ -1453,13 +_,11 @@
+@@ -1448,13 +_,11 @@
          boolean runsNormally = this.tickRateManager().runsNormally();
  
          int tickedEntities = 0; // Paper - rewrite chunk system
@@ -24,7 +24,7 @@
              } else if (runsNormally && this.shouldTickBlocksAt(tickingBlockEntity.getPos())) {
                  tickingBlockEntity.tick();
                  // Paper start - rewrite chunk system
-@@ -1469,7 +_,7 @@
+@@ -1464,7 +_,7 @@
                  // Paper end - rewrite chunk system
              }
          }

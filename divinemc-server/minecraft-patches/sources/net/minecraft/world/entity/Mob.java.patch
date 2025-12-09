@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -339,6 +_,8 @@
+@@ -336,6 +_,8 @@
              this.playAmbientSound();
          }
  
