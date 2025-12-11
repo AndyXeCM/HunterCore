@@ -412,10 +412,10 @@ index a714ee2724220c5bc5f3d9eebb0a709611478b3a..7be8790e7c2b9f8fefc646ec6ebc4a21
                          }
                      }
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 41bc20f28171b50849022e4b64c2eee38eec2c16..ef03cdbf80bbd1447a272e36a74b86121391e7f2 100644
+index 511ecf08faa8a71a027cc37d06a9de6bcc6e8966..dfd8194adb402b43ec34f05a1e734ac07371f4ab 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -1967,7 +1967,6 @@ public class ServerGamePacketListenerImpl
+@@ -1960,7 +1960,6 @@ public class ServerGamePacketListenerImpl
      }
  
      public void internalTeleport(PositionMoveRotation posMoveRotation, Set<Relative> relatives) {

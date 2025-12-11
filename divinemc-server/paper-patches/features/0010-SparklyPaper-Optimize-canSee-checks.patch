@@ -14,7 +14,7 @@ This seems stupid, but it does seem that it improves the performance a bit, and 
 We also create a "canSee" method tailored for "ChunkMap#updatePlayer()", a method without the equals check (the "updatePlayer()" already checks if the entity is the same entity) because the CraftPlayer's `equals()` check is a *bit* expensive compared to only checking the object's identity, and because the identity has already been check, we don't need to check it twice.
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index dc0ef7978ef22b7ce1a3b1e4d608f63c78077572..770939f9abf4640dff5fc6af113926913359186a 100644
+index 38a03942a3e6473b8e8a56cf2125a857dd3e9193..21ecf7a0c607eebdd28aa26474a363beb7b57b72 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 @@ -236,7 +236,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessa
@@ -26,7 +26,7 @@ index dc0ef7978ef22b7ce1a3b1e4d608f63c78077572..770939f9abf4640dff5fc6af11392691
      private final Set<UUID> unlistedEntities = new HashSet<>(); // Paper - Add Listing API for Player
      private static final WeakHashMap<Plugin, WeakReference<Plugin>> pluginWeakReferences = new WeakHashMap<>();
      private int hash = 0;
-@@ -2142,9 +2142,15 @@ public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessa
+@@ -2141,9 +2141,15 @@ public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessa
  
      @Override
      public boolean canSee(org.bukkit.entity.Entity entity) {

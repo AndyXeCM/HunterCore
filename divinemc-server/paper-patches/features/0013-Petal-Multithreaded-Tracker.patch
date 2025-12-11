@@ -32,10 +32,10 @@ index d7398b1ecf2660c29fb7d106b48fe02d3736603e..ab499a7eaccdc1578ec64f90f54f79b0
          }
  
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index 770939f9abf4640dff5fc6af113926913359186a..c8d6b0dfe5674512b0d55e065b274b6df3f11c95 100644
+index 21ecf7a0c607eebdd28aa26474a363beb7b57b72..1a111cabac9995aa481baaf2fe7bfbf02a296b96 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-@@ -2717,7 +2717,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessa
+@@ -2716,7 +2716,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessa
          Iterator<AttributeInstance> iterator = collection.iterator();
          while (iterator.hasNext()) {
              AttributeInstance genericInstance = iterator.next();
@@ -45,7 +45,7 @@ index 770939f9abf4640dff5fc6af113926913359186a..c8d6b0dfe5674512b0d55e065b274b6d
                  break;
              }
 diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
-index 5bb856e86f2270c75406b8a5540f4a9c1e679fb4..da3a92e0f857a57c954b638b8e3bf7e65a7bd58e 100644
+index d37d7ae608c80913afdde48c3e03d11e4697d1d1..25aff851e4723500d0f8d05c0d231103ee5dff7b 100644
 --- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
 +++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
 @@ -1930,6 +1930,26 @@ public class CraftEventFactory {
