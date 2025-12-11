@@ -2,7 +2,7 @@ package org.leavesmc.leaves.protocol.jade.util;
 
 import com.google.common.collect.Streams;
 import net.minecraft.core.IdMapper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.leavesmc.leaves.protocol.jade.JadeProtocol;
 import org.leavesmc.leaves.protocol.jade.provider.IJadeProvider;
@@ -27,7 +27,7 @@ public interface IHierarchyLookup<T extends IJadeProvider> {
     @Nullable
     IdMapper<T> idMapper();
 
-    default List<ResourceLocation> mappedIds() {
+    default List<Identifier> mappedIds() {
         return Streams.stream(Objects.requireNonNull(idMapper()))
             .map(IJadeProvider::getUid)
             .toList();
@@ -52,7 +52,7 @@ public interface IHierarchyLookup<T extends IJadeProvider> {
 
     void invalidate();
 
-    void loadComplete(PriorityStore<ResourceLocation, IJadeProvider> priorityStore);
+    void loadComplete(PriorityStore<Identifier, IJadeProvider> priorityStore);
 
     default IdMapper<T> createIdMapper() {
         List<T> list = entries().flatMap(entry -> entry.getValue().stream()).toList();

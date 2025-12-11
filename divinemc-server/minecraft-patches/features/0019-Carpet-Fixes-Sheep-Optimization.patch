@@ -19,10 +19,10 @@ we used a prebaked list of all the possible colors and combinations, however thi
 datapack to change it.
 
 diff --git a/net/minecraft/world/item/DyeColor.java b/net/minecraft/world/item/DyeColor.java
-index fe71f28c0273a23ba6f798eacd6f9a6a8e36ec9b..3fd3cabf59753cc46c99f62b9c9cdcf6fc3c3a19 100644
+index f2e761f253969ca01b78c7ddc7a571ecc9655432..703c08e90fbde1cbd1272a864aa7960691a1ae2e 100644
 --- a/net/minecraft/world/item/DyeColor.java
 +++ b/net/minecraft/world/item/DyeColor.java
-@@ -112,6 +112,15 @@ public enum DyeColor implements StringRepresentable {
+@@ -110,6 +110,15 @@ public enum DyeColor implements StringRepresentable {
      }
  
      public static DyeColor getMixedColor(ServerLevel level, DyeColor first, DyeColor second) {
@@ -38,7 +38,7 @@ index fe71f28c0273a23ba6f798eacd6f9a6a8e36ec9b..3fd3cabf59753cc46c99f62b9c9cdcf6
          CraftingInput craftingInput = makeCraftColorInput(first, second);
          return level.recipeAccess()
              .getRecipeFor(RecipeType.CRAFTING, craftingInput, level)
-@@ -132,4 +141,85 @@ public enum DyeColor implements StringRepresentable {
+@@ -130,4 +139,85 @@ public enum DyeColor implements StringRepresentable {
          return values()[random.nextInt(values().length)];
      }
      // Purpur end - Shulker spawn from bullet options

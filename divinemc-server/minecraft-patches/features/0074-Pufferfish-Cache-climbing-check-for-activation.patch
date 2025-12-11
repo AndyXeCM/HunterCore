@@ -10,7 +10,7 @@ As part of: Pufferfish (https://github.com/pufferfish-gg/Pufferfish)
 Licensed under: GPL-3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
 
 diff --git a/io/papermc/paper/entity/activation/ActivationRange.java b/io/papermc/paper/entity/activation/ActivationRange.java
-index 5d9089d98ed0daa8ee680123e50c3ce9abd2bca6..04623779031daa2f0d8e9c149f0b40388cb2bd8b 100644
+index 883504917170f59b04ad61304eb51bc5832e2c97..8aa3e78fcd64095b4f445158c18fccada043ab06 100644
 --- a/io/papermc/paper/entity/activation/ActivationRange.java
 +++ b/io/papermc/paper/entity/activation/ActivationRange.java
 @@ -238,7 +238,7 @@ public final class ActivationRange {
@@ -23,10 +23,10 @@ index 5d9089d98ed0daa8ee680123e50c3ce9abd2bca6..04623779031daa2f0d8e9c149f0b4038
              }
              if (entity instanceof final Mob mob && mob.getTarget() != null) {
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index e3e64a0bf7b8b9e04114a2b0b363932517deea0f..ad3e68127ba84bdc18f738dbf709099a50aa8216 100644
+index 4d14baa31657287b6e565bf7c64d964db28afebc..9e098495ff487b319175e4a26db47127aac98089 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -2244,6 +2244,20 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -2259,6 +2259,20 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          return this.lastClimbablePos;
      }
  

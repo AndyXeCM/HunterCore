@@ -11,7 +11,7 @@ As part of: Lithium (https://github.com/CaffeineMC/lithium)
 Licensed under: LGPL-3.0 (https://www.gnu.org/licenses/lgpl-3.0.html)
 
 diff --git a/net/minecraft/core/Direction.java b/net/minecraft/core/Direction.java
-index cbb743ce94f08b624a64555d057ed04286094ba9..15360c644f559f16c319ddd10f6171a9b9cc7ac4 100644
+index 9926682586fda91017e3e1ab079296a8c4a88879..ec167104be91305c6b9320330dcdbfb5627b78da 100644
 --- a/net/minecraft/core/Direction.java
 +++ b/net/minecraft/core/Direction.java
 @@ -225,7 +225,7 @@ public enum Direction implements StringRepresentable, ca.spottedleaf.moonrise.pa
@@ -23,7 +23,7 @@ index cbb743ce94f08b624a64555d057ed04286094ba9..15360c644f559f16c319ddd10f6171a9
      }
  
      public Direction getClockWise(Direction.Axis axis) {
-@@ -358,7 +358,7 @@ public enum Direction implements StringRepresentable, ca.spottedleaf.moonrise.pa
+@@ -357,7 +357,7 @@ public enum Direction implements StringRepresentable, ca.spottedleaf.moonrise.pa
      }
  
      public static Direction getRandom(RandomSource random) {
@@ -33,7 +33,7 @@ index cbb743ce94f08b624a64555d057ed04286094ba9..15360c644f559f16c319ddd10f6171a9
  
      public static Direction getApproximateNearest(double x, double y, double z) {
 diff --git a/net/minecraft/world/phys/AABB.java b/net/minecraft/world/phys/AABB.java
-index 529bd339441fde279ed81573ca5339a0837b3b87..b26ea727a7867a74edd7b0fb60965fe9c2fcb474 100644
+index 120e432df71eaee94225555d24c82e6d05b34b9f..b81c1c66d1f1ec2e3d93a2b32fbd9089c623bc41 100644
 --- a/net/minecraft/world/phys/AABB.java
 +++ b/net/minecraft/world/phys/AABB.java
 @@ -19,6 +19,15 @@ public class AABB {

@@ -20,10 +20,10 @@ index 3e4241976fdfe65bc0aae90a9097770745c0ddf1..98b101fde04fbf5507f021bb8d8e6bed
                      if (var3 instanceof ReportedException reportedException && reportedException.getCause() instanceof OutOfMemoryError) {
                          throw PacketUtils.makeReportedException(var3, this.packet, this.listener);
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 01a75f0a3692b954f43993b586945e26163e91e0..dbb3a32da66472b3b075d155938e2b6fa4fb53f2 100644
+index fd183c0cb9bc9de2a717e9e6845ff76ec84ba438..9fdef6cda5eb9a160b4c1eff1934ccadb9f64e0c 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1739,6 +1739,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1761,6 +1761,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
              serverLevel.tickTimes10s.add(this.tickCount, j);
              serverLevel.tickTimes60s.add(this.tickCount, j);
              // DivineMC end - MSPT Tracking for each world
@@ -35,10 +35,10 @@ index 01a75f0a3692b954f43993b586945e26163e91e0..dbb3a32da66472b3b075d155938e2b6f
              CrashReport crashReport = CrashReport.forThrowable(levelTickingException, "Exception ticking world");
              serverLevel.fillReportDetails(crashReport);
 diff --git a/net/minecraft/world/level/block/ShulkerBoxBlock.java b/net/minecraft/world/level/block/ShulkerBoxBlock.java
-index e08083fbb6c3090c9a6f78dbbe487cbd4fec485a..d5d77110e7799223a66c2d6e47a1d9b4653f3ec4 100644
+index 6c5696ab4981a6d582d4d0f13c9822bf84a5d9f1..95cbb9e988f4c54b37ff946e48e73e26436e9b37 100644
 --- a/net/minecraft/world/level/block/ShulkerBoxBlock.java
 +++ b/net/minecraft/world/level/block/ShulkerBoxBlock.java
-@@ -183,7 +183,17 @@ public class ShulkerBoxBlock extends BaseEntityBlock {
+@@ -181,7 +181,17 @@ public class ShulkerBoxBlock extends BaseEntityBlock {
  
      @Override
      protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
@@ -58,7 +58,7 @@ index e08083fbb6c3090c9a6f78dbbe487cbd4fec485a..d5d77110e7799223a66c2d6e47a1d9b4
  
      public static Block getBlockByColor(@Nullable DyeColor color) {
 diff --git a/net/minecraft/world/level/redstone/NeighborUpdater.java b/net/minecraft/world/level/redstone/NeighborUpdater.java
-index f45cf0136e77ed5a903d033a7b0611e5edc23db9..e5b0cc92a2f9cdb89cd2436f6591531f8ae91d28 100644
+index 87512434ccd8d46d8db718228c790465c64b2c20..2928ed49be435d972683a3d8c68073c869c642c1 100644
 --- a/net/minecraft/world/level/redstone/NeighborUpdater.java
 +++ b/net/minecraft/world/level/redstone/NeighborUpdater.java
 @@ -60,9 +60,19 @@ public interface NeighborUpdater {

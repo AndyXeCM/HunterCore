@@ -180,7 +180,7 @@ index fb11a2eea540d55e50eab59f9857ca5d99f556f8..c40f65c30b6422a27154295a2b3a6348
  
      private double sampleWithDerivative(int gridX, int gridY, int gridZ, double deltaX, double deltaY, double deltaZ, double[] noiseValues) {
 diff --git a/net/minecraft/world/level/levelgen/synth/PerlinNoise.java b/net/minecraft/world/level/levelgen/synth/PerlinNoise.java
-index da3c26fbad32d75d71f7e59c8c3341316a754756..f05902bb4b0d9e746d0033e73ec9f3b5626a53b5 100644
+index 4c5268704af9b6a88c00878459254851c0592da1..431b81c85af4b482ea1a8f82f31f4e2f29464454 100644
 --- a/net/minecraft/world/level/levelgen/synth/PerlinNoise.java
 +++ b/net/minecraft/world/level/levelgen/synth/PerlinNoise.java
 @@ -26,6 +26,7 @@ public class PerlinNoise {
@@ -230,7 +230,7 @@ index da3c26fbad32d75d71f7e59c8c3341316a754756..f05902bb4b0d9e746d0033e73ec9f3b5
      }
  
      @Deprecated
-@@ -187,7 +211,7 @@ public class PerlinNoise {
+@@ -186,7 +210,7 @@ public class PerlinNoise {
      }
  
      public static double wrap(double value) {

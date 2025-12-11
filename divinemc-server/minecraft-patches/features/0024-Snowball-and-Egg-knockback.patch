@@ -4,10 +4,10 @@ Date: Sat, 1 Feb 2025 19:24:47 +0300
 Subject: [PATCH] Snowball and Egg knockback
 
 
-diff --git a/net/minecraft/world/entity/projectile/Snowball.java b/net/minecraft/world/entity/projectile/Snowball.java
-index 97e6628e0717b3d11b91b5eead7b3b4373966e05..7afe2ce589a3c25ddabc707c7580751834c1940a 100644
---- a/net/minecraft/world/entity/projectile/Snowball.java
-+++ b/net/minecraft/world/entity/projectile/Snowball.java
+diff --git a/net/minecraft/world/entity/projectile/throwableitemprojectile/Snowball.java b/net/minecraft/world/entity/projectile/throwableitemprojectile/Snowball.java
+index 448f9564abad3781b10525949fb0ba5413a87cd4..1ea3b5fdcb9ce48e7ba0fe31dd39cab1c8ab1282 100644
+--- a/net/minecraft/world/entity/projectile/throwableitemprojectile/Snowball.java
++++ b/net/minecraft/world/entity/projectile/throwableitemprojectile/Snowball.java
 @@ -55,6 +55,12 @@ public class Snowball extends ThrowableItemProjectile {
          Entity entity = result.getEntity();
          int i = entity.level().purpurConfig.snowballDamage >= 0 ? entity.level().purpurConfig.snowballDamage : entity instanceof Blaze ? 3 : 0; // Purpur - Add configurable snowball damage
@@ -21,10 +21,10 @@ index 97e6628e0717b3d11b91b5eead7b3b4373966e05..7afe2ce589a3c25ddabc707c75807518
      }
  
      // Purpur start - options to extinguish fire blocks with snowballs - borrowed and modified code from ThrownPotion#onHitBlock and ThrownPotion#dowseFire
-diff --git a/net/minecraft/world/entity/projectile/ThrownEgg.java b/net/minecraft/world/entity/projectile/ThrownEgg.java
-index bbb364be2af16a3c200d2197166bb3ad28e5e35d..ff0453123efb7a751d576e5bd2864fa495f8ef3d 100644
---- a/net/minecraft/world/entity/projectile/ThrownEgg.java
-+++ b/net/minecraft/world/entity/projectile/ThrownEgg.java
+diff --git a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEgg.java b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEgg.java
+index c7db74ccc3f8c46e97c24857f297fe5fb5f45e36..13c91d42a6ca4f2b4baa66a8ca73a391bf128ce7 100644
+--- a/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEgg.java
++++ b/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEgg.java
 @@ -55,7 +55,14 @@ public class ThrownEgg extends ThrowableItemProjectile {
      @Override
      protected void onHitEntity(EntityHitResult result) {

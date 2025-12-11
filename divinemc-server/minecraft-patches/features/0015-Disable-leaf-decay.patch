@@ -5,10 +5,10 @@ Subject: [PATCH] Disable leaf decay
 
 
 diff --git a/net/minecraft/world/level/block/LeavesBlock.java b/net/minecraft/world/level/block/LeavesBlock.java
-index b507dbb6ab345cf754775226c59320526d7b94f0..884f102836ff1ea08632804465f21a18bb7cd18d 100644
+index d5b114dca7b28d910f03ae3468e891d5d9863897..dbe3702bab05e38e21cd2e5e0fad793fee36c04a 100644
 --- a/net/minecraft/world/level/block/LeavesBlock.java
 +++ b/net/minecraft/world/level/block/LeavesBlock.java
-@@ -70,12 +70,29 @@ public abstract class LeavesBlock extends Block implements SimpleWaterloggedBloc
+@@ -80,12 +80,29 @@ public abstract class LeavesBlock extends Block implements SimpleWaterloggedBloc
      }
  
      protected boolean decaying(BlockState state) {

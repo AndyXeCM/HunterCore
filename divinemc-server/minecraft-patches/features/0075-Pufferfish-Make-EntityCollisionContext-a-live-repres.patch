@@ -10,11 +10,11 @@ As part of: Airplane (https://github.com/TECHNOVE/Airplane)
 Licensed under: GPL-3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
 
 diff --git a/net/minecraft/world/phys/shapes/EntityCollisionContext.java b/net/minecraft/world/phys/shapes/EntityCollisionContext.java
-index a2d7eb19fc8963f80c94761138b7c43af0e44fe9..c9b1f73cffd2bcfb426324dcbe15fd599fac0bbf 100644
+index 98787a3e5366c4964db278785fbbd578373be991..0a0f2b451ed2a82a699df0b0273945cfffaae295 100644
 --- a/net/minecraft/world/phys/shapes/EntityCollisionContext.java
 +++ b/net/minecraft/world/phys/shapes/EntityCollisionContext.java
-@@ -12,40 +12,35 @@ import net.minecraft.world.level.block.state.BlockState;
- import net.minecraft.world.level.material.FluidState;
+@@ -12,39 +12,34 @@ import net.minecraft.world.level.material.FluidState;
+ import org.jspecify.annotations.Nullable;
  
  public class EntityCollisionContext implements CollisionContext {
 -    private final boolean descending;
@@ -24,8 +24,7 @@ index a2d7eb19fc8963f80c94761138b7c43af0e44fe9..c9b1f73cffd2bcfb426324dcbe15fd59
 -    private final ItemStack heldItem;
      private final boolean alwaysCollideWithFluid;
 +    // DivineMC end - Pufferfish: Make EntityCollisionContext a live representation
-     @Nullable
-     private final Entity entity;
+     private final @Nullable Entity entity;
  
      protected EntityCollisionContext(
          boolean descending, boolean placement, double entityBottom, ItemStack heldItem, boolean alwaysCollideWithFluid, @Nullable Entity entity
@@ -64,7 +63,7 @@ index a2d7eb19fc8963f80c94761138b7c43af0e44fe9..c9b1f73cffd2bcfb426324dcbe15fd59
      }
  
      @Override
-@@ -65,12 +60,12 @@ public class EntityCollisionContext implements CollisionContext {
+@@ -64,12 +59,12 @@ public class EntityCollisionContext implements CollisionContext {
  
      @Override
      public boolean isDescending() {
@@ -78,4 +77,4 @@ index a2d7eb19fc8963f80c94761138b7c43af0e44fe9..c9b1f73cffd2bcfb426324dcbe15fd59
 +        return (this.entity == null ? -Double.MAX_VALUE : entity.getY()) > (double) pos.getY() + shape.max(Direction.Axis.Y) - (double) 1.0E-5F; // DivineMC - Pufferfish: Make EntityCollisionContext a live representation
      }
  
-     @Nullable
+     public @Nullable Entity getEntity() {

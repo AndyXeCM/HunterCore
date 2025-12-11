@@ -8,10 +8,10 @@ Integration with Imanity Software's Raytrace AntiXray for better use of this plu
 Original project: https://github.com/Imanity-Software/raytrace-antixray-spigot-sdk
 
 diff --git a/net/minecraft/server/level/ServerPlayerGameMode.java b/net/minecraft/server/level/ServerPlayerGameMode.java
-index fad600f343ee0983efc183f083b1507648987575..9bbcffc77dcf0e062a7f3464aee7f8d0563a440f 100644
+index 2e3b6da733387c95c0add1f7a42508023f0b74ff..df6ebb53ec75f4a66e397100f4ef85978a1db3c5 100644
 --- a/net/minecraft/server/level/ServerPlayerGameMode.java
 +++ b/net/minecraft/server/level/ServerPlayerGameMode.java
-@@ -316,6 +316,12 @@ public class ServerPlayerGameMode {
+@@ -313,6 +313,12 @@ public class ServerPlayerGameMode {
                  org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDamageAbortEvent(this.player, pos, this.player.getInventory().getSelectedItem()); // CraftBukkit
              }
          }
@@ -25,10 +25,10 @@ index fad600f343ee0983efc183f083b1507648987575..9bbcffc77dcf0e062a7f3464aee7f8d0
      }
  
 diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
-index d8b6f1b853609a7fcbd9c2fe6485e5080dece43a..21a20aa602f51bbd6c8cdcb52f6b485971834595 100644
+index a2f6fe78fc822634ac5c2db9a88000add60134f4..fafee0fe15564b47da3641858e60d10cdd860ef4 100644
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
-@@ -1126,6 +1126,12 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+@@ -1133,6 +1133,12 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
                  snapshot.setFlags(flags); // Paper - always set the flag of the most recent call to mitigate issues with multiple update at the same pos with different flags
              }
              BlockState blockState = chunkAt.setBlockState(pos, state, flags);

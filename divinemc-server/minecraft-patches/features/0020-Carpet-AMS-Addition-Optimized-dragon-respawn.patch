@@ -12,23 +12,23 @@ As part of: Carpet-AMS-Addition (https://github.com/Minecraft-AMS/Carpet-AMS-Add
 Licensed under: LGPL-3.0 (https://www.gnu.org/licenses/lgpl-3.0.html)
 
 diff --git a/net/minecraft/world/level/block/state/pattern/BlockPattern.java b/net/minecraft/world/level/block/state/pattern/BlockPattern.java
-index f7bb979f08634a7e1b77c59040f59fb5e11aafa5..e0eca73d9e8a77b2a4972db61001394c6bf1d2c4 100644
+index f834d487136627c07c893b8d68a6929ed46f20b9..681a2d480606387437e25d99cff15905c37399ef 100644
 --- a/net/minecraft/world/level/block/state/pattern/BlockPattern.java
 +++ b/net/minecraft/world/level/block/state/pattern/BlockPattern.java
-@@ -59,7 +59,7 @@ public class BlockPattern {
+@@ -57,7 +57,7 @@ public class BlockPattern {
+         return this.matches(pos, finger, thumb, loadingCache);
      }
  
-     @Nullable
--    private BlockPattern.BlockPatternMatch matches(BlockPos pos, Direction finger, Direction thumb, LoadingCache<BlockPos, BlockInWorld> cache) {
-+    public BlockPattern.BlockPatternMatch matches(BlockPos pos, Direction finger, Direction thumb, LoadingCache<BlockPos, BlockInWorld> cache) { // DivineMC - Carpet-AMS-Addition: Optimized dragon respawn - make public
+-    private BlockPattern.@Nullable BlockPatternMatch matches(BlockPos pos, Direction finger, Direction thumb, LoadingCache<BlockPos, BlockInWorld> cache) {
++    public BlockPattern.@Nullable BlockPatternMatch matches(BlockPos pos, Direction finger, Direction thumb, LoadingCache<BlockPos, BlockInWorld> cache) { // DivineMC - Carpet-AMS-Addition: Optimized dragon respawn - make public
          for (int i = 0; i < this.width; i++) {
              for (int i1 = 0; i1 < this.height; i1++) {
                  for (int i2 = 0; i2 < this.depth; i2++) {
 diff --git a/net/minecraft/world/level/dimension/end/EndDragonFight.java b/net/minecraft/world/level/dimension/end/EndDragonFight.java
-index fcb0fb9ca663ec40e1541d099bc3d710963f6c9d..db9843fddf43bdc287978728f08230c0e6178195 100644
+index cb6e5f2ad837a0eb11ceccee297f557f4355d304..072d5716a8fbec5c9c5ae78fa9591cf3c22ca755 100644
 --- a/net/minecraft/world/level/dimension/end/EndDragonFight.java
 +++ b/net/minecraft/world/level/dimension/end/EndDragonFight.java
-@@ -274,8 +274,68 @@ public class EndDragonFight {
+@@ -270,7 +270,68 @@ public class EndDragonFight {
          return false;
      }
  
@@ -36,9 +36,10 @@ index fcb0fb9ca663ec40e1541d099bc3d710963f6c9d..db9843fddf43bdc287978728f08230c0
 +    private int cachePortalChunkIteratorX = -8;
 +    private int cachePortalChunkIteratorZ = -8;
 +    private int cachePortalOriginIteratorY = -1;
++    // DivineMC end - Carpet-AMS-Addition: Optimized dragon respawn
 +
-     @Nullable
-     public BlockPattern.BlockPatternMatch findExitPortal() {
+     public BlockPattern.@Nullable BlockPatternMatch findExitPortal() {
++        // DivineMC start - Carpet-AMS-Addition: Optimized dragon respawn
 +        if (org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.optimizedDragonRespawn) {
 +            int i, j;
 +            for (i = cachePortalChunkIteratorX; i <= 8; ++i) {
@@ -92,12 +93,11 @@ index fcb0fb9ca663ec40e1541d099bc3d710963f6c9d..db9843fddf43bdc287978728f08230c0
 +
 +            return null;
 +        }
-+    // DivineMC end - Carpet-AMS-Addition: Optimized dragon respawn
-+
++        // DivineMC end - Carpet-AMS-Addition: Optimized dragon respawn
          ChunkPos chunkPos = new ChunkPos(this.origin);
  
          for (int i = -8 + chunkPos.x; i <= 8 + chunkPos.x; i++) {
-@@ -573,6 +633,11 @@ public class EndDragonFight {
+@@ -567,6 +628,11 @@ public class EndDragonFight {
      }
  
      public boolean respawnDragon(List<EndCrystal> crystals) { // CraftBukkit - return boolean

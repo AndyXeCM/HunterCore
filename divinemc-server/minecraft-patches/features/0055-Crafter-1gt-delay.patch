@@ -5,7 +5,7 @@ Subject: [PATCH] Crafter 1gt delay
 
 
 diff --git a/net/minecraft/world/level/block/CrafterBlock.java b/net/minecraft/world/level/block/CrafterBlock.java
-index a132883d85d515edb131049714915902444e4c3e..68e28ff810d6420dafc03cc43d7edbe5ee38d971 100644
+index c5fe15844d405a27cdae18c903dd481c25b437de..a42297906a632c937f3b8c98371304b98362f51f 100644
 --- a/net/minecraft/world/level/block/CrafterBlock.java
 +++ b/net/minecraft/world/level/block/CrafterBlock.java
 @@ -75,7 +75,7 @@ public class CrafterBlock extends BaseEntityBlock {
@@ -17,9 +17,9 @@ index a132883d85d515edb131049714915902444e4c3e..68e28ff810d6420dafc03cc43d7edbe5
              level.setBlock(pos, state.setValue(TRIGGERED, true), Block.UPDATE_CLIENTS);
              this.setBlockEntityTriggered(blockEntity, true);
          } else if (!hasNeighborSignal && triggeredValue) {
-@@ -125,7 +125,7 @@ public class CrafterBlock extends BaseEntityBlock {
+@@ -124,7 +124,7 @@ public class CrafterBlock extends BaseEntityBlock {
      @Override
-     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
          if (state.getValue(TRIGGERED)) {
 -            level.scheduleTick(pos, this, 4);
 +            level.scheduleTick(pos, this, !org.bxteam.divinemc.config.DivineConfig.MiscCategory.copperBulb1gt ? 4 : 1); // DivineMC - Crafter 1gt delay

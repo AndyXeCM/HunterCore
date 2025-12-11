@@ -7,10 +7,10 @@ Original license: GPL v3
 Original project: https://github.com/pufferfish-gg/Pufferfish
 
 diff --git a/net/minecraft/world/entity/monster/EnderMan.java b/net/minecraft/world/entity/monster/EnderMan.java
-index e4d6610c43a019e9e1e296703e80eecc4ffdd36c..5607e5712795a0c979bc11ac335f9bb38668d503 100644
+index c90a955b14ae10037f31c7e9b8a86df3323602cc..ac363aef23dec6d76bca9b4d5a6e85b908beabae 100644
 --- a/net/minecraft/world/entity/monster/EnderMan.java
 +++ b/net/minecraft/world/entity/monster/EnderMan.java
-@@ -336,11 +336,28 @@ public class EnderMan extends Monster implements NeutralMob {
+@@ -334,11 +334,28 @@ public class EnderMan extends Monster implements NeutralMob {
      private boolean teleport(double x, double y, double z) {
          BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos(x, y, z);
  

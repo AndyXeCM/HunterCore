@@ -7,19 +7,10 @@ Original project: https://github.com/TelepathicGrunt/StructureLayoutOptimizer
 Original license: MIT
 
 diff --git a/net/minecraft/world/level/levelgen/structure/pools/JigsawPlacement.java b/net/minecraft/world/level/levelgen/structure/pools/JigsawPlacement.java
-index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5980f5d4b 100644
+index 12a8c5d85c9b6a433b90ae98743e78a48bf1e7d4..ae25d2b544f61bec142e38f299331f67a3f2d8bf 100644
 --- a/net/minecraft/world/level/levelgen/structure/pools/JigsawPlacement.java
 +++ b/net/minecraft/world/level/levelgen/structure/pools/JigsawPlacement.java
-@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
- import com.mojang.logging.LogUtils;
- import java.util.List;
- import java.util.Optional;
-+import java.util.ArrayList;
-+import java.util.LinkedHashSet;
- import net.minecraft.core.BlockPos;
- import net.minecraft.core.Direction;
- import net.minecraft.core.Holder;
-@@ -288,6 +290,108 @@ public class JigsawPlacement {
+@@ -286,6 +286,108 @@ public class JigsawPlacement {
              this.random = random;
          }
  
@@ -48,7 +39,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
 +            }
 +
 +            // Linked hashset keeps order of elements.
-+            LinkedHashSet<StructurePoolElement> uniquePieces = new LinkedHashSet<>((instance).rawTemplates.size());
++            java.util.LinkedHashSet<StructurePoolElement> uniquePieces = new java.util.LinkedHashSet<>((instance).rawTemplates.size());
 +
 +            // Don't use addAll. Want to keep it simple in case of inefficiency in collection's addAll.
 +            // Set will ignore duplicates after first appearance of an element.
@@ -59,7 +50,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
 +
 +            // Move the elements from set to the list in the same order.
 +            int uniquePiecesFound = uniquePieces.size();
-+            List<StructurePoolElement> deduplicatedListOfPieces = new ArrayList<>(uniquePiecesFound);
++            List<StructurePoolElement> deduplicatedListOfPieces = new java.util.ArrayList<>(uniquePiecesFound);
 +            for (int i = 0; i < uniquePiecesFound; i++) {
 +                deduplicatedListOfPieces.add(uniquePieces.removeFirst());
 +            }
@@ -67,7 +58,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
 +            return deduplicatedListOfPieces;
 +        }
 +
-+        private ArrayList<StructurePoolElement> structureLayoutOptimizer$skipDuplicateTemplatePoolElementLists1() {
++        private java.util.ArrayList<StructurePoolElement> structureLayoutOptimizer$skipDuplicateTemplatePoolElementLists1() {
 +            // Swap with trojan list, so we can record what pieces we visited
 +            return org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.deduplicateShuffledTemplatePoolElementList ? Lists.newArrayList() : new org.bxteam.divinemc.util.structure.TrojanArrayList<>();
 +        }
@@ -88,7 +79,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
 +                StructureTemplatePool.Projection candidatePlacementBehavior = structurePoolElement.getProjection();
 +                boolean isCandidateRigid = candidatePlacementBehavior == StructureTemplatePool.Projection.RIGID;
 +                if (isCandidateRigid && (!trojanVoxelShape.boxOctree.boundaryContains(parentTargetPosition) || trojanVoxelShape.boxOctree.withinAnyBox(parentTargetPosition))) {
-+                    return new ArrayList<>();
++                    return new java.util.ArrayList<>();
 +                }
 +            }
 +            return original;
@@ -112,7 +103,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
 +                    }
 +
 +                    // Short circuit the Rotation loop
-+                    return new ArrayList<>();
++                    return new java.util.ArrayList<>();
 +                }
 +                // Record piece as it will go through the 4 rotation checks for spawning.
 +                else {
@@ -128,7 +119,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
          void tryPlacingChildren(
              PoolElementStructurePiece piece,
              MutableObject<VoxelShape> free,
-@@ -345,9 +449,9 @@ public class JigsawPlacement {
+@@ -343,9 +445,9 @@ public class JigsawPlacement {
                                  mutableObject1 = free;
                              }
  
@@ -140,7 +131,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
                              }
  
                              list.addAll(fallback.value().getShuffledTemplates(this.random));
-@@ -358,10 +462,14 @@ public class JigsawPlacement {
+@@ -356,10 +458,14 @@ public class JigsawPlacement {
                                      break;
                                  }
  
@@ -157,7 +148,7 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
                                      BoundingBox boundingBox1 = structurePoolElement.getBoundingBox(this.structureTemplateManager, BlockPos.ZERO, rotation1);
                                      int i2;
                                      if (useExpansionHack && boundingBox1.getYSpan() <= 16) {
-@@ -394,7 +502,7 @@ public class JigsawPlacement {
+@@ -392,7 +498,7 @@ public class JigsawPlacement {
                                      }
  
                                      for (StructureTemplate.JigsawBlockInfo jigsawBlockInfo1 : shuffledJigsawBlocks) {
@@ -166,16 +157,16 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
                                              BlockPos blockPos2 = jigsawBlockInfo1.info().pos();
                                              BlockPos blockPos3 = blockPos1.subtract(blockPos2);
                                              BoundingBox boundingBox2 = structurePoolElement.getBoundingBox(this.structureTemplateManager, blockPos3, rotation1);
-@@ -423,9 +531,26 @@ public class JigsawPlacement {
+@@ -421,9 +527,26 @@ public class JigsawPlacement {
                                                  boundingBox3.encapsulate(new BlockPos(boundingBox3.minX(), boundingBox3.minY() + max, boundingBox3.minZ()));
                                              }
  
 -                                            if (!Shapes.joinIsNotEmpty(
--                                                mutableObject1.getValue(), Shapes.create(AABB.of(boundingBox3).deflate(0.25)), BooleanOp.ONLY_SECOND
+-                                                mutableObject1.get(), Shapes.create(AABB.of(boundingBox3).deflate(0.25)), BooleanOp.ONLY_SECOND
 -                                            )) {
 +                                            // DivineMC start - Optimize Structure Generation
 +                                            boolean internal$joinIsNotEmpty;
-+                                            VoxelShape parentBounds = mutableObject1.getValue();
++                                            VoxelShape parentBounds = mutableObject1.get();
 +                                            java.util.function.Supplier<Boolean> original = () -> Shapes.joinIsNotEmpty(
 +                                                parentBounds, Shapes.create(AABB.of(boundingBox3).deflate(0.25)), BooleanOp.ONLY_SECOND
 +                                            );
@@ -194,13 +185,13 @@ index 103d604797bed34c2e357d01c2f7324dea3e9026..4aa68163958e89521f542470c473f8d5
 +                                            if (!internal$joinIsNotEmpty) {
 +                                            // DivineMC end - Optimize Structure Generation
                                                  mutableObject1.setValue(
-                                                     Shapes.joinUnoptimized(
-                                                         mutableObject1.getValue(), Shapes.create(AABB.of(boundingBox3)), BooleanOp.ONLY_FIRST
+                                                     Shapes.joinUnoptimized(mutableObject1.get(), Shapes.create(AABB.of(boundingBox3)), BooleanOp.ONLY_FIRST)
+                                                 );
 diff --git a/net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement.java b/net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement.java
-index 0e107da76f267e8987b97c976a17e85cd5b8a341..f76a26a471dfe2f261b15d0ebbe3602cd05aaa4e 100644
+index d6ee47406d65f66c2559242816471add8c3f9f8f..a79af6c4820f391e56ca90b5dc2bcb15fefe7e30 100644
 --- a/net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement.java
 +++ b/net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement.java
-@@ -120,8 +120,16 @@ public class SinglePoolElement extends StructurePoolElement {
+@@ -118,8 +118,16 @@ public class SinglePoolElement extends StructurePoolElement {
          StructureTemplateManager structureTemplateManager, BlockPos pos, Rotation rotation, RandomSource random
      ) {
          List<StructureTemplate.JigsawBlockInfo> jigsaws = this.getTemplate(structureTemplateManager).getJigsaws(pos, rotation);
@@ -219,8 +210,8 @@ index 0e107da76f267e8987b97c976a17e85cd5b8a341..f76a26a471dfe2f261b15d0ebbe3602c
          return jigsaws;
      }
  
-@@ -197,4 +205,12 @@ public class SinglePoolElement extends StructurePoolElement {
-     public ResourceLocation getTemplateLocation() {
+@@ -195,4 +203,12 @@ public class SinglePoolElement extends StructurePoolElement {
+     public Identifier getTemplateLocation() {
          return this.template.orThrow();
      }
 +
@@ -233,7 +224,7 @@ index 0e107da76f267e8987b97c976a17e85cd5b8a341..f76a26a471dfe2f261b15d0ebbe3602c
 +    // DivineMC end - Optimize Structure Generation
  }
 diff --git a/net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate.java b/net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate.java
-index a2405124c0d04827b9a98883e587729646df456f..da67064ed98d343e0b303819a8fdf5c48cc33b43 100644
+index dd804657ed9935155aaaacfd5a1738df39d016e8..e7f672e07b6e920d5088b0dce5a2939cbd2bc9a4 100644
 --- a/net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate.java
 +++ b/net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate.java
 @@ -256,6 +256,12 @@ public class StructureTemplate {
@@ -246,10 +237,10 @@ index a2405124c0d04827b9a98883e587729646df456f..da67064ed98d343e0b303819a8fdf5c4
 +    }
 +    // DivineMC end - Optimize Structure Generation
 +
-     public boolean placeInWorld(ServerLevelAccessor level, BlockPos offset, BlockPos pos, StructurePlaceSettings settings, RandomSource random, int flags) {
-         if (this.palettes.isEmpty()) {
-             return false;
-@@ -273,7 +279,11 @@ public class StructureTemplate {
+     public boolean placeInWorld(
+         ServerLevelAccessor level, BlockPos offset, BlockPos pos, StructurePlaceSettings settings, RandomSource random, @Block.UpdateFlags int flags
+     ) {
+@@ -275,7 +281,11 @@ public class StructureTemplate {
                  }
              }
              // CraftBukkit end
@@ -262,8 +253,8 @@ index a2405124c0d04827b9a98883e587729646df456f..da67064ed98d343e0b303819a8fdf5c4
              if ((!list.isEmpty() || !settings.isIgnoreEntities() && !this.entityInfoList.isEmpty())
                  && this.size.getX() >= 1
                  && this.size.getY() >= 1
-@@ -885,7 +895,11 @@ public class StructureTemplate {
-         private List<StructureTemplate.JigsawBlockInfo> cachedJigsaws;
+@@ -886,7 +896,11 @@ public class StructureTemplate {
+         private @Nullable List<StructureTemplate.JigsawBlockInfo> cachedJigsaws;
  
          Palette(List<StructureTemplate.StructureBlockInfo> blocks) {
 -            this.blocks = blocks;

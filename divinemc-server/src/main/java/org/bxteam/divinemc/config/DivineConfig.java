@@ -2,7 +2,7 @@ package org.bxteam.divinemc.config;
 
 import com.google.common.base.Throwables;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -518,7 +518,7 @@ public class DivineConfig {
                 entityType.dabEnabled = true;
             }
 
-            final String DEFAULT_PREFIX = ResourceLocation.DEFAULT_NAMESPACE + ResourceLocation.NAMESPACE_SEPARATOR;
+            final String DEFAULT_PREFIX = Identifier.DEFAULT_NAMESPACE + Identifier.NAMESPACE_SEPARATOR;
             for (String name : dabBlackedEntities) {
                 String lowerName = name.toLowerCase(Locale.ROOT);
                 String typeId = lowerName.startsWith(DEFAULT_PREFIX) ? lowerName : DEFAULT_PREFIX + lowerName;
@@ -756,7 +756,7 @@ public class DivineConfig {
                 entityType.skipRaytracingCheck = retInvertSkippedEntities;
             }
 
-            final String DEFAULT_PREFIX = ResourceLocation.DEFAULT_NAMESPACE + ResourceLocation.NAMESPACE_SEPARATOR;
+            final String DEFAULT_PREFIX = Identifier.DEFAULT_NAMESPACE + Identifier.NAMESPACE_SEPARATOR;
 
             for (String name : retSkippedEntities) {
                 String lowerName = name.toLowerCase(Locale.ROOT);

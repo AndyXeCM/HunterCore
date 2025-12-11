@@ -5,10 +5,10 @@ Subject: [PATCH] Cleanup dead code from Paper
 
 
 diff --git a/net/minecraft/network/Connection.java b/net/minecraft/network/Connection.java
-index 5b31eed8f91b45b46521da5169d8003dfd5ec669..bd0712025fd20fbbc24d86f29700f7a28ed81921 100644
+index 12f08893bddd1936403bf29323cb4d8c485bc7bd..73827925ce67343f21302c9c93644eb1a431412c 100644
 --- a/net/minecraft/network/Connection.java
 +++ b/net/minecraft/network/Connection.java
-@@ -608,13 +608,7 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
+@@ -584,13 +584,7 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
              if (!(this.packetListener instanceof net.minecraft.server.network.ServerLoginPacketListenerImpl loginPacketListener)
                  || loginPacketListener.state != net.minecraft.server.network.ServerLoginPacketListenerImpl.State.VERIFYING
                  || Connection.joinAttemptsThisTick++ < MAX_PER_TICK) {
@@ -70,10 +70,10 @@ index 98b101fde04fbf5507f021bb8d8e6bed334de5b6..e76530da9641acc482aa0f030c4dc267
      }
  }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 8c98c2593eec14a8a378041e94cf52b8fbfedc30..4788686f0bd8ab67700bf3687560ff4a26a8e493 100644
+index eb2ed61faac0d4803298325dc5aeec3c6b0a1ad2..92521490b6ddc0ff4a102d870f5826f1b61ee68a 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -1415,13 +1415,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1453,13 +1453,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      // Paper end - log detailed entity tick information
  
      public void tickNonPassenger(Entity entity) {
@@ -87,7 +87,7 @@ index 8c98c2593eec14a8a378041e94cf52b8fbfedc30..4788686f0bd8ab67700bf3687560ff4a
          entity.setOldPosAndRot();
          entity.tickCount++;
          entity.totalEntityAge++; // Paper - age-like counter for all entities
-@@ -1434,13 +1428,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -1472,13 +1466,6 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
          for (Entity entity1 : entity.getPassengers()) {
              this.tickPassenger(entity, entity1, isActive); // Paper - EAR 2
          }
@@ -102,10 +102,10 @@ index 8c98c2593eec14a8a378041e94cf52b8fbfedc30..4788686f0bd8ab67700bf3687560ff4a
  
      private void tickPassenger(Entity ridingEntity, Entity passengerEntity, final boolean isActive) { // Paper - EAR 2
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 9db43874a94770d49ea5ff48a46c4657e4819e98..013261aff0b9ecfeb51f3baf597d7ee211a8a095 100644
+index 5893372688c9355759602645577cdbab7e6e3716..e18f4d60e94054f7f7ebbd066ff3ae45ce441507 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -1116,29 +1116,10 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -1131,29 +1131,10 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
          return this.onGround;
      }
  
@@ -135,7 +135,7 @@ index 9db43874a94770d49ea5ff48a46c4657e4819e98..013261aff0b9ecfeb51f3baf597d7ee2
          if (this.noPhysics) {
              this.setPos(this.getX() + movement.x, this.getY() + movement.y, this.getZ() + movement.z);
              this.horizontalCollision = false;
-@@ -1259,13 +1240,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -1274,13 +1255,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
                  this.setDeltaMovement(this.getDeltaMovement().multiply(blockSpeedFactor, 1.0, blockSpeedFactor));
              }
          }
@@ -149,17 +149,17 @@ index 9db43874a94770d49ea5ff48a46c4657e4819e98..013261aff0b9ecfeb51f3baf597d7ee2
      }
  
      private void applyMovementEmissionAndPlaySound(Entity.MovementEmission movementEmission, Vec3 movement, BlockPos pos, BlockState state) {
-@@ -4993,9 +4967,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
-     }
+@@ -5018,9 +4992,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
  
      public void setDeltaMovement(Vec3 deltaMovement) {
--        synchronized (this.posLock) { // Paper - detailed watchdog information
-         this.deltaMovement = deltaMovement;
--        } // Paper - detailed watchdog information
+         if (deltaMovement.isFinite()) {
+-            synchronized (this.posLock) { // Paper - detailed watchdog information
+             this.deltaMovement = deltaMovement;
+-            } // Paper - detailed watchdog information
+         }
      }
  
-     public void addDeltaMovement(Vec3 addend) {
-@@ -5093,9 +5065,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -5121,9 +5093,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
          }
          // Paper end - Block invalid positions and bounding box
          if (this.position.x != x || this.position.y != y || this.position.z != z) {

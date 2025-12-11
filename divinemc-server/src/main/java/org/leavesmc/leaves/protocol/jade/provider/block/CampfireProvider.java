@@ -5,7 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.entity.CampfireBlockEntity;
@@ -23,7 +23,7 @@ public enum CampfireProvider implements IServerExtensionProvider<ItemStack> {
     INSTANCE;
 
     private static final MapCodec<Integer> COOKING_TIME_CODEC = Codec.INT.fieldOf("jade:cooking");
-    private static final ResourceLocation MC_CAMPFIRE = JadeProtocol.mc_id("campfire");
+    private static final Identifier MC_CAMPFIRE = JadeProtocol.mc_id("campfire");
 
     @Override
     public @Nullable @Unmodifiable List<ViewGroup<ItemStack>> getGroups(@NotNull Accessor<?> request) {
@@ -48,7 +48,7 @@ public enum CampfireProvider implements IServerExtensionProvider<ItemStack> {
     }
 
     @Override
-    public ResourceLocation getUid() {
+    public Identifier getUid() {
         return MC_CAMPFIRE;
     }
 }

@@ -22,10 +22,10 @@ Example config in paper-world-defaults.yml:
 ```
 
 diff --git a/net/minecraft/world/level/NaturalSpawner.java b/net/minecraft/world/level/NaturalSpawner.java
-index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8adcb17e7ce 100644
+index 24cbfb900eeed9c666334ca178e6bc02abc25a77..ef1d224e9488f437ea198c9362587605b29153c3 100644
 --- a/net/minecraft/world/level/NaturalSpawner.java
 +++ b/net/minecraft/world/level/NaturalSpawner.java
-@@ -160,29 +160,52 @@ public final class NaturalSpawner {
+@@ -161,29 +161,52 @@ public final class NaturalSpawner {
                  // Copied from getFilteredSpawningCategories
                  int limit = mobCategory.getMaxInstancesPerChunk();
                  org.bukkit.entity.SpawnCategory spawnCategory = org.bukkit.craftbukkit.util.CraftSpawnCategory.toBukkit(mobCategory);
@@ -90,7 +90,7 @@ index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8ad
                  // Paper end - Optional per player mob spawns
              }
          }
-@@ -204,14 +227,16 @@ public final class NaturalSpawner {
+@@ -205,14 +228,16 @@ public final class NaturalSpawner {
          // Paper start - Optional per player mob spawns
          spawnCategoryForChunk(category, level, chunk, filter, callback, Integer.MAX_VALUE, null);
      }
@@ -109,7 +109,7 @@ index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8ad
      }
  
      @VisibleForDebug
-@@ -229,18 +254,17 @@ public final class NaturalSpawner {
+@@ -230,18 +255,17 @@ public final class NaturalSpawner {
      ) {
          spawnCategoryForPosition(category, level, chunk, pos, filter, callback, Integer.MAX_VALUE, null);
      }
@@ -130,7 +130,7 @@ index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8ad
              for (int i1 = 0; i1 < 3; i1++) {
                  int x = pos.getX();
                  int z = pos.getZ();
-@@ -280,14 +304,14 @@ public final class NaturalSpawner {
+@@ -281,14 +305,14 @@ public final class NaturalSpawner {
                              }
                              // Paper end - per player mob count backoff
                              if (doSpawning == PreSpawnStatus.ABORT) {
@@ -147,7 +147,7 @@ index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8ad
                                  }
  
                                  mobForSpawn.snapTo(d, y, d1, level.random.nextFloat() * 360.0F, 0.0F);
-@@ -310,7 +334,7 @@ public final class NaturalSpawner {
+@@ -311,7 +335,7 @@ public final class NaturalSpawner {
                                      }
                                      // CraftBukkit end
                                      if (i >= mobForSpawn.getMaxSpawnClusterSize() || i >= maxSpawns) { // Paper - Optional per player mob spawns
@@ -156,7 +156,7 @@ index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8ad
                                      }
  
                                      if (mobForSpawn.isMaxGroupSizeReached(i3)) {
-@@ -323,6 +347,8 @@ public final class NaturalSpawner {
+@@ -324,6 +348,8 @@ public final class NaturalSpawner {
                  }
              }
          }
@@ -166,10 +166,10 @@ index 1b62bc5836fbf0ddc37d8f979b4e7aa628c4b00e..60290430e1ac70d3b885651168a6e8ad
  
      private static boolean isRightDistanceToPlayerAndSpawnPoint(ServerLevel level, ChunkAccess chunk, BlockPos.MutableBlockPos pos, double distance) {
 diff --git a/net/minecraft/world/level/chunk/ChunkAccess.java b/net/minecraft/world/level/chunk/ChunkAccess.java
-index 98b7e1e3b8592824c69a9647a82621755526c71a..f6f9a88283e051e6a7c96f461b68b3881b3361d2 100644
+index 54ddcf92e72b9cbd0eb442e5d0faa83c0cf3b33b..f2111830b112870c07bf20a0dd52427309d25332 100644
 --- a/net/minecraft/world/level/chunk/ChunkAccess.java
 +++ b/net/minecraft/world/level/chunk/ChunkAccess.java
-@@ -86,6 +86,7 @@ public abstract class ChunkAccess implements BiomeManager.NoiseBiomeSource, Ligh
+@@ -83,6 +83,7 @@ public abstract class ChunkAccess implements BiomeManager.NoiseBiomeSource, Ligh
      private static final org.bukkit.craftbukkit.persistence.CraftPersistentDataTypeRegistry DATA_TYPE_REGISTRY = new org.bukkit.craftbukkit.persistence.CraftPersistentDataTypeRegistry();
      public org.bukkit.craftbukkit.persistence.DirtyCraftPersistentDataContainer persistentDataContainer = new org.bukkit.craftbukkit.persistence.DirtyCraftPersistentDataContainer(ChunkAccess.DATA_TYPE_REGISTRY);
      // CraftBukkit end
@@ -178,19 +178,19 @@ index 98b7e1e3b8592824c69a9647a82621755526c71a..f6f9a88283e051e6a7c96f461b68b388
      // Paper start - rewrite chunk system
      private volatile ca.spottedleaf.moonrise.patches.starlight.light.SWMRNibbleArray[] blockNibbles;
 diff --git a/net/minecraft/world/level/chunk/storage/SerializableChunkData.java b/net/minecraft/world/level/chunk/storage/SerializableChunkData.java
-index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83dabc8437f 100644
+index 95c8d65a4b6db8d0721460ae55cb8fb8143ea9a2..51a3c5c8da9d10a9851eb479db67dd759b2ef9b3 100644
 --- a/net/minecraft/world/level/chunk/storage/SerializableChunkData.java
 +++ b/net/minecraft/world/level/chunk/storage/SerializableChunkData.java
 @@ -93,6 +93,7 @@ public record SerializableChunkData(
      List<CompoundTag> blockEntities,
      CompoundTag structureData
-     , @Nullable net.minecraft.nbt.Tag persistentDataContainer // CraftBukkit - persistentDataContainer
+     , net.minecraft.nbt.@Nullable Tag persistentDataContainer // CraftBukkit - persistentDataContainer
 +    , @Nullable long[] failedSpawnAttempts // Paper - throttle failed spawn attempts
  ) {
      private static final Codec<List<SavedTick<Block>>> BLOCK_TICKS_CODEC = SavedTick.codec(BuiltInRegistries.BLOCK.byNameCodec()).listOf();
      private static final Codec<List<SavedTick<Fluid>>> FLUID_TICKS_CODEC = SavedTick.codec(BuiltInRegistries.FLUID.byNameCodec()).listOf();
-@@ -184,6 +185,19 @@ public record SerializableChunkData(
-                 lists[i] = list2;
+@@ -185,6 +186,19 @@ public record SerializableChunkData(
+                 }
              }
  
 +            // Paper start - throttle failed spawn attempts
@@ -209,7 +209,7 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
              List<CompoundTag> list3 = tag.getList("entities").stream().flatMap(ListTag::compoundStream).toList();
              List<CompoundTag> list4 = tag.getList("block_entities").stream().flatMap(ListTag::compoundStream).toList();
              CompoundTag compoundOrEmpty = tag.getCompoundOrEmpty("structures");
-@@ -256,6 +270,7 @@ public record SerializableChunkData(
+@@ -257,6 +271,7 @@ public record SerializableChunkData(
                  list4,
                  compoundOrEmpty
                  , tag.get("ChunkBukkitValues") // CraftBukkit - ChunkBukkitValues
@@ -217,8 +217,8 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
              );
          }
      }
-@@ -419,6 +434,15 @@ public record SerializableChunkData(
-             chunkAccess.addPackedPostProcess(this.postProcessingSections[i], i);
+@@ -423,6 +438,15 @@ public record SerializableChunkData(
+             }
          }
  
 +        // Paper start - throttle failed spawn attempts
@@ -233,7 +233,7 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
          if (chunkType == ChunkType.LEVELCHUNK) {
              return this.loadStarlightLightData(level, new ImposterProtoChunk((LevelChunk)chunkAccess, false)); // Paper - starlight
          } else {
-@@ -534,6 +558,7 @@ public record SerializableChunkData(
+@@ -538,6 +562,7 @@ public record SerializableChunkData(
                  persistentDataContainer = chunk.persistentDataContainer.toTagCompound();
              }
              // CraftBukkit end
@@ -241,7 +241,7 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
              return new SerializableChunkData(
                  level.palettedContainerFactory(),
                  pos,
-@@ -554,6 +579,7 @@ public record SerializableChunkData(
+@@ -558,6 +583,7 @@ public record SerializableChunkData(
                  list1,
                  compoundTag
                  , persistentDataContainer // CraftBukkit - persistentDataContainer
@@ -249,7 +249,7 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
              );
          }
      }
-@@ -639,6 +665,21 @@ public record SerializableChunkData(
+@@ -643,6 +669,21 @@ public record SerializableChunkData(
              compoundTag.put("ChunkBukkitValues", this.persistentDataContainer);
          }
          // CraftBukkit end
@@ -271,7 +271,7 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
          // Paper start - starlight
          if (this.lightCorrect && !this.chunkStatus.isBefore(net.minecraft.world.level.chunk.status.ChunkStatus.LIGHT)) {
              // clobber vanilla value to force vanilla to relight
-@@ -854,4 +895,49 @@ public record SerializableChunkData(
+@@ -857,4 +898,49 @@ public record SerializableChunkData(
          }
          // Paper end - starlight - convert from record
      }
@@ -284,19 +284,19 @@ index 2e8a1898c9ef8bbfd58ea1e9fbd7f6a633822fb9..e393f9025283acb7d1f5937aebbde83d
 +        long lastUpdateTime,
 +        long inhabitedTime,
 +        ChunkStatus chunkStatus,
-+        @Nullable BlendingData.Packed blendingData,
++        BlendingData.@Nullable Packed blendingData,
 +        @Nullable BelowZeroRetrogen belowZeroRetrogen,
 +        UpgradeData upgradeData,
-+        @Nullable long[] carvingMask,
++        long @Nullable [] carvingMask,
 +        Map<Heightmap.Types, long[]> heightmaps,
 +        ChunkAccess.PackedTicks packedTicks,
-+        ShortList[] postProcessingSections,
++        @Nullable ShortList[] postProcessingSections,
 +        boolean lightCorrect,
-+        List<net.minecraft.world.level.chunk.storage.SerializableChunkData.SectionData> sectionData,
++        List<SerializableChunkData.SectionData> sectionData,
 +        List<CompoundTag> entities,
 +        List<CompoundTag> blockEntities,
-+        CompoundTag structureData,
-+        @Nullable net.minecraft.nbt.Tag persistentDataContainer // CraftBukkit - persistentDataContainer
++        CompoundTag structureData
++        , net.minecraft.nbt.@Nullable Tag persistentDataContainer // CraftBukkit - persistentDataContainer
 +    ) {
 +        this(containerFactory,
 +            chunkPos,

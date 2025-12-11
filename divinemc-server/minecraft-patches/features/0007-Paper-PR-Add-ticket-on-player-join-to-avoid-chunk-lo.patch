@@ -15,7 +15,7 @@ The delay is currently set to 2 seconds, however, we may want to adjust this bef
 This patch fixes PaperMC/Paper#9581
 
 diff --git a/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java b/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
-index 8697528095ebed543ee1bb3b6b617a26a800bd5d..4fc29f7aae32180f86af971f7f80a37aa6e797e4 100644
+index 7129c5e1920008ac54f3a8ac83f5589396f4e4e9..7cac3ba1aac89cca09964b4e68ec1628cb3c5811 100644
 --- a/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
 +++ b/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
 @@ -48,6 +48,7 @@ public final class RegionizedPlayerChunkLoader {
@@ -27,10 +27,10 @@ index 8697528095ebed543ee1bb3b6b617a26a800bd5d..4fc29f7aae32180f86af971f7f80a37a
      public static final int GENERATED_TICKET_LEVEL = ChunkHolderManager.FULL_LOADED_TICKET_LEVEL;
      public static final int LOADED_TICKET_LEVEL = ChunkTaskScheduler.getTicketLevel(ChunkStatus.EMPTY);
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index 67f9d5384f26d27cb59c2bfa090697dd86b85b67..457dfcb459f2618e6975ab3e4ff37d5988dd50c2 100644
+index 71c5de736166101d90d464e4a4adb12d89e44315..0313586d4f5f8c21aa9e8367dc9ca072f3271d9e 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -221,6 +221,13 @@ public abstract class PlayerList {
+@@ -226,6 +226,13 @@ public abstract class PlayerList {
          // this.broadcastAll(ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(player))); // CraftBukkit - replaced with loop below
          // Paper start - Fire PlayerJoinEvent when Player is actually ready; correctly register player BEFORE PlayerJoinEvent, so the entity is valid and doesn't require tick delay hacks
          player.suppressTrackerForLogin = true;

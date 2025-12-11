@@ -5,11 +5,11 @@ Subject: [PATCH] Optimize collections
 
 
 diff --git a/net/minecraft/core/NonNullList.java b/net/minecraft/core/NonNullList.java
-index feefe51469843707afb2ecd4aaa3c9da2e089eb5..c7e418e5f7ca7f177df4e9432a0963f89b972a61 100644
+index b8cca20523ac848d32f76a490db36f9d6fe36e07..9f07a4f1c036c7578818067870ccee7057fbd179 100644
 --- a/net/minecraft/core/NonNullList.java
 +++ b/net/minecraft/core/NonNullList.java
-@@ -14,23 +14,23 @@ public class NonNullList<E> extends AbstractList<E> {
-     private final E defaultValue;
+@@ -12,23 +12,23 @@ public class NonNullList<E> extends AbstractList<E> {
+     private final @Nullable E defaultValue;
  
      public static <E> NonNullList<E> create() {
 -        return new NonNullList<>(Lists.newArrayList(), null);
@@ -37,10 +37,10 @@ index feefe51469843707afb2ecd4aaa3c9da2e089eb5..c7e418e5f7ca7f177df4e9432a0963f8
  
      protected NonNullList(List<E> list, @Nullable E defaultValue) {
 diff --git a/net/minecraft/server/level/ChunkMap.java b/net/minecraft/server/level/ChunkMap.java
-index 71fafa5cf67cd1e460b0be14ecfe0c922b666704..993c03f1957b6905ed943ff34ec9c530fdf69928 100644
+index b9eea26bb7e838a3b158b136d9e42f8ee93ddd8b..7721cad8962eb3f5d5f45ece9199c0d419bced2d 100644
 --- a/net/minecraft/server/level/ChunkMap.java
 +++ b/net/minecraft/server/level/ChunkMap.java
-@@ -132,8 +132,10 @@ public class ChunkMap extends ChunkStorage implements ChunkHolder.PlayerProvider
+@@ -137,8 +137,10 @@ public class ChunkMap extends SimpleRegionStorage implements ChunkHolder.PlayerP
      public final ChunkMap.DistanceManager distanceManager;
      private final String storageName;
      private final PlayerMap playerMap = new PlayerMap();
@@ -54,7 +54,7 @@ index 71fafa5cf67cd1e460b0be14ecfe0c922b666704..993c03f1957b6905ed943ff34ec9c530
      public int serverViewDistance;
      public final WorldGenContext worldGenContext; // Paper - public
 diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
-index 738cbde3595165e0f05c0a6fde21499e98dc850b..4ec89234607f58ee32d0ea2ef056c8098e137041 100644
+index 2c6f6f3bf53529673415987904465a2362aad96e..01e844df3ed46ef5ae34ae56845ae3d011567157 100644
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
 @@ -260,7 +260,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
@@ -76,15 +76,15 @@ index 738cbde3595165e0f05c0a6fde21499e98dc850b..4ec89234607f58ee32d0ea2ef056c809
          ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemLevel)this).moonrise$getEntityLookup().getHardCollidingEntities(entity, box, ret, predicate);
  
 diff --git a/net/minecraft/world/level/chunk/ProtoChunk.java b/net/minecraft/world/level/chunk/ProtoChunk.java
-index 456d301d45350fb15de5ab663c482257e607f3aa..6fe4dd49256325908e49c02728a5b51964a96c12 100644
+index fd923d89d4456f0b13d97ef6fa90815a27e2e734..1201358ae5f75b61286e520001e7e5f7dbf2c7a1 100644
 --- a/net/minecraft/world/level/chunk/ProtoChunk.java
 +++ b/net/minecraft/world/level/chunk/ProtoChunk.java
-@@ -45,7 +45,7 @@ public class ProtoChunk extends ChunkAccess {
-     @Nullable
-     private volatile LevelLightEngine lightEngine;
+@@ -44,7 +44,7 @@ public class ProtoChunk extends ChunkAccess {
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private volatile @Nullable LevelLightEngine lightEngine;
      private volatile ChunkStatus status = ChunkStatus.EMPTY;
 -    private final List<CompoundTag> entities = Lists.newArrayList();
 +    private final List<CompoundTag> entities = Collections.synchronizedList(Lists.newArrayList()); // DivineMC - Optimize collections
-     @Nullable
-     private CarvingMask carvingMask;
-     @Nullable
+     private @Nullable CarvingMask carvingMask;
+     private @Nullable BelowZeroRetrogen belowZeroRetrogen;
+     private final ProtoChunkTicks<Block> blockTicks;

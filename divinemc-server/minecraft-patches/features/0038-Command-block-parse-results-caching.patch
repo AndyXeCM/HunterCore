@@ -5,21 +5,21 @@ Subject: [PATCH] Command block parse results caching
 
 
 diff --git a/net/minecraft/world/level/BaseCommandBlock.java b/net/minecraft/world/level/BaseCommandBlock.java
-index 390d9cbe8050b90e4bd9327cf4d80571fbd8ece4..1398fb38edfc975dc716a5147159e9da0443ca83 100644
+index 183ad542a6589071a37f1036b9bbe7dd141f7ed8..7d7d47c20779327f9e5a6caae2e17da65140acc4 100644
 --- a/net/minecraft/world/level/BaseCommandBlock.java
 +++ b/net/minecraft/world/level/BaseCommandBlock.java
-@@ -35,6 +35,10 @@ public abstract class BaseCommandBlock {
+@@ -30,6 +30,10 @@ public abstract class BaseCommandBlock {
+     @Nullable Component lastOutput;
      private String command = "";
-     @Nullable
-     private Component customName;
+     private @Nullable Component customName;
 +    // DivineMC start - Caching command block parse results
 +    private String lastExecutedCommand;
 +    private com.mojang.brigadier.ParseResults<CommandSourceStack> parseResultsCache;
 +    // DivineMC end - Caching command block parse results
      // CraftBukkit start
      protected abstract org.bukkit.command.CommandSender getBukkitSender(CommandSourceStack wrapper);
-     // CraftBukkit end
-@@ -115,13 +119,41 @@ public abstract class BaseCommandBlock {
+     public abstract ServerLevel getLevel();
+@@ -110,13 +114,41 @@ public abstract class BaseCommandBlock {
                                  this.successCount++;
                              }
                          });
@@ -46,10 +46,10 @@ index 390d9cbe8050b90e4bd9327cf4d80571fbd8ece4..1398fb38edfc975dc716a5147159e9da
 +                                if (args.length != 0) {
 +                                    String newCommand = joiner.join(args);
 +                                    if (!newCommand.equals(lastExecutedCommand) || parseResultsCache == null) {
-+                                        MinecraftServer.LOGGER.info("Recompiling parse results cache for command block at ({}, {}, {})", this.getPosition().x, this.getPosition().y, this.getPosition().z);
-+                                        this.cache(server.getCommands().getDispatcher(), commandSourceStack, newCommand);
++                                        //net.minecraft.server.MinecraftServer.LOGGER.info("Recompiling parse results cache for command block at ({}, {}, {})", this.getPosition().x, this.getPosition().y, this.getPosition().z); // TODO: check this
++                                        this.cache(level.getServer().getCommands().getDispatcher(), commandSourceStack, newCommand);
 +                                    }
-+                                    server.getCommands().performCommand(parseResultsCache, newCommand);
++                                    level.getServer().getCommands().performCommand(parseResultsCache, newCommand);
 +                                }
 +                            }
 +                        } else {
@@ -58,16 +58,16 @@ index 390d9cbe8050b90e4bd9327cf4d80571fbd8ece4..1398fb38edfc975dc716a5147159e9da
 +                            if (!event.callEvent()) {
 +                                return true;
 +                            }
-+                            server.getCommands().performPrefixedCommand(commandSourceStack, event.getCommand());
++                            level.getServer().getCommands().performPrefixedCommand(commandSourceStack, event.getCommand());
 +                            // Paper end - ServerCommandEvent
                          }
--                        server.getCommands().performPrefixedCommand(commandSourceStack, event.getCommand());
+-                        level.getServer().getCommands().performPrefixedCommand(commandSourceStack, event.getCommand());
 -                        // Paper end - ServerCommandEvent
 +                        // DivineMC end - Command block parse results caching
                      }
-                 } catch (Throwable var8) {
-                     CrashReport crashReport = CrashReport.forThrowable(var8, "Executing command block");
-@@ -142,6 +174,13 @@ public abstract class BaseCommandBlock {
+                 } catch (Throwable var7) {
+                     CrashReport crashReport = CrashReport.forThrowable(var7, "Executing command block");
+@@ -137,6 +169,13 @@ public abstract class BaseCommandBlock {
          }
      }
  
@@ -78,6 +78,6 @@ index 390d9cbe8050b90e4bd9327cf4d80571fbd8ece4..1398fb38edfc975dc716a5147159e9da
 +    }
 +    // DivineMC end - Command block parse results caching
 +
-     public BaseCommandBlock.CloseableCommandBlockSource createSource() { // Paper - public, remove nullable
-         return new BaseCommandBlock.CloseableCommandBlockSource(this.trackOutput); // Paper - add back source when output disabled
+     public BaseCommandBlock.CloseableCommandBlockSource createSource(ServerLevel level) { // Paper - public, remove nullable
+         return new BaseCommandBlock.CloseableCommandBlockSource(level, this.trackOutput); // Paper - add back source when output disabled
      }

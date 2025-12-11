@@ -10,10 +10,10 @@ As part of: C2ME (https://github.com/RelativityMC/C2ME-fabric)
 Licensed under: MIT (https://opensource.org/licenses/MIT)
 
 diff --git a/net/minecraft/world/level/chunk/storage/IOWorker.java b/net/minecraft/world/level/chunk/storage/IOWorker.java
-index 27e1edbd8d8ffd80c1a3df17bc47f4a6936619f7..c3326e753ecf8a0ba1930d8c7573ebd2c594cf45 100644
+index b2b7c20a25bdefd42e8a36eb29935b8d5b24925d..d7ec29997bd03cf4807aab4961696cbba36d53a5 100644
 --- a/net/minecraft/world/level/chunk/storage/IOWorker.java
 +++ b/net/minecraft/world/level/chunk/storage/IOWorker.java
-@@ -212,7 +212,38 @@ public class IOWorker implements ChunkScanAccess, AutoCloseable {
+@@ -213,7 +213,38 @@ public class IOWorker implements ChunkScanAccess, AutoCloseable {
          });
      }
  

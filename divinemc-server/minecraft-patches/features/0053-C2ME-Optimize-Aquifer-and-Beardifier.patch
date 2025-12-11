@@ -11,10 +11,10 @@ As part of: C2ME (https://github.com/RelativityMC/C2ME-fabric)
 Licensed under: MIT (https://opensource.org/licenses/MIT)
 
 diff --git a/net/minecraft/world/level/levelgen/Aquifer.java b/net/minecraft/world/level/levelgen/Aquifer.java
-index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fdc89d5293 100644
+index 2c9b447d8b0f8f817bfe5350678f97a36103ec02..28490fba2b0cd2d682fd085b105b247e3dd35ea1 100644
 --- a/net/minecraft/world/level/levelgen/Aquifer.java
 +++ b/net/minecraft/world/level/levelgen/Aquifer.java
-@@ -98,6 +98,13 @@ public interface Aquifer {
+@@ -96,6 +96,13 @@ public interface Aquifer {
          private final int minGridZ;
          private final int gridSizeX;
          private final int gridSizeZ;
@@ -28,7 +28,7 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
          private static final int[][] SURFACE_SAMPLING_OFFSETS_IN_CHUNKS = new int[][]{
              {0, 0}, {-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {-3, 0}, {-2, 0}, {-1, 0}, {1, 0}, {-2, 1}, {-1, 1}, {0, 1}, {1, 1}
          };
-@@ -133,6 +140,41 @@ public interface Aquifer {
+@@ -131,6 +138,41 @@ public interface Aquifer {
              this.aquiferCache = new Aquifer.FluidStatus[i4];
              this.aquiferLocationCache = new long[i4];
              Arrays.fill(this.aquiferLocationCache, Long.MAX_VALUE);
@@ -70,7 +70,7 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
              int i5 = this.adjustSurfaceLevel(
                  noiseChunk.maxPreliminarySurfaceLevel(fromGridX(this.minGridX, 0), fromGridZ(this.minGridZ, 0), fromGridX(i, 9), fromGridZ(i3, 9))
              );
-@@ -154,142 +196,23 @@ public interface Aquifer {
+@@ -151,142 +193,23 @@ public interface Aquifer {
                  this.shouldScheduleFluidUpdate = false;
                  return null;
              } else {
@@ -223,7 +223,7 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
          }
  
          @Override
-@@ -302,65 +225,28 @@ public interface Aquifer {
+@@ -299,65 +222,28 @@ public interface Aquifer {
              return 1.0 - (secondDistance - firstDistance) / 25.0;
          }
  
@@ -276,13 +276,13 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
 -                    double d10x = 2.0;
 -                    double d12;
 -                    if (!(d11 < -2.0) && !(d11 > 2.0)) {
--                        double value = substance.getValue();
--                        if (Double.isNaN(value)) {
--                            double d13 = this.barrierNoise.compute(context);
--                            substance.setValue(d13);
--                            d12 = d13;
+-                        double d13 = substance.doubleValue();
+-                        if (Double.isNaN(d13)) {
+-                            double d14 = this.barrierNoise.compute(context);
+-                            substance.setValue(d14);
+-                            d12 = d14;
 -                        } else {
--                            d12 = value;
+-                            d12 = d13;
 -                        }
 -                    } else {
 -                        d12 = 0.0;
@@ -299,7 +299,7 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
  
          private static int gridX(int x) {
              return x >> 4;
-@@ -441,22 +327,21 @@ public interface Aquifer {
+@@ -438,22 +324,21 @@ public interface Aquifer {
          }
  
          private int computeSurfaceLevel(int x, int y, int z, Aquifer.FluidStatus fluidStatus, int maxSurfaceLevel, boolean fluidPresent) {
@@ -330,7 +330,7 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
  
              int i;
              if (d1 > 0.0) {
-@@ -487,12 +372,12 @@ public interface Aquifer {
+@@ -484,12 +369,12 @@ public interface Aquifer {
          private BlockState computeFluidType(int x, int y, int z, Aquifer.FluidStatus fluidStatus, int surfaceLevel) {
              BlockState blockState = fluidStatus.fluidType;
              if (surfaceLevel <= -10 && surfaceLevel != DimensionType.WAY_BELOW_MIN_Y && fluidStatus.fluidType != Blocks.LAVA.defaultBlockState()) {
@@ -349,7 +349,7 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
                  if (Math.abs(d) > 0.3) {
                      blockState = Blocks.LAVA.defaultBlockState();
                  }
-@@ -500,5 +385,218 @@ public interface Aquifer {
+@@ -497,5 +382,218 @@ public interface Aquifer {
  
              return blockState;
          }
@@ -569,13 +569,13 @@ index d672f425368e4489b2477da7c049670e72b46306..c2c190a6d88691ae01613651c7dc21fd
      }
  }
 diff --git a/net/minecraft/world/level/levelgen/Beardifier.java b/net/minecraft/world/level/levelgen/Beardifier.java
-index c9ddfc8670614c2d8629066b0cc805d18e4f662f..fc1f1fcac84197a2652dfd3869ef505f1a6140f1 100644
+index 3e8b852fe7630677f0497e36a176787a9400d5d6..9ef31dd54491509fa47a1c273c1552a4021fed64 100644
 --- a/net/minecraft/world/level/levelgen/Beardifier.java
 +++ b/net/minecraft/world/level/levelgen/Beardifier.java
-@@ -35,6 +35,15 @@ public class Beardifier implements DensityFunctions.BeardifierOrMarker {
+@@ -34,6 +34,15 @@ public class Beardifier implements DensityFunctions.BeardifierOrMarker {
+     private final List<Beardifier.Rigid> pieces;
      private final List<JigsawJunction> junctions;
-     @Nullable
-     private final BoundingBox affectedBox;
+     private final @Nullable BoundingBox affectedBox;
 +    // DivineMC start - C2ME: Optimize Beardifier
 +    private Beardifier.Rigid[] c2me$pieceArray;
 +    private JigsawJunction[] c2me$junctionArray;
@@ -588,7 +588,7 @@ index c9ddfc8670614c2d8629066b0cc805d18e4f662f..fc1f1fcac84197a2652dfd3869ef505f
  
      public static Beardifier forStructuresInChunk(StructureManager structureManager, ChunkPos chunkPos) {
          List<StructureStart> list = structureManager.startsForStructure(chunkPos, structure -> structure.terrainAdaptation() != TerrainAdjustment.NONE);
-@@ -109,53 +118,54 @@ public class Beardifier implements DensityFunctions.BeardifierOrMarker {
+@@ -108,53 +117,54 @@ public class Beardifier implements DensityFunctions.BeardifierOrMarker {
          }
      }
  

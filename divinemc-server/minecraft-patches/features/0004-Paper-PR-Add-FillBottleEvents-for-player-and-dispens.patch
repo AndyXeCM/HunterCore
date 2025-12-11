@@ -23,10 +23,10 @@ index c58b4a5426dc2e502e240e9b9270ead2ef65ecbd..1618e1d985ea798c1d7485b30fad5b45
                      player.awardStat(Stats.ITEM_USED.get(item));
                      // level.setBlockAndUpdate(pos, Blocks.WATER_CAULDRON.defaultBlockState()); // CraftBukkit
 diff --git a/net/minecraft/core/dispenser/DispenseItemBehavior.java b/net/minecraft/core/dispenser/DispenseItemBehavior.java
-index 5d0eb3893a0cca99ef53c2095b7b36a145dc15be..077ccddb7d358be352b6d497ed8b4e97b7d09262 100644
+index ff32a89a720676c5a9f34ea7c859f03d47545b72..fc618f97cee829dbd4b0c167c5fe515a58189c37 100644
 --- a/net/minecraft/core/dispenser/DispenseItemBehavior.java
 +++ b/net/minecraft/core/dispenser/DispenseItemBehavior.java
-@@ -580,13 +580,25 @@ public interface DispenseItemBehavior {
+@@ -584,13 +584,25 @@ public interface DispenseItemBehavior {
                              blockStateBase -> blockStateBase.hasProperty(BeehiveBlock.HONEY_LEVEL) && blockStateBase.getBlock() instanceof BeehiveBlock
                          )
                          && blockState.getValue(BeehiveBlock.HONEY_LEVEL) >= 5) {
@@ -55,7 +55,7 @@ index 5d0eb3893a0cca99ef53c2095b7b36a145dc15be..077ccddb7d358be352b6d497ed8b4e97
                          return super.execute(blockSource, item);
                      }
 diff --git a/net/minecraft/world/item/BottleItem.java b/net/minecraft/world/item/BottleItem.java
-index 105f9166297de2bfa6bdcfa9f6a0ffb00c0242ac..111f43fc5c74577f8f3067a4f84be7a6f96fdfb2 100644
+index 287332788643be2eb9058555456e9058c6ee475b..a10ecc1f2756a10d43ea38a9eaafa22f3ce97023 100644
 --- a/net/minecraft/world/item/BottleItem.java
 +++ b/net/minecraft/world/item/BottleItem.java
 @@ -35,6 +35,18 @@ public class BottleItem extends Item {
@@ -111,7 +111,7 @@ index 105f9166297de2bfa6bdcfa9f6a0ffb00c0242ac..111f43fc5c74577f8f3067a4f84be7a6
                  }
  
 diff --git a/net/minecraft/world/level/block/BeehiveBlock.java b/net/minecraft/world/level/block/BeehiveBlock.java
-index 02671ed6ba302c36d15896bd1fb3a0883b6e0940..8e9426784b46f8b988279c1dc4c6d2276f394422 100644
+index 7b24213eb30f60d49c37fc7d1242b52db578e634..68e4991c6b57f6dd15619c9225a3dba9b26f6d2c 100644
 --- a/net/minecraft/world/level/block/BeehiveBlock.java
 +++ b/net/minecraft/world/level/block/BeehiveBlock.java
 @@ -159,12 +159,26 @@ public class BeehiveBlock extends BaseEntityBlock {

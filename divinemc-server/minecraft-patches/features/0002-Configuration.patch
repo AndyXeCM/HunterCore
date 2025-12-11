@@ -5,10 +5,10 @@ Subject: [PATCH] Configuration
 
 
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 50df5c788069b57493d5f4125d087f9bb9dd712c..49aa436abf89b16dc5249f37bf27b02b49d9e2e8 100644
+index e2c98671da543e420e38778f9c58aec558ec634e..6c02ab6c4076e8223229626754ed766b16537cfd 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -255,6 +255,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+@@ -252,6 +252,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
              this.setLocalIp(properties.serverIp);
          }
  
@@ -17,7 +17,7 @@ index 50df5c788069b57493d5f4125d087f9bb9dd712c..49aa436abf89b16dc5249f37bf27b02b
          // Spigot start
          this.setPlayerList(new DedicatedPlayerList(this, this.registries(), this.playerDataStorage));
          org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
-@@ -286,6 +288,7 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+@@ -292,6 +294,7 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
          }
          org.purpurmc.purpur.PurpurConfig.registerCommands();
          // Purpur end - Purpur config files
@@ -26,7 +26,7 @@ index 50df5c788069b57493d5f4125d087f9bb9dd712c..49aa436abf89b16dc5249f37bf27b02b
   
          // DivineMC start - Pufferfish: SIMD Support
 diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
-index c7cebf9ffb930ca228bd728996080781d7ed499f..be10e785bedb3193b1270ae2908824b2af005809 100644
+index 8bc55b03ae9fc29f2227c418fc3098ae5c1d56ec..414cb1bd92e082dbe34a5078a4269fc98900e1f3 100644
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
 @@ -167,6 +167,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl

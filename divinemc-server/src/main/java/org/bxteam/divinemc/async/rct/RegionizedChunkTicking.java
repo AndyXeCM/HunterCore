@@ -25,10 +25,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
@@ -50,7 +50,7 @@ public final class RegionizedChunkTicking extends ServerChunkCache {
     @Override
     protected void iterateTickingChunksFaster(final @NotNull CompletableFuture<Void> spawns) {
         final ServerLevel world = this.level;
-        final int randomTickSpeed = world.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
+        final int randomTickSpeed = world.getGameRules().get(GameRules.RANDOM_TICK_SPEED);
         final LevelChunk[] raw = world.moonrise$getEntityTickingChunks().toArray(new LevelChunk[0]);
 
         final TickPair tickPair = computePlayerRegionsParallel();

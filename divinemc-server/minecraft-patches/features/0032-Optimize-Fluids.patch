@@ -5,7 +5,7 @@ Subject: [PATCH] Optimize Fluids
 
 
 diff --git a/net/minecraft/world/level/block/LiquidBlock.java b/net/minecraft/world/level/block/LiquidBlock.java
-index 8c00026651da489ab954710b59d5a03bf54ffd0d..6b55c4110ebf0c8fa74ede3d33bd4ad121c51908 100644
+index 2a21f04b39507bc76c7ddf18cac4d3ec2532540f..66bcca51be89536c5e176cece02e33eae37818a9 100644
 --- a/net/minecraft/world/level/block/LiquidBlock.java
 +++ b/net/minecraft/world/level/block/LiquidBlock.java
 @@ -199,6 +199,7 @@ public class LiquidBlock extends Block implements BucketPickup {
@@ -132,10 +132,10 @@ index 9685d02a9837c773094a5da5cff6fa6fcfeed86a..afab54ffe92241f8d549ebe9745a0b47
          return canPassThroughWall(Direction.DOWN, level, pos, state, belowPos, belowState)
              && (belowState.getFluidState().getType().isSame(this) || canHoldFluid(level, belowPos, belowState, this.getFlowing()));
 diff --git a/net/minecraft/world/level/material/LavaFluid.java b/net/minecraft/world/level/material/LavaFluid.java
-index 4df0dad91a5beeb0443ac1849e7783c470aae3d3..b7c01dadd69ce314ef6066d4c5d7c27080c7af8f 100644
+index 9d93ca788ee18988ec8b4d069339fab47b1a1fb9..e0924cf9201a6d24f5deb9dcd924822228ce5b51 100644
 --- a/net/minecraft/world/level/material/LavaFluid.java
 +++ b/net/minecraft/world/level/material/LavaFluid.java
-@@ -239,6 +239,7 @@ public abstract class LavaFluid extends FlowingFluid {
+@@ -237,6 +237,7 @@ public abstract class LavaFluid extends FlowingFluid {
                      // CraftBukkit end
                  }
  

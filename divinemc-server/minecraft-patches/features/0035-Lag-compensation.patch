@@ -3,12 +3,13 @@ From: NONPLAYT <76615486+NONPLAYT@users.noreply.github.com>
 Date: Sat, 1 Feb 2025 18:38:26 +0300
 Subject: [PATCH] Lag compensation
 
+TODO: recheck GameRules
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 9180e8cdd4bfad33f8dcda0ac8785defff4a1dad..9a3bd9f646889f43393c3cf54f5bcfa33ec6bbd1 100644
+index c425b6a1f3cb2fb451671c1d5732f9352dac5bcf..eab57f8cc5b065e19728643f4ca1340d99751f92 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -287,6 +287,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -292,6 +292,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
      public boolean lagging = false; // Purpur - Lagging threshold
      protected boolean upnp = false; // Purpur - UPnP Port Forwarding
@@ -16,7 +17,7 @@ index 9180e8cdd4bfad33f8dcda0ac8785defff4a1dad..9a3bd9f646889f43393c3cf54f5bcfa3
      // Paper start - improve tick loop
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes1s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(1L));
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes5s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(5L));
-@@ -1593,6 +1594,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1599,6 +1600,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          }
  
          this.server.spark.tickStart(); // Paper - spark
@@ -25,10 +26,10 @@ index 9180e8cdd4bfad33f8dcda0ac8785defff4a1dad..9a3bd9f646889f43393c3cf54f5bcfa3
          this.tickCount++;
          this.tickRateManager.tick();
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index f0d46211593acffc448cbfb87a91734cd2cec70b..641e87ee647cbf66b3ed7ea3a1aa7c633fab4336 100644
+index 477cb54c89b59812af74758c841fb714a39bf6c5..45d33ea79d9464a821f1770771d31e53e80bdea7 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -224,6 +224,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -230,6 +230,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      private final alternate.current.wire.WireHandler wireHandler = new alternate.current.wire.WireHandler(this); // Paper - optimize redstone (Alternate Current)
      public boolean hasRidableMoveEvent = false; // Purpur - Ridables
      public net.minecraft.world.item.ItemStack ominousBanner; // DivineMC - Optimize Raids
@@ -36,7 +37,7 @@ index f0d46211593acffc448cbfb87a91734cd2cec70b..641e87ee647cbf66b3ed7ea3a1aa7c63
  
      @Override
      public @Nullable LevelChunk getChunkIfLoaded(int x, int z) {
-@@ -787,6 +788,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -802,6 +803,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
              }
          }
  
@@ -45,7 +46,7 @@ index f0d46211593acffc448cbfb87a91734cd2cec70b..641e87ee647cbf66b3ed7ea3a1aa7c63
          this.updateSkyBrightness();
          if (runsNormally) {
              this.tickTime();
-@@ -880,11 +883,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -896,11 +899,18 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
                      this.setDayTime(this.preciseTime);
                  } else
                  // Purpur end - Configurable daylight cycle
@@ -66,7 +67,7 @@ index f0d46211593acffc448cbfb87a91734cd2cec70b..641e87ee647cbf66b3ed7ea3a1aa7c63
          this.serverLevelData.setDayTime(time);
          // Purpur start - Configurable daylight cycle
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 288d23e443f495d7fbfd0bbbe1bca7a2ff9da64a..2dc2dd9dbbe63316827b620b991ad929ad7bb77e 100644
+index 0a04d302246ac1bb97405a6a03b2fac912458105..879f93453fce3bf4dec30ecdac738796eec576b4 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -526,6 +526,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -96,7 +97,7 @@ index 288d23e443f495d7fbfd0bbbe1bca7a2ff9da64a..2dc2dd9dbbe63316827b620b991ad929
          return this.getAirSupply() <= -this.level().purpurConfig.drowningDamageInterval; // Purpur - Drowning Settings
      }
 diff --git a/net/minecraft/world/entity/PortalProcessor.java b/net/minecraft/world/entity/PortalProcessor.java
-index 88b07fbb96b20124777889830afa480673629d43..91f6d43b3785ddad7db8eb529ba3293c45f3588d 100644
+index 4e69e32ad000b8c02e44c3ffce24ff5e3c090a2f..54ab44c223465a8111afd98e5d135595902a6a27 100644
 --- a/net/minecraft/world/entity/PortalProcessor.java
 +++ b/net/minecraft/world/entity/PortalProcessor.java
 @@ -24,10 +24,20 @@ public class PortalProcessor {
@@ -118,14 +119,14 @@ index 88b07fbb96b20124777889830afa480673629d43..91f6d43b3785ddad7db8eb529ba3293c
 +    }
 +    // DivineMC end - Lag compensation
 +
-     @Nullable
-     public TeleportTransition getPortalDestination(ServerLevel level, Entity entity) {
+     public @Nullable TeleportTransition getPortalDestination(ServerLevel level, Entity entity) {
          return this.portal.getPortalDestination(level, entity, this.entryPosition);
+     }
 diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
-index 8153c870c0c822792ffbb0fa1ae96b201a1444e3..7525184fd5a801e39fbcba2afbcc968862a1cfbb 100644
+index ddf7fa8e67440beb102b6bf91b30f2b340b52a8e..4a6cda5dd6cdcd0fc7503eba6e74442637441268 100644
 --- a/net/minecraft/world/entity/item/ItemEntity.java
 +++ b/net/minecraft/world/entity/item/ItemEntity.java
-@@ -149,8 +149,25 @@ public class ItemEntity extends Entity implements TraceableEntity {
+@@ -146,8 +146,25 @@ public class ItemEntity extends Entity implements TraceableEntity {
      }
      // Paper end - EAR 2
  
@@ -152,10 +153,10 @@ index 8153c870c0c822792ffbb0fa1ae96b201a1444e3..7525184fd5a801e39fbcba2afbcc9688
              this.discard(org.bukkit.event.entity.EntityRemoveEvent.Cause.DESPAWN); // CraftBukkit - add Bukkit remove cause
          } else {
 diff --git a/net/minecraft/world/item/Item.java b/net/minecraft/world/item/Item.java
-index 5305b72c37ba0fcde811d46e781fb4c74817da52..fbae6ab5d5a999039ae8d67cd3df193ed5eec5d9 100644
+index a97923a94eb8a63b9a2ece6d46b8b19dd4cfb866..b879345862f3eb2b8210841de70e8fd1923bea8e 100644
 --- a/net/minecraft/world/item/Item.java
 +++ b/net/minecraft/world/item/Item.java
-@@ -286,10 +286,25 @@ public class Item implements FeatureElement, ItemLike {
+@@ -299,10 +299,25 @@ public class Item implements FeatureElement, ItemLike {
          }
      }
  
@@ -180,50 +181,13 @@ index 5305b72c37ba0fcde811d46e781fb4c74817da52..fbae6ab5d5a999039ae8d67cd3df193e
 +            return original;
 +            // DivineMC end - Lag compensation
          } else {
-             BlocksAttacks blocksAttacks = stack.get(DataComponents.BLOCKS_ATTACKS);
-             return blocksAttacks != null ? 72000 : 0;
-diff --git a/net/minecraft/world/level/GameRules.java b/net/minecraft/world/level/GameRules.java
-index 7141d2c69e27e9b14e99360686d9bff1d84c24e6..5eeaa5bca2c9482420990822781625a2c1a6e94e 100644
---- a/net/minecraft/world/level/GameRules.java
-+++ b/net/minecraft/world/level/GameRules.java
-@@ -378,8 +378,31 @@ public class GameRules {
-     }
- 
-     public int getInt(GameRules.Key<GameRules.IntegerValue> key) {
--        return this.getRule(key).get();
-+        return lagCompensation(this.getRule(key).get(), key); // DivineMC - Lag compensation
-+    }
-+
-+    // DivineMC start - Lag compensation
-+    private final java.util.concurrent.atomic.AtomicReference<net.minecraft.server.level.ServerLevel> level = new java.util.concurrent.atomic.AtomicReference<>();
-+
-+    private int lagCompensation(int original, GameRules.Key<GameRules.IntegerValue> rule) {
-+        net.minecraft.server.level.ServerLevel level = getOrCacheLevel();
-+        if (!org.bxteam.divinemc.config.DivineConfig.MiscCategory.lagCompensationEnabled || !org.bxteam.divinemc.config.DivineConfig.MiscCategory.randomTickSpeedAcceleration) return original;
-+        if (!(rule == GameRules.RULE_RANDOMTICKING)) return original;
-+        return (int) (original * org.bxteam.divinemc.util.tps.TPSCalculator.MAX_TPS / (float) level.tpsCalculator.getMostAccurateTPS());
-+    }
-+
-+    private net.minecraft.server.level.ServerLevel getOrCacheLevel() {
-+        if (level.get() == null) {
-+            for (final net.minecraft.server.level.ServerLevel level : MinecraftServer.getServer().getAllLevels()) {
-+                if (level.getGameRules() == this) {
-+                    this.level.set(level);
-+                    break;
-+                }
-+            }
-+        }
-+        return level.get();
-     }
-+    // DivineMC end - Lag compensation
- 
-     public static class BooleanValue extends GameRules.Value<GameRules.BooleanValue> {
-         private boolean value;
+             return !stack.has(DataComponents.BLOCKS_ATTACKS) && !stack.has(DataComponents.KINETIC_WEAPON) ? 0 : 72000;
+         }
 diff --git a/net/minecraft/world/level/block/state/BlockBehaviour.java b/net/minecraft/world/level/block/state/BlockBehaviour.java
-index f9794da266b5f08f01f88184d3bcca9d8371e44f..a6c99a119a923dd890169888ff4e9852f6e27855 100644
+index 430712393db078423d5d7e3391cc0a6833cab434..5ce545304d1ba80efaeb63367dbd34b2e17d64ed 100644
 --- a/net/minecraft/world/level/block/state/BlockBehaviour.java
 +++ b/net/minecraft/world/level/block/state/BlockBehaviour.java
-@@ -350,13 +350,21 @@ public abstract class BlockBehaviour implements FeatureElement {
+@@ -349,13 +349,21 @@ public abstract class BlockBehaviour implements FeatureElement {
      protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
      }
  
@@ -248,10 +212,10 @@ index f9794da266b5f08f01f88184d3bcca9d8371e44f..a6c99a119a923dd890169888ff4e9852
      }
  
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index 606c33d67fc7612b25ca23fe34769d3b179ebbd6..2d4807134e071254ce882e0bc4988242894c5d2f 100644
+index 1cea69f07a0b28cf8b112c202c668b915bf1b88f..63e391441f655138ddfd303270f33c7a35655ca5 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
-@@ -953,6 +953,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -947,6 +947,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
              this.ticker = ticker;
          }
  
@@ -271,7 +235,7 @@ index 606c33d67fc7612b25ca23fe34769d3b179ebbd6..2d4807134e071254ce882e0bc4988242
          @Override
          public void tick() {
              if (!this.blockEntity.isRemoved() && this.blockEntity.hasLevel()) {
-@@ -961,7 +974,11 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -955,7 +968,11 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
                      try {
                          BlockState blockState = LevelChunk.this.getBlockState(blockPos);
                          if (this.blockEntity.getType().isValid(blockState)) {
@@ -285,10 +249,10 @@ index 606c33d67fc7612b25ca23fe34769d3b179ebbd6..2d4807134e071254ce882e0bc4988242
                          // Paper start - Remove the Block Entity if it's invalid
                          } else {
 diff --git a/net/minecraft/world/level/material/LavaFluid.java b/net/minecraft/world/level/material/LavaFluid.java
-index ccbaed0f81c3edb25231037950bf1559ca3e616d..f9ad547c86d553b9cc7020d3966169f1fa23cd0d 100644
+index e0924cf9201a6d24f5deb9dcd924822228ce5b51..71539ed8c9a568ede5e681ca78fa3d7c41d7037c 100644
 --- a/net/minecraft/world/level/material/LavaFluid.java
 +++ b/net/minecraft/world/level/material/LavaFluid.java
-@@ -190,9 +190,22 @@ public abstract class LavaFluid extends FlowingFluid {
+@@ -188,9 +188,22 @@ public abstract class LavaFluid extends FlowingFluid {
          return fluidState.getHeight(level, pos) >= 0.44444445F && fluid.is(FluidTags.WATER);
      }
  
@@ -301,9 +265,9 @@ index ccbaed0f81c3edb25231037950bf1559ca3e616d..f9ad547c86d553b9cc7020d3966169f1
 +
      @Override
      public int getTickDelay(LevelReader level) {
--        return level.getWorldBorder().world != null ? (level.dimensionType().ultraWarm() ? level.getWorldBorder().world.purpurConfig.lavaSpeedNether : level.getWorldBorder().world.purpurConfig.lavaSpeedNotNether) : (level.dimensionType().ultraWarm() ? 10 : 30); // Purpur - Make lava flow speed configurable
+-        return level.getWorldBorder().world != null ? (isFastLava(level) ? level.getWorldBorder().world.purpurConfig.lavaSpeedNether : level.getWorldBorder().world.purpurConfig.lavaSpeedNotNether) : (isFastLava(level) ? 10 : 30); // Purpur - Make lava flow speed configurable
 +        // DivineMC start - Lag compensation
-+        int original = level.getWorldBorder().world != null ? (level.dimensionType().ultraWarm() ? level.getWorldBorder().world.purpurConfig.lavaSpeedNether : level.getWorldBorder().world.purpurConfig.lavaSpeedNotNether) : (level.dimensionType().ultraWarm() ? 10 : 30); // Purpur - Make lava flow speed configurable
++        int original = level.getWorldBorder().world != null ? (isFastLava(level) ? level.getWorldBorder().world.purpurConfig.lavaSpeedNether : level.getWorldBorder().world.purpurConfig.lavaSpeedNotNether) : (isFastLava(level) ? 10 : 30); // Purpur - Make lava flow speed configurable
 +        if (level instanceof ServerLevel serverLevel) {
 +            return lagCompensation(original, serverLevel);
 +        }
@@ -313,10 +277,10 @@ index ccbaed0f81c3edb25231037950bf1559ca3e616d..f9ad547c86d553b9cc7020d3966169f1
  
      @Override
 diff --git a/net/minecraft/world/level/material/WaterFluid.java b/net/minecraft/world/level/material/WaterFluid.java
-index 19505eafb8b3aa09d7f889ecb62bcc28d835b4c8..790dcd8e71fc2e102a4aeae28b3a4a24680401ae 100644
+index 4533d9f76f4ea21cee3c3114bcfcded40fe7321b..55a3b79c902881852900c3f2ea6740caca66cd18 100644
 --- a/net/minecraft/world/level/material/WaterFluid.java
 +++ b/net/minecraft/world/level/material/WaterFluid.java
-@@ -124,8 +124,16 @@ public abstract class WaterFluid extends FlowingFluid {
+@@ -123,8 +123,16 @@ public abstract class WaterFluid extends FlowingFluid {
          return 1;
      }
  

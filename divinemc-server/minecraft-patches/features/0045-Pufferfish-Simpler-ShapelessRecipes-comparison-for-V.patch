@@ -13,16 +13,16 @@ the vanilla one, however this is far more advanced than what you need
 for all the vanilla recipes.
 
 diff --git a/net/minecraft/world/item/crafting/ShapelessRecipe.java b/net/minecraft/world/item/crafting/ShapelessRecipe.java
-index d601b54b1de2f2ae44fe2b20c8116c71a6340e45..658c950e18a5a4ff992c8720e60f505a11ab2efd 100644
+index 28d085fce206634ee88c492e06fdbf63a618ee12..33bf174d99e8f3ea80523301b22a31bb3b2d4219 100644
 --- a/net/minecraft/world/item/crafting/ShapelessRecipe.java
 +++ b/net/minecraft/world/item/crafting/ShapelessRecipe.java
-@@ -23,13 +23,21 @@ public class ShapelessRecipe implements CraftingRecipe {
+@@ -22,13 +22,21 @@ public class ShapelessRecipe implements CraftingRecipe {
+     final ItemStack result;
      final List<Ingredient> ingredients;
-     @Nullable
-     private PlacementInfo placementInfo;
-+    // DivineMC start - Pufferfish: Simpler ShapelessRecipes comparison for Vanilla
-+    private final boolean isBukkit;
+     private @Nullable PlacementInfo placementInfo;
++    private final boolean isBukkit; // DivineMC - Pufferfish: Simpler ShapelessRecipes comparison for Vanilla
  
++    // DivineMC start - Pufferfish: Simpler ShapelessRecipes comparison for Vanilla
      public ShapelessRecipe(String group, CraftingBookCategory category, ItemStack result, List<Ingredient> ingredients) {
 +        this(group, category, result, ingredients, false);
 +    }
@@ -38,7 +38,7 @@ index d601b54b1de2f2ae44fe2b20c8116c71a6340e45..658c950e18a5a4ff992c8720e60f505a
  
      // CraftBukkit start
      @Override
-@@ -72,6 +80,27 @@ public class ShapelessRecipe implements CraftingRecipe {
+@@ -71,6 +79,27 @@ public class ShapelessRecipe implements CraftingRecipe {
  
      @Override
      public boolean matches(CraftingInput input, Level level) {

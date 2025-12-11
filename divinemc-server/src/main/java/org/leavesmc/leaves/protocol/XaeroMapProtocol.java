@@ -1,6 +1,6 @@
 package org.leavesmc.leaves.protocol;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import org.bxteam.divinemc.config.DivineConfig;
 import org.jetbrains.annotations.Contract;
@@ -14,17 +14,17 @@ public class XaeroMapProtocol implements LeavesProtocol {
     public static final String PROTOCOL_ID_MINI = "xaerominimap";
     public static final String PROTOCOL_ID_WORLD = "xaeroworldmap";
 
-    private static final ResourceLocation MINIMAP_KEY = idMini("main");
-    private static final ResourceLocation WORLDMAP_KEY = idWorld("main");
+    private static final Identifier MINIMAP_KEY = idMini("main");
+    private static final Identifier WORLDMAP_KEY = idWorld("main");
 
     @Contract("_ -> new")
-    public static ResourceLocation idMini(String path) {
-        return ResourceLocation.tryBuild(PROTOCOL_ID_MINI, path);
+    public static Identifier idMini(String path) {
+        return Identifier.tryBuild(PROTOCOL_ID_MINI, path);
     }
 
     @Contract("_ -> new")
-    public static ResourceLocation idWorld(String path) {
-        return ResourceLocation.tryBuild(PROTOCOL_ID_WORLD, path);
+    public static Identifier idWorld(String path) {
+        return Identifier.tryBuild(PROTOCOL_ID_WORLD, path);
     }
 
     public static void onSendWorldInfo(@NotNull ServerPlayer player) {

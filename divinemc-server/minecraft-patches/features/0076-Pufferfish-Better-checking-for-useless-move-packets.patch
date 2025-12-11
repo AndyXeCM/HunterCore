@@ -10,7 +10,7 @@ As part of: Airplane (https://github.com/TECHNOVE/Airplane)
 Licensed under: GPL-3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
 
 diff --git a/net/minecraft/server/level/ServerEntity.java b/net/minecraft/server/level/ServerEntity.java
-index cfa2c3aa357a0dbb7edf7f0c8cebea5ed2f31cbc..d8ac41bacbb2303eacac6d96dd829865346f5b3b 100644
+index 615691b0f07380e5ce0c105d1f7eb469c7c0d5d6..70b92d9f9d75a42926c221bf53ec8051ececb1fa 100644
 --- a/net/minecraft/server/level/ServerEntity.java
 +++ b/net/minecraft/server/level/ServerEntity.java
 @@ -181,18 +181,24 @@ public class ServerEntity {
@@ -48,4 +48,4 @@ index cfa2c3aa357a0dbb7edf7f0c8cebea5ed2f31cbc..d8ac41bacbb2303eacac6d96dd829865
 +                    // DivineMC end - Pufferfish: Better checking for useless move packets
                  }
  
-                 if (this.entity.hasImpulse || this.trackDelta || this.entity instanceof LivingEntity && ((LivingEntity)this.entity).isFallFlying()) {
+                 if (this.entity.needsSync || this.trackDelta || this.entity instanceof LivingEntity && ((LivingEntity)this.entity).isFallFlying()) {

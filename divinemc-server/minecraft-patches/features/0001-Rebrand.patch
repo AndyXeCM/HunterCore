@@ -5,7 +5,7 @@ Subject: [PATCH] Rebrand
 
 
 diff --git a/net/minecraft/CrashReport.java b/net/minecraft/CrashReport.java
-index 394443d00e661715439be1e56dddc129947699a4..480ad57a6b7b74e6b83e9c6ceb69ea1feacca106 100644
+index 704ede68e582f19ab3d1fca142a942da283f332e..a863868fd002b02b7f397c20dde5a923b9d7a818 100644
 --- a/net/minecraft/CrashReport.java
 +++ b/net/minecraft/CrashReport.java
 @@ -30,7 +30,7 @@ public class CrashReport {
@@ -31,11 +31,11 @@ index 97844ec1ccc986eb3d3a185d78a03ceeca49fc1a..5e40ec3fbe6e6d5f98ad98df7d4c27d6
  
      @Override
 diff --git a/net/minecraft/server/Main.java b/net/minecraft/server/Main.java
-index 42841fdc7e64311ba9217789a3dc758a351cf674..036c3931f4c1e453892f32e59085be702721f016 100644
+index 272e2871aca8d283229cc5618e3051146db56681..e5d78f6a8a2ef2a197b3d327ca48679feb012601 100644
 --- a/net/minecraft/server/Main.java
 +++ b/net/minecraft/server/Main.java
-@@ -67,36 +67,29 @@ public class Main {
-     )
+@@ -65,36 +65,29 @@ public class Main {
+     @SuppressForbidden(reason = "System.out needed before bootstrap")
      @DontObfuscate
      public static void main(final OptionSet optionSet) { // CraftBukkit - replaces main(String[] args)
 +        // DivineMC start - Rebrand
@@ -90,7 +90,7 @@ index 42841fdc7e64311ba9217789a3dc758a351cf674..036c3931f4c1e453892f32e59085be70
              Path path = (Path) optionSet.valueOf("pidFile"); // CraftBukkit
              if (path != null) {
                  writePidFile(path);
-@@ -122,8 +115,6 @@ public class Main {
+@@ -120,8 +113,6 @@ public class Main {
              DedicatedServerSettings dedicatedServerSettings = new DedicatedServerSettings(optionSet); // CraftBukkit - CLI argument support
              dedicatedServerSettings.forceSave();
              RegionFileVersion.configure(dedicatedServerSettings.getProperties().regionFileComression);
@@ -99,7 +99,7 @@ index 42841fdc7e64311ba9217789a3dc758a351cf674..036c3931f4c1e453892f32e59085be70
              // Paper start - load config files early for access below if needed
              org.bukkit.configuration.file.YamlConfiguration bukkitConfiguration = io.papermc.paper.configuration.PaperConfigurations.loadLegacyConfigFile((File) optionSet.valueOf("bukkit-settings"));
              org.bukkit.configuration.file.YamlConfiguration spigotConfiguration = io.papermc.paper.configuration.PaperConfigurations.loadLegacyConfigFile((File) optionSet.valueOf("spigot-settings"));
-@@ -146,19 +137,6 @@ public class Main {
+@@ -144,19 +135,6 @@ public class Main {
                  return;
              }
  
@@ -120,10 +120,10 @@ index 42841fdc7e64311ba9217789a3dc758a351cf674..036c3931f4c1e453892f32e59085be70
              String awtException = io.papermc.paper.util.ServerEnvironment.awtDependencyCheck();
              if (awtException != null) {
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 8a9e97f3b92def14f40c246ca0ff713ed8192b08..f29cee41258a8220256bf6b3b5b04f79c142cc19 100644
+index e3561303df02b5c769dd039ad45c684062e04bd5..990b50a5ec6d578924cae12031a6ab467f0f1287 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1277,6 +1277,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1279,6 +1279,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
      protected void runServer() {
          try {
@@ -163,7 +163,7 @@ index 614c7d9f673c926562acc8fa3b3788623900db41..937469a134e721c47e235a34acc565f1
                      minecraftServerGui.runFinalizers();
                  }
 diff --git a/net/minecraft/world/level/chunk/storage/RegionFileStorage.java b/net/minecraft/world/level/chunk/storage/RegionFileStorage.java
-index 0e6222214f4b5407705dcbdf4dcf574111bcf366..8215edb0dbb5a9de66d5107786c338d2fd02d5ea 100644
+index e7e71018a4d328832fe44eef595e78265ee720ae..dbea0449cebd448f5b165097aee8633e4d8bac67 100644
 --- a/net/minecraft/world/level/chunk/storage/RegionFileStorage.java
 +++ b/net/minecraft/world/level/chunk/storage/RegionFileStorage.java
 @@ -309,7 +309,7 @@ public class RegionFileStorage implements AutoCloseable, ca.spottedleaf.moonrise

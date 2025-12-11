@@ -40,7 +40,7 @@
      }
  
      public float getSpeed() {
-@@ -3897,6 +_,7 @@
+@@ -3902,6 +_,7 @@
      protected void updateFallFlying() {
          this.checkFallDistanceAccumulation();
          if (!this.level().isClientSide()) {
