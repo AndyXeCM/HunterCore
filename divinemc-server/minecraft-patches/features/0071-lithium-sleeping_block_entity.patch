@@ -1378,19 +1378,25 @@ index 775928cfe700202a70b19589ca72afd9768b62f1..2eda08301a3e3888c55a21390d1a718b
 +    // DivineMC end - lithium: sleeping_block_entity
  }
 diff --git a/net/minecraft/world/level/block/entity/HopperBlockEntity.java b/net/minecraft/world/level/block/entity/HopperBlockEntity.java
-index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a29720c2e 100644
+index 4eb65b8df8069aa678c82092248e6ac3dde04160..050432808c8eeae659cd372641b8ff4d49f58da5 100644
 --- a/net/minecraft/world/level/block/entity/HopperBlockEntity.java
 +++ b/net/minecraft/world/level/block/entity/HopperBlockEntity.java
-@@ -28,7 +28,7 @@ import net.minecraft.world.level.storage.ValueOutput;
+@@ -28,7 +28,13 @@ import net.minecraft.world.level.storage.ValueOutput;
  import net.minecraft.world.phys.AABB;
  import org.jspecify.annotations.Nullable;
  
 -public class HopperBlockEntity extends RandomizableContainerBlockEntity implements Hopper {
++// DivineMC start - lithium: sleeping_block_entity
++import net.minecraft.world.level.chunk.LevelChunk.RebindableTickingBlockEntityWrapper;
++import net.caffeinemc.mods.lithium.common.hopper.LithiumStackList;
++import net.caffeinemc.mods.lithium.api.inventory.LithiumInventory;
++// DivineMC end - lithium: sleeping_block_entity
++
 +public class HopperBlockEntity extends RandomizableContainerBlockEntity implements Hopper, net.caffeinemc.mods.lithium.common.block.entity.SleepingBlockEntity, net.caffeinemc.mods.lithium.common.tracking.entity.ChunkSectionEntityMovementListener, net.caffeinemc.mods.lithium.api.inventory.LithiumInventory, net.caffeinemc.mods.lithium.common.block.entity.inventory_change_tracking.InventoryChangeListener, net.caffeinemc.mods.lithium.common.hopper.UpdateReceiver, net.caffeinemc.mods.lithium.common.block.entity.inventory_change_tracking.InventoryChangeTracker { // DivineMC - lithium: sleeping_block_entity
      public static final int MOVE_ITEM_SPEED = 8;
      public static final int HOPPER_CONTAINER_SIZE = 5;
      private static final int[][] CACHED_SLOTS = new int[54][];
-@@ -119,6 +119,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -119,6 +125,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
  
      @Override
      public void setBlockState(BlockState blockState) {
@@ -1398,7 +1404,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
          super.setBlockState(blockState);
          this.facing = blockState.getValue(HopperBlock.FACING);
      }
-@@ -137,6 +138,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -137,6 +144,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
              boolean result = tryMoveItems(level, pos, state, blockEntity, () -> {
                  return suckInItems(level, blockEntity);
              });
@@ -1406,7 +1412,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
              if (!result && blockEntity.level.spigotConfig.hopperCheck > 1) {
                  blockEntity.setCooldown(blockEntity.level.spigotConfig.hopperCheck);
              }
-@@ -199,6 +201,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -199,6 +207,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
                  if (flag) {
                      blockEntity.setCooldown(level.spigotConfig.hopperTransfer); // Spigot
                      setChanged(level, pos, state);
@@ -1414,7 +1420,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
                      return true;
                  }
              }
-@@ -375,6 +378,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -375,6 +384,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
      private static void applyCooldown(final Hopper hopper) {
          if (hopper instanceof HopperBlockEntity blockEntity && blockEntity.getLevel() != null) {
              blockEntity.setCooldown(blockEntity.getLevel().spigotConfig.hopperTransfer);
@@ -1422,7 +1428,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
          }
      }
  
-@@ -418,11 +422,19 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -418,11 +428,19 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
      // Paper end - Perf: Optimize Hoppers
  
      private static boolean ejectItems(Level level, BlockPos pos, HopperBlockEntity blockEntity) {
@@ -1443,7 +1449,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
              if (isFullContainer(attachedContainer, opposite)) {
                  // DivineMC start - SparklyPaper: Allow throttling hopper checks if the target container is full
                  if (org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.hopperThrottleWhenFull && org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.hopperThrottleSkipTicks > 0) {
-@@ -536,10 +548,18 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -536,10 +554,18 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
      public static boolean suckInItems(Level level, Hopper hopper) {
          BlockPos blockPos = BlockPos.containing(hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ());
          BlockState blockState = level.getBlockState(blockPos);
@@ -1463,7 +1469,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
  
              for (int i : getSlots(sourceContainer, direction)) {
                  if (tryTakeInItemFromSlot(hopper, sourceContainer, i, direction, level)) { // Spigot
-@@ -551,7 +571,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -551,7 +577,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
          } else {
              boolean flag = hopper.isGridAligned() && blockState.isCollisionShapeFullBlock(level, blockPos) && !blockState.is(BlockTags.DOES_NOT_BLOCK_HOPPERS);
              if (!flag) {
@@ -1472,7 +1478,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
                      if (addItem(hopper, itemEntity)) {
                          return true;
                      }
-@@ -720,7 +740,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -720,7 +746,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
  
      // CraftBukkit start
      private static @Nullable Container runHopperInventorySearchEvent(
@@ -1481,7 +1487,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
          org.bukkit.craftbukkit.block.CraftBlock hopper,
          org.bukkit.craftbukkit.block.CraftBlock searchLocation,
          org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType containerType
-@@ -841,6 +861,19 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -841,6 +867,19 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
      }
  
      public void setCooldown(int cooldownTime) {
@@ -1501,7 +1507,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
          this.cooldownTime = cooldownTime;
      }
  
-@@ -860,6 +893,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -860,6 +899,7 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
      @Override
      protected void setItems(NonNullList<ItemStack> items) {
          this.items = items;
@@ -1509,13 +1515,13 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
      }
  
      public static void entityInside(Level level, BlockPos pos, BlockState state, Entity entity, HopperBlockEntity blockEntity) {
-@@ -874,4 +908,749 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+@@ -874,4 +914,750 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
      protected AbstractContainerMenu createMenu(int id, Inventory player) {
          return new HopperMenu(id, player, this);
      }
 +
 +    // DivineMC start - lithium: sleeping_block_entity
-+    @Nullable private net.minecraft.world.level.chunk.LevelChunk.RebindableTickingBlockEntityWrapper tickWrapper = null;
++    @Nullable private RebindableTickingBlockEntityWrapper tickWrapper = null;
 +    @Nullable private TickingBlockEntity sleepingTicker = null;
 +    private long myModCountAtLastInsert, myModCountAtLastExtract, myModCountAtLastItemCollect;
 +    private boolean skipNextSleepCheckAfterCooldown = false;
@@ -1527,9 +1533,9 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
 +    private Container insertBlockInventory, extractBlockInventory;
 +
 +    @Nullable
-+    private net.caffeinemc.mods.lithium.api.inventory.LithiumInventory insertInventory, extractInventory;
++    private LithiumInventory insertInventory, extractInventory;
 +    @Nullable
-+    private net.caffeinemc.mods.lithium.common.hopper.LithiumStackList insertStackList, extractStackList;
++    private LithiumStackList insertStackList, extractStackList;
 +    private long insertStackListModCount, extractStackListModCount;
 +
 +    @Nullable
@@ -1660,7 +1666,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
 +    }
 +
 +    @Override
-+    public @Nullable net.minecraft.world.level.chunk.LevelChunk.RebindableTickingBlockEntityWrapper lithium$getTickWrapper() {
++    public @Nullable RebindableTickingBlockEntityWrapper lithium$getTickWrapper() {
 +        return tickWrapper;
 +    }
 +
@@ -2258,6 +2264,7 @@ index 4eb65b8df8069aa678c82092248e6ac3dde04160..45cfeacda5ba9302be5452826c37d10a
 +        }
 +        return false;
 +    }
++    // DivineMC end - lithium: sleeping_block_entity
  }
 diff --git a/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java b/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java
 index 61b99c895c0e248f0e7c4c634644dcff54a964d9..f07fd97545fa31b47b7dad32a2ab4ee5214e0d3e 100644

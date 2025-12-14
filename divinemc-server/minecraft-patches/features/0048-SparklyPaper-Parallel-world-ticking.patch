@@ -262,7 +262,7 @@ index 2488fc0ae21b8e10895b0ef6397d8e0e5bc843a8..b2d66e2f24e64fce0f260e6c807fc189
      }
      // CraftBukkit end
 diff --git a/net/minecraft/server/PlayerAdvancements.java b/net/minecraft/server/PlayerAdvancements.java
-index afa99de0800d1ac15fe496e6af62969764fcb865..da94b8419dad718e25057f2efc839d3c00ba9f47 100644
+index 6dddfdb97916165b717f68ae2afbb8d89b1283d6..daabbc5f4890c3683afb0531315e7466701a9111 100644
 --- a/net/minecraft/server/PlayerAdvancements.java
 +++ b/net/minecraft/server/PlayerAdvancements.java
 @@ -53,7 +53,7 @@ public class PlayerAdvancements {
@@ -1353,22 +1353,28 @@ index 63e391441f655138ddfd303270f33c7a35655ca5..482029bc19a3a05aff8924257128ee9c
          LevelChunkSection section = this.getSection(this.getSectionIndex(y));
          boolean hasOnlyAir = section.hasOnlyAir();
 diff --git a/net/minecraft/world/level/entity/EntityTickList.java b/net/minecraft/world/level/entity/EntityTickList.java
-index a8a5017de2ee0c00bed9b56f2f3c85d23e4056e9..608c70a8247f75f1367ca1e875b0b9c92030dab1 100644
+index a8a5017de2ee0c00bed9b56f2f3c85d23e4056e9..2073ba07ad4f2cc4b1dd734e048a76cf3ea210d4 100644
 --- a/net/minecraft/world/level/entity/EntityTickList.java
 +++ b/net/minecraft/world/level/entity/EntityTickList.java
-@@ -11,25 +11,67 @@ import org.jspecify.annotations.Nullable;
+@@ -6,30 +6,73 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry;
+ import java.util.function.Consumer;
+ import net.minecraft.world.entity.Entity;
++import net.minecraft.server.level.ServerLevel; // DivineMC - Parallel world ticking
+ import org.jspecify.annotations.Nullable;
+ 
  public class EntityTickList {
      public final ca.spottedleaf.moonrise.common.list.IteratorSafeOrderedReferenceSet<net.minecraft.world.entity.Entity> entities = new ca.spottedleaf.moonrise.common.list.IteratorSafeOrderedReferenceSet<>(); // Paper - rewrite chunk system
  
 +    // DivineMC start - Parallel world ticking
 +    @Nullable
-+    private final net.minecraft.server.level.ServerLevel serverLevel;
++    private final ServerLevel serverLevel;
 +
 +    public EntityTickList() {
 +        this(null);
 +    }
 +
-+    public EntityTickList(@Nullable net.minecraft.server.level.ServerLevel serverLevel) {
++    public EntityTickList(@Nullable ServerLevel serverLevel) {
 +        this.serverLevel = serverLevel;
 +    }
 +    // DivineMC end - Parallel world ticking

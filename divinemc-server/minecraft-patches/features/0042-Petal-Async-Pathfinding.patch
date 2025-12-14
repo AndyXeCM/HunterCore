@@ -715,18 +715,27 @@ index 5959e1b1772ffbdfb108365171fe37cbf56ef825..92669a529316d76563a110f5770ba06a
      }
  
 diff --git a/net/minecraft/world/level/pathfinder/PathFinder.java b/net/minecraft/world/level/pathfinder/PathFinder.java
-index 919769ae40efea904be6adbbb13542bd39bf0291..42a82354377ea9ee90064678851d3e41051650fc 100644
+index 919769ae40efea904be6adbbb13542bd39bf0291..0d45c9378a23f89babbe9b542bddb0ac109beddd 100644
 --- a/net/minecraft/world/level/pathfinder/PathFinder.java
 +++ b/net/minecraft/world/level/pathfinder/PathFinder.java
-@@ -23,11 +23,19 @@ public class PathFinder {
+@@ -16,6 +16,8 @@ import net.minecraft.world.entity.Mob;
+ import net.minecraft.world.level.PathNavigationRegion;
+ import org.jspecify.annotations.Nullable;
+ 
++import org.bxteam.divinemc.async.pathfinding.NodeEvaluatorGenerator; // DivineMC - Petal: Async Pathfinding
++
+ public class PathFinder {
+     private static final float FUDGING = 1.5F;
+     private final Node[] neighbors = new Node[32];
+@@ -23,11 +25,19 @@ public class PathFinder {
      public final NodeEvaluator nodeEvaluator;
      private final BinaryHeap openSet = new BinaryHeap();
      private BooleanSupplier captureDebug = () -> false;
-+    private final @Nullable org.bxteam.divinemc.async.pathfinding.NodeEvaluatorGenerator nodeEvaluatorGenerator; // DivineMC - we use this later to generate an evaluator
++    private final @Nullable NodeEvaluatorGenerator nodeEvaluatorGenerator; // DivineMC - we use this later to generate an evaluator
  
 -    public PathFinder(NodeEvaluator nodeEvaluator, int maxVisitedNodes) {
 +    // DivineMC start - support nodeEvaluatorgenerators
-+    public PathFinder(NodeEvaluator nodeEvaluator, int maxVisitedNodes, @Nullable org.bxteam.divinemc.async.pathfinding.NodeEvaluatorGenerator nodeEvaluatorGenerator) { // DivineMC - add nodeEvaluatorGenerator
++    public PathFinder(NodeEvaluator nodeEvaluator, int maxVisitedNodes, @Nullable NodeEvaluatorGenerator nodeEvaluatorGenerator) { // DivineMC - add nodeEvaluatorGenerator
          this.nodeEvaluator = nodeEvaluator;
          this.maxVisitedNodes = maxVisitedNodes;
 +        this.nodeEvaluatorGenerator = nodeEvaluatorGenerator;
@@ -739,7 +748,7 @@ index 919769ae40efea904be6adbbb13542bd39bf0291..42a82354377ea9ee90064678851d3e41
  
      public void setCaptureDebug(BooleanSupplier captureDebug) {
          this.captureDebug = captureDebug;
-@@ -38,25 +46,61 @@ public class PathFinder {
+@@ -38,25 +48,61 @@ public class PathFinder {
      }
  
      public @Nullable Path findPath(PathNavigationRegion region, Mob mob, Set<BlockPos> targets, float maxRange, int reachRange, float maxVisitedNodesMultiplier) {
@@ -808,7 +817,7 @@ index 919769ae40efea904be6adbbb13542bd39bf0291..42a82354377ea9ee90064678851d3e41
          // Set<Target> set = targetPositions.keySet(); // Paper - unused
          node.g = 0.0F;
          node.h = this.getBestH(node, positions); // Paper - optimize collection
-@@ -97,7 +141,7 @@ public class PathFinder {
+@@ -97,7 +143,7 @@ public class PathFinder {
              }
  
              if (!(node1.distanceTo(node) >= maxRange)) {

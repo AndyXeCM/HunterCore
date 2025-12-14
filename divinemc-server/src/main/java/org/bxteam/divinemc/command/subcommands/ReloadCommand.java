@@ -45,7 +45,7 @@ public final class ReloadCommand extends DivineSubCommandPermission {
             try {
                 level.divineConfig.init();
             } catch (IOException e) {
-                MinecraftServer.LOGGER.error("Failed to reload DivineMC world config for level {}", level.dimension().location(), e);
+                MinecraftServer.LOGGER.error("Failed to reload DivineMC world config for level {}", level.dimension().identifier(), e);
             }
             level.resetBreedingCooldowns();
         }

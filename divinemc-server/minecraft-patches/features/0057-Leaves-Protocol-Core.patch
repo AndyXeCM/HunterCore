@@ -48,7 +48,7 @@ index 354e6792cd93a77870d4a061a5b3d9fe4bed2458..580746b5c66a60949281f4a0f814b2e8
              runnable.run();
          }
 diff --git a/net/minecraft/server/network/ServerCommonPacketListenerImpl.java b/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-index 28c61ccce5a71b8a3c3e87617907ced1fc45b68c..b0dc1559be498445410803aaa660a4e6a99da67c 100644
+index 28c61ccce5a71b8a3c3e87617907ced1fc45b68c..add49a402be6a1989506bc25bf0a4e7660a3f17a 100644
 --- a/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
 @@ -62,6 +62,7 @@ public abstract class ServerCommonPacketListenerImpl implements ServerCommonPack
@@ -76,7 +76,7 @@ index 28c61ccce5a71b8a3c3e87617907ced1fc45b68c..b0dc1559be498445410803aaa660a4e6
 +            org.leavesmc.leaves.protocol.core.LeavesProtocolManager.handlePayload(org.leavesmc.leaves.protocol.core.ProtocolUtils.createSelector(this), leavesPayload);
 +            return;
 +        }
-+        if (packet.payload() instanceof net.minecraft.network.protocol.common.custom.DiscardedPayload(net.minecraft.resources.ResourceLocation id, byte[] data)) {
++        if (packet.payload() instanceof net.minecraft.network.protocol.common.custom.DiscardedPayload(net.minecraft.resources.Identifier id, byte[] data)) {
 +            if (org.leavesmc.leaves.protocol.core.LeavesProtocolManager.handleBytebuf(org.leavesmc.leaves.protocol.core.ProtocolUtils.createSelector(this), id, io.netty.buffer.Unpooled.wrappedBuffer(data))) {
 +                return;
 +            }

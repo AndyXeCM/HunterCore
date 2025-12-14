@@ -2226,7 +2226,7 @@ index ea7666cc10aee49e13dbdd6e3367fabaa0dcbc17..9e0fe52c81f764843580ebb5fe6a5bd6
      }
  
 diff --git a/net/minecraft/world/entity/animal/armadillo/Armadillo.java b/net/minecraft/world/entity/animal/armadillo/Armadillo.java
-index 8502205994ecf28b1b791195088d183d7574760f..4bf6144e822e201d9c2e009c1ac8d332ae02518b 100644
+index 8502205994ecf28b1b791195088d183d7574760f..0715301d83ac1b625ce45045b7614bfe10a3fc51 100644
 --- a/net/minecraft/world/entity/animal/armadillo/Armadillo.java
 +++ b/net/minecraft/world/entity/animal/armadillo/Armadillo.java
 @@ -21,8 +21,6 @@ import net.minecraft.util.ByIdMap;
@@ -2238,7 +2238,7 @@ index 8502205994ecf28b1b791195088d183d7574760f..4bf6144e822e201d9c2e009c1ac8d332
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.InteractionResult;
  import net.minecraft.world.damagesource.DamageSource;
-@@ -161,11 +159,7 @@ public class Armadillo extends Animal {
+@@ -161,13 +159,8 @@ public class Armadillo extends Animal {
  
      @Override
      protected void customServerAiStep(ServerLevel level) {
@@ -2248,8 +2248,10 @@ index 8502205994ecf28b1b791195088d183d7574760f..4bf6144e822e201d9c2e009c1ac8d332
 -        profilerFiller.pop();
 -        profilerFiller.push("armadilloActivityUpdate");
          ArmadilloAi.updateActivity(this);
-         profilerFiller.pop();
+-        profilerFiller.pop();
          if (this.isAlive() && --this.scuteTime <= 0 && this.shouldDropLoot(level)) {
+             this.forceDrops = true; // CraftBukkit
+             if (this.dropFromGiftLootTable(level, BuiltInLootTables.ARMADILLO_SHED, this::spawnAtLocation)) {
 diff --git a/net/minecraft/world/entity/animal/axolotl/Axolotl.java b/net/minecraft/world/entity/animal/axolotl/Axolotl.java
 index e5ac43bf5631254c31d91abb1c5de408807429dd..73ff138007002a6203b6a0df88d34d26f025a827 100644
 --- a/net/minecraft/world/entity/animal/axolotl/Axolotl.java
