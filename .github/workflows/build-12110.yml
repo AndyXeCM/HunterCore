@@ -10,10 +10,11 @@ jobs:
   build:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     if: "!contains(github.event.commits[0].message, '[ci-skip]')"
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      API_KEY: ${{ secrets.API_KEY }}
     outputs:
       build_number: ${{ env.BUILD_NUMBER }}
-      jar_file: ${{ steps.prepare_jar.outputs.jar_file }}
-      version: ${{ steps.prepare_jar.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -66,23 +67,46 @@ jobs:
       - name: Build Paperclip Jar
         run: ./gradlew createMojmapPaperclipJar --stacktrace --parallel --no-daemon
 
-      - name: Prepare and Move Paperclip Jar
-        id: prepare_jar
-        run: |
-          VERSION="1.21.10"
-          BUILD="${BUILD_NUMBER}"
-          JAR_NAME="divinemc-${VERSION}-${BUILD}.jar"
-          mv divinemc-server/build/libs/divinemc-paperclip-*-mojmap.jar divinemc-server/build/libs/${JAR_NAME}
-          echo "jar_file=divinemc-server/build/libs/${JAR_NAME}" >> $GITHUB_OUTPUT
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "JAR_FILE=divinemc-server/build/libs/${JAR_NAME}" >> $GITHUB_ENV
-
-      - name: Upload to API
-        env:
-          API_URL: 'https://api.bxteam.org'
-          API_KEY: ${{ secrets.ATLAS_API_KEY }}
-          PROJECT_KEY: 'divinemc'
-          VERSION_BRANCH: 'ver/1.21.10'
-          BUILD_NUMBER: ${{ github.run_number }}
-          JAR_FILE: ${{ env.JAR_FILE }}
+      - name: Upload Build to API
         run: bash scripts/uploadBuild.sh
+        env:
+          BUILD_NUMBER: ${{ env.BUILD_NUMBER }}
+          API_KEY: ${{ secrets.API_KEY }}
+
+      - name: Get MC Version
+        id: mcversion
+        run: |
+          mcversion=$(grep "mcVersion" gradle.properties | cut -d'=' -f2 | sed 's/\r//')
+          echo "version=$mcversion" >> $GITHUB_OUTPUT
+
+      - name: Update Version Tag
+        uses: actions/github-script@v8
+        with:
+          script:  |
+            const tag = `ver-${{ steps.mcversion.outputs.version }}`;
+            const ref = `refs/tags/${tag}`;
+            
+            console.log(`Updating tag: ${tag}`);
+            
+            try {
+              await github.rest.git.updateRef({
+                owner: context.repo.owner,
+                repo: context. repo.repo,
+                ref: `tags/${tag}`,
+                sha: context.sha,
+                force: true
+              });
+              console.log(`✅ Tag ${tag} updated successfully`);
+            } catch (error) {
+              if (error.status === 404) {
+                await github.rest.git. createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: ref,
+                  sha: context. sha
+                });
+                console.log(`✅ Tag ${tag} created successfully`);
+              } else {
+                throw error;
+              }
+            }
