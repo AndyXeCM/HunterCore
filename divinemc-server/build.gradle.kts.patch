@@ -149,7 +149,7 @@
  
      implementation("net.neoforged:srgutils:1.0.9") // Mappings handling
      implementation("net.neoforged:AutoRenamingTool:2.0.3") // Remap plugins
-@@ -217,30 +_,42 @@
+@@ -217,6 +_,16 @@
      implementation("me.lucko:spark-paper:1.10.152")
  }
  
@@ -166,11 +166,7 @@
  tasks.jar {
      manifest {
          val git = Git(rootProject.layout.projectDirectory.path)
-         val mcVersion = rootProject.providers.gradleProperty("mcVersion").get()
-         val build = System.getenv("BUILD_NUMBER") ?: null
--        val buildTime = providers.environmentVariable("BUILD_STARTED_AT").map(Instant::parse).orElse(Instant.EPOCH).get()
-+        val buildTime = Instant.now() // DivineMC - Set build time to current
-         val gitHash = git.exec(providers, "rev-parse", "--short=7", "HEAD").get().trim()
+@@ -227,20 +_,22 @@
          val implementationVersion = "$mcVersion-${build ?: "DEV"}-$gitHash"
          val date = git.exec(providers, "show", "-s", "--format=%ci", gitHash).get().trim()
          val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()

@@ -1765,7 +1765,7 @@ index 39a604c9a53930b53d959b1d2eb504aa964e9a58..0d0380e3955836ce125f777841477503
  
      @Override
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index d2542c2bd15d274f9844c731a2e2b388a318ee4c..c1fff7f3d74a804d9608e3ff78386f49845b8f59 100644
+index 99afd7599602d52cbe85b13c6df4304aa25167d0..18d45a6023d96e09f3d796e8b72e17e7b25f9bc7 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -83,8 +83,6 @@ import net.minecraft.util.Util;
@@ -1837,7 +1837,7 @@ index d2542c2bd15d274f9844c731a2e2b388a318ee4c..c1fff7f3d74a804d9608e3ff78386f49
              }
          }
          // Paper start - detailed watchdog information
-@@ -3553,8 +3540,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -3555,8 +3542,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
              this.processPortalCooldown();
              if (this.portalProcess != null) {
                  if (this.portalProcess.processPortalTeleportation(serverLevel, this, this.canUsePortal(false))) {
@@ -1846,7 +1846,7 @@ index d2542c2bd15d274f9844c731a2e2b388a318ee4c..c1fff7f3d74a804d9608e3ff78386f49
                      this.setPortalCooldown();
                      TeleportTransition portalDestination = this.portalProcess.getPortalDestination(serverLevel, this);
                      if (portalDestination != null) {
-@@ -3566,8 +3551,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -3567,8 +3552,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
                              this.teleport(portalDestination);
                          }
                      }
@@ -1855,7 +1855,7 @@ index d2542c2bd15d274f9844c731a2e2b388a318ee4c..c1fff7f3d74a804d9608e3ff78386f49
                  } else if (this.portalProcess.hasExpired()) {
                      this.portalProcess = null;
                  }
-@@ -4132,15 +4115,12 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -4133,15 +4116,12 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
              entity.teleport(this.calculatePassengerTransition(teleportTransition, entity));
          }
  
@@ -1871,7 +1871,7 @@ index d2542c2bd15d274f9844c731a2e2b388a318ee4c..c1fff7f3d74a804d9608e3ff78386f49
          return this;
      }
  
-@@ -4156,11 +4136,8 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -4157,11 +4137,8 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
              }
          }
  
@@ -1883,7 +1883,7 @@ index d2542c2bd15d274f9844c731a2e2b388a318ee4c..c1fff7f3d74a804d9608e3ff78386f49
              return null;
          } else {
              // Paper start - Fix item duplication and teleport issues
-@@ -4180,7 +4157,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -4181,7 +4158,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
              newLevel.resetEmptyTime();
              teleportTransition.postTeleportTransition().onTransition(entityx);
              this.teleportSpectators(teleportTransition, oldLevel);

@@ -631,18 +631,20 @@ index 471e558a609c9e457720660b90fe57322b860461..0d12647a0dc1159eb1932c947058068d
              if (isLocatorBarEnabledFor(player)) {
                  if (!connection.isBroken()) {
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index a315d7c523cda7acc6c4fa0413764a4eca746045..65a72cedfd3f3da0323b553afe0e9a515d4f3986 100644
+index de1db9149a03d83700f1d8031d201d6a300a3498..9d46db5efee581a94e28a9dd95225043b4818db2 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -3561,16 +3561,36 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -3563,15 +3563,34 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
              if (this.portalProcess != null) {
                  if (this.portalProcess.processPortalTeleportation(serverLevel, this, this.canUsePortal(false))) {
                      this.setPortalCooldown();
 -                    TeleportTransition portalDestination = this.portalProcess.getPortalDestination(serverLevel, this);
 -                    if (portalDestination != null) {
 -                        ServerLevel level = portalDestination.newLevel();
--                        if (this instanceof ServerPlayer // CraftBukkit - always call event for players
--                            || (level != null && (level.dimension() == serverLevel.dimension() || this.canTeleport(serverLevel, level))) // CraftBukkit
+-                        if (serverLevel.isAllowedToEnterPortal(level) && (level.dimension() == serverLevel.dimension() || this.canTeleport(serverLevel, level))
+-                            )
+-                         {
+-                            this.teleport(portalDestination);
 +                    // DivineMC start - Parallel world ticking
 +                    java.util.function.Consumer<Entity> portalEntityTask = entity -> {
 +                        assert entity.portalProcess != null;
@@ -655,12 +657,8 @@ index a315d7c523cda7acc6c4fa0413764a4eca746045..65a72cedfd3f3da0323b553afe0e9a51
 +                        TeleportTransition portalDestination = this.portalProcess.getPortalDestination(serverLevel, this);
 +                        if (portalDestination != null) {
 +                            ServerLevel level = portalDestination.newLevel();
-+                            if (this instanceof ServerPlayer // CraftBukkit - always call event for players
-+                                || (level != null && (level.dimension() == serverLevel.dimension() || this.canTeleport(serverLevel, level))) // CraftBukkit
-                             )
--                         {
--                            this.teleport(portalDestination);
-+                            {
++                            if (serverLevel.isAllowedToEnterPortal(level) && (level.dimension() == serverLevel.dimension() || this.canTeleport(serverLevel, level))
++                            ) {
 +                                this.teleport(portalDestination);
 +                            }
                          }
@@ -678,7 +676,7 @@ index a315d7c523cda7acc6c4fa0413764a4eca746045..65a72cedfd3f3da0323b553afe0e9a51
                  } else if (this.portalProcess.hasExpired()) {
                      this.portalProcess = null;
                  }
-@@ -4145,6 +4165,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -4146,6 +4165,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
      }
  
      private @Nullable Entity teleportCrossDimension(ServerLevel oldLevel, ServerLevel newLevel, TeleportTransition teleportTransition) {
