@@ -634,18 +634,6 @@ public class DivineConfig {
         public static String logLevel = "WARN";
         public static boolean onlyLogThrown = true;
 
-        // Raytrace Entity Tracker
-        @Experimental("Raytrace Entity Tracker")
-        public static boolean retEnabled = false;
-        public static int retThreads = 2;
-        public static int retThreadsPriority = Thread.NORM_PRIORITY + 2;
-        public static boolean retSkipMarkerArmorStands = true;
-        public static int retCheckIntervalMs = 10;
-        public static int retTracingDistance = 48;
-        public static int retHitboxLimit = 50;
-        public static List<String> retSkippedEntities = List.of();
-        public static boolean retInvertSkippedEntities = false;
-
         // Old features
         public static boolean copperBulb1gt = false;
         public static boolean crafter1gt = false;
@@ -655,7 +643,6 @@ public class DivineConfig {
             lagCompensation();
             regionFileExtension();
             sentrySettings();
-            ret();
             oldFeatures();
         }
 
@@ -726,47 +713,6 @@ public class DivineConfig {
                 "Only log Throwable exceptions to Sentry.");
 
             if (sentryDsn != null && !sentryDsn.isBlank()) gg.pufferfish.pufferfish.sentry.SentryManager.init(Level.getLevel(logLevel));
-        }
-
-        private static void ret() {
-            retEnabled = getBoolean(ConfigCategory.MISC.key("raytrace-entity-tracker.enabled"), retEnabled,
-                "Raytrace Entity Tracker uses async ray-tracing to untrack entities players cannot see. Implementation of EntityCulling mod by tr7zw.");
-            retThreads = getInt(ConfigCategory.MISC.key("raytrace-entity-tracker.threads"), retThreads,
-                "The number of threads to use for raytrace entity tracker.");
-            retThreadsPriority = getInt(ConfigCategory.MISC.key("raytrace-entity-tracker.threads-priority"), retThreadsPriority,
-                "The priority of the threads used for raytrace entity tracker.",
-                "0 - lowest, 10 - highest, 5 - normal");
-
-            retSkipMarkerArmorStands = getBoolean(ConfigCategory.MISC.key("raytrace-entity-tracker.skip-marker-armor-stands"), retSkipMarkerArmorStands,
-                "Whether to skip tracing entities with marker armor stand");
-            retCheckIntervalMs = getInt(ConfigCategory.MISC.key("raytrace-entity-tracker.check-interval-ms"), retCheckIntervalMs,
-                "The interval in milliseconds between each trace.");
-            retTracingDistance = getInt(ConfigCategory.MISC.key("raytrace-entity-tracker.tracing-distance"), retTracingDistance,
-                "The distance in blocks to track entities in the raytrace entity tracker.");
-            retHitboxLimit = getInt(ConfigCategory.MISC.key("raytrace-entity-tracker.hitbox-limit"), retHitboxLimit,
-                "The maximum size of bounding box to trace.");
-
-            retSkippedEntities = getStringList(ConfigCategory.MISC.key("raytrace-entity-tracker.skipped-entities"), retSkippedEntities,
-                "List of entity types to skip in raytrace entity tracker.");
-            retInvertSkippedEntities = getBoolean(ConfigCategory.MISC.key("raytrace-entity-tracker.invert-skipped-entities"), retInvertSkippedEntities,
-                "If true, the entities in the skipped list will be tracked, and all other entities will be untracked.",
-                "If false, the entities in the skipped list will be untracked, and all other entities will be tracked.");
-
-            for (EntityType<?> entityType : BuiltInRegistries.ENTITY_TYPE) {
-                entityType.skipRaytracingCheck = retInvertSkippedEntities;
-            }
-
-            final String DEFAULT_PREFIX = Identifier.DEFAULT_NAMESPACE + Identifier.NAMESPACE_SEPARATOR;
-
-            for (String name : retSkippedEntities) {
-                String lowerName = name.toLowerCase(Locale.ROOT);
-                String typeId = lowerName.startsWith(DEFAULT_PREFIX) ? lowerName : DEFAULT_PREFIX + lowerName;
-
-                EntityType.byString(typeId).ifPresentOrElse(entityType ->
-                        entityType.skipRaytracingCheck = !retInvertSkippedEntities,
-                    () -> LOGGER.warn("Skipped unknown entity {} in {}", name, ConfigCategory.MISC.key("raytrace-entity-tracker.skipped-entities"))
-                );
-            }
         }
 
         private static void oldFeatures() {
