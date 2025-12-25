@@ -1,5 +1,6 @@
 package org.bxteam.divinemc.chunk;
 
+import ca.spottedleaf.concurrentutil.numa.OSNuma;
 import ca.spottedleaf.moonrise.common.PlatformHooks;
 import io.netty.util.internal.PlatformDependent;
 import net.objecthunter.exp4j.ExpressionBuilder;
@@ -11,7 +12,7 @@ import java.util.function.BiFunction;
 
 public enum ChunkSystemAlgorithm {
     MOONRISE((configWorkerThreads, configIoThreads) -> {
-        int defaultWorkerThreads = Runtime.getRuntime().availableProcessors() / 2;
+        int defaultWorkerThreads = OSNuma.getNativeInstance().getTotalCores() / 2;
         if (defaultWorkerThreads <= 4) {
             defaultWorkerThreads = defaultWorkerThreads <= 3 ? 1 : 2;
         } else {

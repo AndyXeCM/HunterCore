@@ -232,7 +232,7 @@ index 2e876b918672e8ef3b5197b7e6b1597247fdeaa1..c93a9d2de61c9aa789c0758de0bdafaa
  }
 +// DivineMC end - Optimize Moonrise
 diff --git a/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java b/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java
-index 2bae9949ef325d0001aa638150fbbdf968367e75..f946e625dcfec5c6ee9bf90bb79ac1c2f84ec048 100644
+index c2fe81726ad2cfba2d71f37445d72cc9c4b075f6..5e5318a9fa0e9902b5f0a15cc46cbf1db19f52f1 100644
 --- a/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java
 +++ b/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java
 @@ -1,11 +1,13 @@
@@ -267,8 +267,12 @@ index 2bae9949ef325d0001aa638150fbbdf968367e75..f946e625dcfec5c6ee9bf90bb79ac1c2
          return this.byIndex[index];
      }
  
-@@ -30,8 +32,8 @@ public final class ShortList {
+@@ -31,11 +33,11 @@ public final class ShortList {
+         if (byIndex.length < len) {
+             this.byIndex = Arrays.copyOf(byIndex, len);
          }
+-        this.map.ensureCapacity(len);
++        // DivineMC - removed ensureCapacity as it's not available on synchronized map
      }
  
 -    public boolean add(final short value) {
@@ -278,7 +282,7 @@ index 2bae9949ef325d0001aa638150fbbdf968367e75..f946e625dcfec5c6ee9bf90bb79ac1c2
          final short currIndex = this.map.putIfAbsent(value, (short)count);
  
          if (currIndex != Short.MIN_VALUE) {
-@@ -51,7 +53,7 @@ public final class ShortList {
+@@ -55,7 +57,7 @@ public final class ShortList {
          return true;
      }
  
@@ -287,7 +291,7 @@ index 2bae9949ef325d0001aa638150fbbdf968367e75..f946e625dcfec5c6ee9bf90bb79ac1c2
          final short index = this.map.remove(value);
          if (index == Short.MIN_VALUE) {
              return false;
-@@ -70,7 +72,7 @@ public final class ShortList {
+@@ -74,7 +76,7 @@ public final class ShortList {
          return true;
      }
  

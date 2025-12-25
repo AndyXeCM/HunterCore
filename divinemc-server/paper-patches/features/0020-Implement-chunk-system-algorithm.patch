@@ -7,15 +7,15 @@ This patch adds configurable chunk system algorithms for determining
 worker thread allocation for chunk loading and generation.
 
 diff --git a/src/main/java/ca/spottedleaf/moonrise/common/util/MoonriseCommon.java b/src/main/java/ca/spottedleaf/moonrise/common/util/MoonriseCommon.java
-index 9a1fbd88e56f8dd01368a0a5e74cfa8c54965d7f..0a21222c77b84601841e1750daf3eb0865d99b67 100644
+index b7c7de9797d310b68228faf21164ecc701590a59..6edcc696c231ea4ba63abc0e8004e0abcc243cf8 100644
 --- a/src/main/java/ca/spottedleaf/moonrise/common/util/MoonriseCommon.java
 +++ b/src/main/java/ca/spottedleaf/moonrise/common/util/MoonriseCommon.java
-@@ -34,27 +34,17 @@ public final class MoonriseCommon {
+@@ -35,27 +35,17 @@ public final class MoonriseCommon {
      public static final BalancedPrioritisedThreadPool.OrderedStreamGroup CLIENT_GROUP = MoonriseCommon.WORKER_POOL.createOrderedStreamGroup();
      public static final BalancedPrioritisedThreadPool.OrderedStreamGroup SERVER_GROUP = MoonriseCommon.WORKER_POOL.createOrderedStreamGroup();
  
 -    public static void adjustWorkerThreads(final int configWorkerThreads, final int configIoThreads) {
--        int defaultWorkerThreads = Runtime.getRuntime().availableProcessors() / 2;
+-        int defaultWorkerThreads = OSNuma.getNativeInstance().getTotalCores()  / 2;
 -        if (defaultWorkerThreads <= 4) {
 -            defaultWorkerThreads = defaultWorkerThreads <= 3 ? 1 : 2;
 -        } else {
@@ -46,7 +46,7 @@ index 9a1fbd88e56f8dd01368a0a5e74cfa8c54965d7f..0a21222c77b84601841e1750daf3eb08
  
      public static final long IO_QUEUE_HOLD_TIME = (long)(25.0e6); // 25ms
 diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-index 6c23b24477dd24ed43932d0c5ae5d97f80d968f6..982ffe9c9ec54242cdf7ee6dca42e9f815666260 100644
+index 61aeb613da5c3b38124d3eeea451b13e25527878..d3b7dbbf3b5d33af97729f85754cae77df26b2b4 100644
 --- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
 +++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
 @@ -227,7 +227,7 @@ public class GlobalConfiguration extends ConfigurationPart {

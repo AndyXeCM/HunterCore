@@ -223,7 +223,7 @@ index 69cdd304d255d52c9b7dc9b6a33ffdb630b79abe..73475f21a65395ab3f888d04d4860acd
 +    // DivineMC end - Parallel world ticking
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 9295d8e0b976677424e4a5e325fb789f8cb23ceb..cf286eddde6c45ee12bb080a3c00794697ae0ce2 100644
+index f759432c0f15396d4f6d60944a5524d1d1cc477f..a46095588b6a20b22c7d98a744ef3e3b3080c210 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -3068,4 +3068,11 @@ public final class CraftServer implements Server {
@@ -239,7 +239,7 @@ index 9295d8e0b976677424e4a5e325fb789f8cb23ceb..cf286eddde6c45ee12bb080a3c007946
 +    // DivineMC end - Parallel world ticking
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index aa019a9ef40a18714b9bd68260da612a6274c55b..1ac816225fe7ff1564a3b0fbfd44eee0ad9a9208 100644
+index 56464828398b902d85625680b5a437086e4cabb1..ef395553e7501ee65780e9ed3d013061c951ec9e 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 @@ -461,7 +461,13 @@ public class CraftWorld extends CraftRegionAccessor implements World {
@@ -296,7 +296,7 @@ index aa019a9ef40a18714b9bd68260da612a6274c55b..1ac816225fe7ff1564a3b0fbfd44eee0
          net.minecraft.world.level.Level.ExplosionInteraction explosionType;
          if (!breakBlocks) {
              explosionType = net.minecraft.world.level.Level.ExplosionInteraction.NONE; // Don't break blocks
-@@ -907,6 +922,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -909,6 +924,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
  
      @Override
      public int getHighestBlockYAt(int x, int z, org.bukkit.HeightMap heightMap) {
@@ -304,7 +304,7 @@ index aa019a9ef40a18714b9bd68260da612a6274c55b..1ac816225fe7ff1564a3b0fbfd44eee0
          warnUnsafeChunk("getting a faraway chunk", x >> 4, z >> 4); // Paper
          // Transient load for this tick
          return this.world.getChunk(x >> 4, z >> 4).getHeight(CraftHeightMap.toNMS(heightMap), x, z);
-@@ -922,6 +938,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -924,6 +940,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
      @Override
      public void setBiome(int x, int y, int z, Holder<net.minecraft.world.level.biome.Biome> bb) {
          BlockPos pos = new BlockPos(x, 0, z);
@@ -312,7 +312,7 @@ index aa019a9ef40a18714b9bd68260da612a6274c55b..1ac816225fe7ff1564a3b0fbfd44eee0
          if (this.world.hasChunkAt(pos)) {
              net.minecraft.world.level.chunk.LevelChunk chunk = this.world.getChunkAt(pos);
  
-@@ -1879,6 +1896,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -1881,6 +1898,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
  
      @Override
      public void sendGameEvent(Entity sourceEntity, org.bukkit.GameEvent gameEvent, Vector position) {
@@ -320,7 +320,7 @@ index aa019a9ef40a18714b9bd68260da612a6274c55b..1ac816225fe7ff1564a3b0fbfd44eee0
          getHandle().gameEvent(sourceEntity != null ? ((CraftEntity) sourceEntity).getHandle(): null, net.minecraft.core.registries.BuiltInRegistries.GAME_EVENT.get(org.bukkit.craftbukkit.util.CraftNamespacedKey.toMinecraft(gameEvent.getKey())).orElseThrow(), org.bukkit.craftbukkit.util.CraftVector.toBlockPos(position));
      }
      // Paper end
-@@ -2089,4 +2107,15 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -2091,4 +2109,15 @@ public class CraftWorld extends CraftRegionAccessor implements World {
          return POINTERS_SUPPLIER.view(this);
      }
      // Paper end

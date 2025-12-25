@@ -43,8 +43,8 @@
 +    // DivineMC end - Rebrand
 +
      spigot {
-         enabled = false
-         buildDataRef = "42d18d4c4653ffc549778dbe223f6994a031d69e"
+         enabled = true
+         buildDataRef = "17f77cee7117ab9d6175f088ae8962bfd04e61a9"
 @@ -62,6 +_,7 @@
      libraryRepositories.addAll(
          "https://repo.maven.apache.org/maven2/",
@@ -90,7 +90,7 @@
 +    implementation("net.objecthunter:exp4j:0.4.8")
 +    // DivineMC end - Dependencies
 +
-     implementation("ca.spottedleaf:concurrentutil:0.0.7")
+     implementation("ca.spottedleaf:concurrentutil:0.0.8")
 -    implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
 -    implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
 +    implementation("org.jline:jline-terminal-ffm:3.29.0") // use ffm on java 22+ // DivineMC - Bump dependencies
