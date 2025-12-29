@@ -25,7 +25,7 @@ index 857a1ac427644a1f24a8564041ba3f41da540ef4..477cb54c89b59812af74758c841fb714
  
      // Paper start
 diff --git a/net/minecraft/world/entity/raid/Raid.java b/net/minecraft/world/entity/raid/Raid.java
-index 8aa049d80cf74fb7ea525e0dc648741ddc788e3e..27c469462d54b6a8cf0b42b9d6ccacdc9488e556 100644
+index 0248808df911c8a63cbc5e3ae67e44760b0e1871..eaf3acb203ae58f4ef11585a44d4474b3bb27d9b 100644
 --- a/net/minecraft/world/entity/raid/Raid.java
 +++ b/net/minecraft/world/entity/raid/Raid.java
 @@ -127,6 +127,7 @@ public class Raid {
@@ -59,7 +59,7 @@ index 8aa049d80cf74fb7ea525e0dc648741ddc788e3e..27c469462d54b6a8cf0b42b9d6ccacdc
  
      public float getHealthOfLivingRaiders() {
 diff --git a/net/minecraft/world/entity/raid/Raider.java b/net/minecraft/world/entity/raid/Raider.java
-index b03faa7600f182a12c3a739deefc38028cf45615..fd7ee7d014b696c354357c871b546b2fb3859294 100644
+index 40984af1fc912a7b0367c530c68ee00d51173b64..2b9a4b43466dbd7b497e4fec9f82f1c84947c934 100644
 --- a/net/minecraft/world/entity/raid/Raider.java
 +++ b/net/minecraft/world/entity/raid/Raider.java
 @@ -43,9 +43,25 @@ import org.jspecify.annotations.Nullable;
@@ -107,7 +107,7 @@ index b03faa7600f182a12c3a739deefc38028cf45615..fd7ee7d014b696c354357c871b546b2f
 -            && ItemStack.matches(item, Raid.getOminousBannerInstance(this.registryAccess().lookupOrThrow(Registries.BANNER_PATTERN)))) {
 +            && ItemStack.matches(item, getOminousBanner(this.registryAccess().lookupOrThrow(Registries.BANNER_PATTERN)))) { // DivineMC - Optimize Raids
              // Paper start - EntityPickupItemEvent fixes
-             if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0, false).isCancelled()) {
+             if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) {
                  return;
 @@ -395,6 +411,16 @@ public abstract class Raider extends PatrollingMonster {
                  && !this.cannotPickUpBanner();
