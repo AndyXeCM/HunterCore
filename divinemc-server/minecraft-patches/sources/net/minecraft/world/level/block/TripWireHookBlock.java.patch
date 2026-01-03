@@ -14,7 +14,7 @@
                      if (blockState2 != null) {
 -                        BlockState blockState3 = level.getBlockState(blockPos1);
 -                        if (blockState3.is(Blocks.TRIPWIRE) || blockState3.is(Blocks.TRIPWIRE_HOOK)) {
--                            if (!io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates || !blockState3.is(Blocks.TRIPWIRE))  level.setBlock(blockPos1, blockState2.trySetValue(ATTACHED, flag2), 3); // Paper - prevent tripwire from updating
+-                            if (!io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableTripwireUpdates || !blockState3.is(Blocks.TRIPWIRE))  level.setBlock(blockPos1, blockState2.trySetValue(ATTACHED, flag2), Block.UPDATE_ALL); // Paper - prevent tripwire from updating
 +                        // DivineMC start - Configurable MC-59471
 +                        if (level.divineConfig.allowTripwireDupe) {
 +                            level.setBlock(blockPos1, blockState2.trySetValue(ATTACHED, flag2), 3);
