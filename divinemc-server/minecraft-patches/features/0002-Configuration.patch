@@ -5,7 +5,7 @@ Subject: [PATCH] Configuration
 
 
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index e2c98671da543e420e38778f9c58aec558ec634e..6c02ab6c4076e8223229626754ed766b16537cfd 100644
+index db4829b55a1cc5b5928afe88633c545dd4cd72aa..76133bca70e871d562816a7551ff91d199feb61c 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -252,6 +252,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
@@ -20,13 +20,13 @@ index e2c98671da543e420e38778f9c58aec558ec634e..6c02ab6c4076e8223229626754ed766b
 @@ -292,6 +294,7 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
          }
          org.purpurmc.purpur.PurpurConfig.registerCommands();
-         // Purpur end - Purpur config files
+         */// Purpur end - Purpur config files // Purpur end - Migrate Setting to reintroduce end void rings
 +        org.bxteam.divinemc.command.DivineCommands.registerCommands(this); // DivineMC - Configuration
          com.destroystokyo.paper.VersionHistoryManager.INSTANCE.getClass(); // Paper - load version history now
   
          // DivineMC start - Pufferfish: SIMD Support
 diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
-index 8bc55b03ae9fc29f2227c418fc3098ae5c1d56ec..414cb1bd92e082dbe34a5078a4269fc98900e1f3 100644
+index 6f41d5b730ed9840a64b7c50e966353f907dbeaf..6ad24d39f15373afb353c59928c29ee874f69ea9 100644
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
 @@ -167,6 +167,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl

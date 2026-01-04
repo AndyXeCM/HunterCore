@@ -70,7 +70,7 @@ index 98b101fde04fbf5507f021bb8d8e6bed334de5b6..e76530da9641acc482aa0f030c4dc267
      }
  }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index eb2ed61faac0d4803298325dc5aeec3c6b0a1ad2..92521490b6ddc0ff4a102d870f5826f1b61ee68a 100644
+index 1d58c0d02f1164cfc842b7b234fc2c09ab07c335..d3f285c0a490ddeca8288f0ead188902f18ece01 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -1453,13 +1453,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -102,10 +102,10 @@ index eb2ed61faac0d4803298325dc5aeec3c6b0a1ad2..92521490b6ddc0ff4a102d870f5826f1
  
      private void tickPassenger(Entity ridingEntity, Entity passengerEntity, final boolean isActive) { // Paper - EAR 2
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 65a72cedfd3f3da0323b553afe0e9a515d4f3986..36acef56faf73bd9c0afa987775c6f7bebfc66e1 100644
+index f0e42763ac179b4f9e71e3829018c4460a11c443..867d7fda2a47c8b756d6a8c2874149d8cf030fac 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -1131,29 +1131,10 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -1132,29 +1132,10 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
          return this.onGround;
      }
  
@@ -135,7 +135,7 @@ index 65a72cedfd3f3da0323b553afe0e9a515d4f3986..36acef56faf73bd9c0afa987775c6f7b
          if (this.noPhysics) {
              this.setPos(this.getX() + movement.x, this.getY() + movement.y, this.getZ() + movement.z);
              this.horizontalCollision = false;
-@@ -1274,13 +1255,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -1275,13 +1256,6 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
                  this.setDeltaMovement(this.getDeltaMovement().multiply(blockSpeedFactor, 1.0, blockSpeedFactor));
              }
          }
@@ -149,7 +149,7 @@ index 65a72cedfd3f3da0323b553afe0e9a515d4f3986..36acef56faf73bd9c0afa987775c6f7b
      }
  
      private void applyMovementEmissionAndPlaySound(Entity.MovementEmission movementEmission, Vec3 movement, BlockPos pos, BlockState state) {
-@@ -5018,9 +4992,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -5020,9 +4994,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
  
      public void setDeltaMovement(Vec3 deltaMovement) {
          if (deltaMovement.isFinite()) {
@@ -159,7 +159,7 @@ index 65a72cedfd3f3da0323b553afe0e9a515d4f3986..36acef56faf73bd9c0afa987775c6f7b
          }
      }
  
-@@ -5121,9 +5093,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -5123,9 +5095,7 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
          }
          // Paper end - Block invalid positions and bounding box
          if (this.position.x != x || this.position.y != y || this.position.z != z) {

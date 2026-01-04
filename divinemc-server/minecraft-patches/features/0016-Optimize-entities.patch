@@ -26,10 +26,10 @@ index ffe7b73dafa81ab96c24198d83474fd9af542476..36397d3346d85394e1778e1e129cca98
  
          super.onSyncedDataUpdated(key);
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index c1fff7f3d74a804d9608e3ff78386f49845b8f59..38da0cd729b04fb72eabf95d1c161a3e5afdcd5f 100644
+index 8a9a77a2f97907e0c440258038edc8b7982a604c..0e5ac05b26d83ea17751a9ca22af83561beeac0f 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -1730,6 +1730,10 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -1731,6 +1731,10 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
  
      private int checkInsideBlocks(Vec3 from, Vec3 to, InsideBlockEffectApplier.StepBasedCollector stepBasedCollector, LongSet visited, int maxSteps) {
          AABB aabb = this.makeBoundingBox(to).deflate(1.0E-5F);
@@ -40,7 +40,7 @@ index c1fff7f3d74a804d9608e3ff78386f49845b8f59..38da0cd729b04fb72eabf95d1c161a3e
          boolean flag = from.distanceToSqr(to) > Mth.square(0.9999900000002526);
          boolean flag1 = this.level instanceof ServerLevel serverLevel
              && serverLevel.getServer().debugSubscribers().hasAnySubscriberFor(DebugSubscriptions.ENTITY_BLOCK_INTERSECTIONS);
-@@ -1745,7 +1749,21 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+@@ -1746,7 +1750,21 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
                      return false;
                  } else {
                      atomicInteger.set(index);

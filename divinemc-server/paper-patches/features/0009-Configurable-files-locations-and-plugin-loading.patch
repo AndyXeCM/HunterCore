@@ -43,10 +43,10 @@ index 70413fddd23ca1165cb5090cce4fddcb1bbca93f..ae70b84e6473fa2ed94416bf4bef8849
          @SuppressWarnings("unchecked")
          java.util.List<Path> files = ((java.util.List<File>) optionSet.valuesOf("add-plugin")).stream().map(File::toPath).toList();
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index 4cf0a09594e72193a452215c50ed1cce309d5cc7..efab2b8715988ad87f08e79d77fa46f1fc31aada 100644
+index 64d0e152becc011bd01f2fa71946e8f4c616be09..7f5d440fb13b5ebf9c1659877874fe580323aa9d 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
-@@ -180,6 +180,52 @@ public class Main {
+@@ -178,6 +178,52 @@ public class Main {
                      .describedAs("Yml file");
                  // DivineMC end - Configuration
  

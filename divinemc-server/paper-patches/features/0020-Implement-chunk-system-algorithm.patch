@@ -46,10 +46,10 @@ index b7c7de9797d310b68228faf21164ecc701590a59..6edcc696c231ea4ba63abc0e8004e0ab
  
      public static final long IO_QUEUE_HOLD_TIME = (long)(25.0e6); // 25ms
 diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-index 61aeb613da5c3b38124d3eeea451b13e25527878..d3b7dbbf3b5d33af97729f85754cae77df26b2b4 100644
+index 96c930095f444b00d6d70863830a122f1bb1983e..4450fed7a671972713fe127b8cdab3dfd0f07c4f 100644
 --- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
 +++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-@@ -227,7 +227,7 @@ public class GlobalConfiguration extends ConfigurationPart {
+@@ -230,7 +230,7 @@ public class GlobalConfiguration extends ConfigurationPart {
  
          @PostProcess
          private void postProcess() {

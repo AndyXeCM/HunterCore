@@ -6,7 +6,7 @@ Subject: [PATCH] Lag compensation
 TODO: recheck GameRules
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 4195b8ec98ec5706c6a4641350a18cda0c456d23..ba88395a39dace9638aff195e38fbe4f67948ce9 100644
+index 1a86a242b8c52ef393da107b8ee35d952a9d37e9..7e80416c25087448bd8078f61e9fdd8218e506a2 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -292,6 +292,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -17,7 +17,7 @@ index 4195b8ec98ec5706c6a4641350a18cda0c456d23..ba88395a39dace9638aff195e38fbe4f
      // Paper start - improve tick loop
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes1s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(1L));
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes5s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(5L));
-@@ -1600,6 +1601,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1605,6 +1606,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          }
  
          this.server.spark.tickStart(); // Paper - spark
@@ -26,7 +26,7 @@ index 4195b8ec98ec5706c6a4641350a18cda0c456d23..ba88395a39dace9638aff195e38fbe4f
          this.tickCount++;
          this.tickRateManager.tick();
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 477cb54c89b59812af74758c841fb714a39bf6c5..45d33ea79d9464a821f1770771d31e53e80bdea7 100644
+index 3c8282fca40b9484ccb310276c06054552b724bc..8a1c05ac443bce0d213e0a6dde0704f90e984535 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -230,6 +230,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -67,7 +67,7 @@ index 477cb54c89b59812af74758c841fb714a39bf6c5..45d33ea79d9464a821f1770771d31e53
          this.serverLevelData.setDayTime(time);
          // Purpur start - Configurable daylight cycle
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 0a04d302246ac1bb97405a6a03b2fac912458105..879f93453fce3bf4dec30ecdac738796eec576b4 100644
+index d33d711c1c39579991b9f4e01adaa02734f243b5..95a29a94ceed456bbfc268d507b12123e3737f8d 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -526,6 +526,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -212,7 +212,7 @@ index 430712393db078423d5d7e3391cc0a6833cab434..5ce545304d1ba80efaeb63367dbd34b2
      }
  
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index 1cea69f07a0b28cf8b112c202c668b915bf1b88f..63e391441f655138ddfd303270f33c7a35655ca5 100644
+index ec474a4d1b004691c66e96be132a36d4f99ec6dc..77b3edefb46de0f17056eb30f7697b75145db74a 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
 @@ -947,6 +947,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
@@ -249,7 +249,7 @@ index 1cea69f07a0b28cf8b112c202c668b915bf1b88f..63e391441f655138ddfd303270f33c7a
                          // Paper start - Remove the Block Entity if it's invalid
                          } else {
 diff --git a/net/minecraft/world/level/material/LavaFluid.java b/net/minecraft/world/level/material/LavaFluid.java
-index e0924cf9201a6d24f5deb9dcd924822228ce5b51..71539ed8c9a568ede5e681ca78fa3d7c41d7037c 100644
+index a6dc9cd0d163d6f3ffba8d975adbe581e1248f8b..efd761e5a249c33c335e60f7cabc8a96a45ee61f 100644
 --- a/net/minecraft/world/level/material/LavaFluid.java
 +++ b/net/minecraft/world/level/material/LavaFluid.java
 @@ -188,9 +188,22 @@ public abstract class LavaFluid extends FlowingFluid {
