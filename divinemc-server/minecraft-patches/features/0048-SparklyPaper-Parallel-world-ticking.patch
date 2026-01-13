@@ -262,7 +262,7 @@ index 1080c67b2f366c2ee81716aee90f1c89e4d1ca8f..8908ce962e2e1d6f1dd76deba9cdeca5
      }
      // CraftBukkit end
 diff --git a/net/minecraft/server/PlayerAdvancements.java b/net/minecraft/server/PlayerAdvancements.java
-index 6dddfdb97916165b717f68ae2afbb8d89b1283d6..daabbc5f4890c3683afb0531315e7466701a9111 100644
+index 23d79d02c0e814364c24fd5d8e61a6ecb8b210a2..01838bc18b53c74b5be54579cf4dc9abef4aacc6 100644
 --- a/net/minecraft/server/PlayerAdvancements.java
 +++ b/net/minecraft/server/PlayerAdvancements.java
 @@ -53,7 +53,7 @@ public class PlayerAdvancements {
@@ -274,7 +274,7 @@ index 6dddfdb97916165b717f68ae2afbb8d89b1283d6..daabbc5f4890c3683afb0531315e7466
      private final Set<AdvancementNode> rootsToUpdate = new HashSet<>();
      private ServerPlayer player;
      private @Nullable AdvancementHolder lastSelectedTab;
-@@ -265,6 +265,7 @@ public class PlayerAdvancements {
+@@ -270,6 +270,7 @@ public class PlayerAdvancements {
      }
  
      public void flushDirty(ServerPlayer player, boolean showAdvancements) {
@@ -282,7 +282,7 @@ index 6dddfdb97916165b717f68ae2afbb8d89b1283d6..daabbc5f4890c3683afb0531315e7466
          if (this.isFirstPacket || !this.rootsToUpdate.isEmpty() || !this.progressChanged.isEmpty()) {
              Map<Identifier, AdvancementProgress> map = new HashMap<>();
              Set<AdvancementHolder> set = new java.util.TreeSet<>(java.util.Comparator.comparing(adv -> adv.id().toString())); // Paper - Changed from HashSet to TreeSet ordered alphabetically.
-@@ -276,13 +277,23 @@ public class PlayerAdvancements {
+@@ -281,13 +282,23 @@ public class PlayerAdvancements {
  
              this.rootsToUpdate.clear();
  
@@ -1352,10 +1352,10 @@ index 77b3edefb46de0f17056eb30f7697b75145db74a..d9c9cad394b7210b3c6ac4022b9ac52f
          LevelChunkSection section = this.getSection(this.getSectionIndex(y));
          boolean hasOnlyAir = section.hasOnlyAir();
 diff --git a/net/minecraft/world/level/entity/EntityTickList.java b/net/minecraft/world/level/entity/EntityTickList.java
-index a8a5017de2ee0c00bed9b56f2f3c85d23e4056e9..2073ba07ad4f2cc4b1dd734e048a76cf3ea210d4 100644
+index a8a5017de2ee0c00bed9b56f2f3c85d23e4056e9..224de1710ea09050fc7df70c33a38d1d957e9ac1 100644
 --- a/net/minecraft/world/level/entity/EntityTickList.java
 +++ b/net/minecraft/world/level/entity/EntityTickList.java
-@@ -6,30 +6,73 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+@@ -6,21 +6,37 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
  import it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry;
  import java.util.function.Consumer;
  import net.minecraft.world.entity.Entity;
@@ -1385,46 +1385,15 @@ index a8a5017de2ee0c00bed9b56f2f3c85d23e4056e9..2073ba07ad4f2cc4b1dd734e048a76cf
      public void add(Entity entity) {
 +        if (org.bxteam.divinemc.config.DivineConfig.AsyncCategory.enableParallelWorldTicking) ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread(entity, "Asynchronous entity ticklist addition"); // DivineMC - Parallel world ticking
          this.ensureActiveIsNotIterated();
--        this.entities.add(entity); // Paper - rewrite chunk system
-+        // DivineMC start - Parallel world ticking
-+        if (org.bxteam.divinemc.config.DivineConfig.AsyncCategory.RCTorPWT) {
-+            synchronized (this.entities) {
-+                this.entities.add(entity);
-+            }
-+        } else {
-+            this.entities.add(entity); // Paper - rewrite chunk system
-+        }
-+        // DivineMC end - Parallel world ticking
+         this.entities.add(entity); // Paper - rewrite chunk system
      }
  
      public void remove(Entity entity) {
 +        if (org.bxteam.divinemc.config.DivineConfig.AsyncCategory.enableParallelWorldTicking) ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread(entity, "Asynchronous entity ticklist removal"); // DivineMC - Parallel world ticking
          this.ensureActiveIsNotIterated();
--        this.entities.remove(entity); // Paper - rewrite chunk system
-+        // DivineMC start - Parallel world ticking
-+        if (org.bxteam.divinemc.config.DivineConfig.AsyncCategory.RCTorPWT) {
-+            synchronized (this.entities) {
-+                if (this.entities.contains(entity)) {
-+                    this.entities.remove(entity);
-+                }
-+            }
-+        } else {
-+            this.entities.remove(entity); // Paper - rewrite chunk system
-+        }
-+        // DivineMC end - Parallel world ticking
+         this.entities.remove(entity); // Paper - rewrite chunk system
      }
- 
-     public boolean contains(Entity entity) {
--        return this.entities.contains(entity); // Paper - rewrite chunk system
-+        // DivineMC start - Parallel world ticking
-+        if (org.bxteam.divinemc.config.DivineConfig.AsyncCategory.RCTorPWT) {
-+            synchronized (this.entities) {
-+                return this.entities.contains(entity);
-+            }
-+        } else {
-+            return this.entities.contains(entity); // Paper - rewrite chunk system
-+        }
-+        // DivineMC end - Parallel world ticking
+@@ -30,6 +46,7 @@ public class EntityTickList {
      }
  
      public void forEach(Consumer<Entity> entity) {
