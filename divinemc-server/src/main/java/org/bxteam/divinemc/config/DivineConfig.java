@@ -564,6 +564,8 @@ public class DivineConfig {
         public static boolean fixMc2025 = false;
         public static boolean fixMc94054 = false;
         public static boolean fixMc183990 = false;
+        public static boolean fixMc118740 = false;
+        public static boolean fixMc28289 = false;
 
         public static void load() {
             gameplayFixes();
@@ -604,6 +606,12 @@ public class DivineConfig {
             fixMc183990 = getBoolean(ConfigCategory.FIXES.key("bug.fix-mc-183990"), fixMc183990,
                 "Fixes MC-183990: https://bugs.mojang.com/browse/MC-183990",
                 "AI of some mobs breaks when their target dies.");
+            fixMc118740 = getBoolean(ConfigCategory.FIXES.key("bug.fix-mc-118740"), fixMc118740,
+                "Fixes MC-118740: https://bugs.mojang.com/browse/MC-118740",
+                "Any right click resets attack cooldown.");
+            fixMc28289 = getBoolean(ConfigCategory.FIXES.key("bug.fix-mc-28289"), fixMc28289,
+                "Fixes MC-28289: https://bugs.mojang.com/browse/MC-28289",
+                "Switching items at the same time as attacking carries over the attributes and enchantments of the previously held item.");
         }
     }
 

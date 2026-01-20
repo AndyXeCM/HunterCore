@@ -6,7 +6,7 @@ Subject: [PATCH] Option to allow weird movement and disable teleporting
 
 
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 82931d8e250fdff02cfc5d8d347e32cf831b932c..db486ebd55bdc335961e63c17f144430ad492653 100644
+index ecd7da8689e396f0d2a5be2a5c93d6b4295e4834..1b32d49443200baabf49fe0b69cf35b79b9b0c39 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -628,7 +628,7 @@ public class ServerGamePacketListenerImpl
@@ -27,7 +27,7 @@ index 82931d8e250fdff02cfc5d8d347e32cf831b932c..db486ebd55bdc335961e63c17f144430
                      flag1 = true; // Paper - diff on change, this should be moved wrongly
                      LOGGER.warn("{} (vehicle of {}) moved wrongly! {}", rootVehicle.getPlainTextName(), this.player.getPlainTextName(), Math.sqrt(d7));
                  }
-@@ -1580,20 +1580,24 @@ public class ServerGamePacketListenerImpl
+@@ -1581,20 +1581,24 @@ public class ServerGamePacketListenerImpl
                                      if (this.shouldCheckPlayerMovement(isFallFlying)) {
                                          float f2 = isFallFlying ? 300.0F : 100.0F;
                                          if (d7 - d6 > Math.max(f2, Mth.square(org.spigotmc.SpigotConfig.movedTooQuicklyMultiplier * (float) i * speed))) {
@@ -63,7 +63,7 @@ index 82931d8e250fdff02cfc5d8d347e32cf831b932c..db486ebd55bdc335961e63c17f144430
                                          }
                                      }
                                  }
-@@ -1654,6 +1658,7 @@ public class ServerGamePacketListenerImpl
+@@ -1655,6 +1659,7 @@ public class ServerGamePacketListenerImpl
                                  d7 = d3 * d3 + d4 * d4 + d5 * d5;
                                  boolean movedWrongly = false; // Paper - Add fail move event; rename
                                  if (!this.player.isChangingDimension()
