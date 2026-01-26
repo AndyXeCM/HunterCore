@@ -7,9 +7,9 @@ import net.minecraft.world.entity.EntityType;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bxteam.divinemc.async.pathfinding.PathfindTaskRejectPolicy;
 import org.bxteam.divinemc.chunk.ChunkSystemAlgorithm;
 import org.bxteam.divinemc.config.annotations.Experimental;
-import org.bxteam.divinemc.async.pathfinding.PathfindTaskRejectPolicy;
 import org.bxteam.divinemc.region.EnumRegionFileExtension;
 import org.bxteam.divinemc.region.type.LinearRegionFile;
 import org.jetbrains.annotations.Nullable;
@@ -208,7 +208,7 @@ public class DivineConfig {
         public static int asyncPathfindingMaxThreads = 1;
         public static int asyncPathfindingKeepalive = 60;
         public static int asyncPathfindingQueueSize = 0;
-        public static PathfindTaskRejectPolicy asyncPathfindingRejectPolicy = PathfindTaskRejectPolicy.FLUSH_ALL;
+        public static PathfindTaskRejectPolicy asyncPathfindingRejectPolicy = PathfindTaskRejectPolicy.CALLER_RUNS;
 
         // Multithreaded tracker settings
         public static boolean multithreadedEnabled = true;
@@ -287,10 +287,18 @@ public class DivineConfig {
 
             if (asyncPathfindingQueueSize <= 0) asyncPathfindingQueueSize = asyncPathfindingMaxThreads * 256;
 
-            asyncPathfindingRejectPolicy = PathfindTaskRejectPolicy.fromString(getString(ConfigCategory.ASYNC.key("pathfinding.reject-policy"), maxThreads >= 12 && asyncPathfindingQueueSize < 512 ? PathfindTaskRejectPolicy.FLUSH_ALL.toString() : PathfindTaskRejectPolicy.CALLER_RUNS.toString(),
-                "The policy to use when the queue is full and a new task is submitted.",
-                "FLUSH_ALL: All pending tasks will be run on server thread.",
-                "CALLER_RUNS: Newly submitted task will be run on server thread."));
+            try {
+                asyncPathfindingRejectPolicy = PathfindTaskRejectPolicy.valueOf(getString(ConfigCategory.ASYNC.key("pathfinding.reject-policy"),
+                    maxThreads >= 12 && asyncPathfindingQueueSize < 512
+                        ? PathfindTaskRejectPolicy.FLUSH_ALL.toString()
+                        : PathfindTaskRejectPolicy.CALLER_RUNS.toString(),
+                    "The policy to use when the queue is full and a new task is submitted.",
+                    "FLUSH_ALL: All pending tasks will be run on server thread.",
+                    "CALLER_RUNS: Newly submitted task will be run on server thread."));
+            } catch (IllegalArgumentException ignore) {
+                LOGGER.warn("Invalid async pathfinding reject policy, using default CALLER_RUNS");
+                asyncPathfindingRejectPolicy = PathfindTaskRejectPolicy.CALLER_RUNS;
+            }
         }
 
         private static void multithreadedTracker() {
