@@ -3,6 +3,7 @@ From: dan28000 <pirkldan28@gmail.com>
 Date: Thu, 12 Jun 2025 10:08:25 +0200
 Subject: [PATCH] Configurable files locations and plugin loading
 
+Removed, was added to the Paper
 
 diff --git a/src/main/java/com/destroystokyo/paper/console/PaperConsole.java b/src/main/java/com/destroystokyo/paper/console/PaperConsole.java
 index 6567ff18cb1c21230565c2d92caf3a7f7f915c17..f5bc0eff886e9e3386467f40d4f329455d0b76e6 100644

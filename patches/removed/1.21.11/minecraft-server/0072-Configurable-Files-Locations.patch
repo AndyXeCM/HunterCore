@@ -3,6 +3,7 @@ From: dan28000 <84990628+dan28000@users.noreply.github.com>
 Date: Mon, 6 Oct 2025 14:17:59 +0200
 Subject: [PATCH] Configurable Files Locations
 
+Removed, was added to the Paper
 
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
 index e6e3491ec1aebf95d681fbd05e312cbcf968423e..9f75a353882426d78f031fe09dc0cf6f7bc60495 100644
