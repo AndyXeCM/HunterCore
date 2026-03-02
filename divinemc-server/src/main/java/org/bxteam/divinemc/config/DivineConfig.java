@@ -381,7 +381,7 @@ public class DivineConfig {
         public static int hopperThrottleSkipTicks = 0;
 
         // DAB settings
-        public static boolean dabEnabled = true;
+        public static boolean dabEnabled = false;
         public static int dabStartDistance = 12;
         public static int dabStartDistanceSquared;
         public static int dabMaximumActivationFrequency = 20;
