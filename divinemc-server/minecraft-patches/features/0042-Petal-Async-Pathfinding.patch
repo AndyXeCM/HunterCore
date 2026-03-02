@@ -11,10 +11,10 @@ Licensed under: GPL-3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
 Makes most pathfinding-related work happen asynchronously
 
 diff --git a/net/minecraft/world/entity/ai/behavior/AcquirePoi.java b/net/minecraft/world/entity/ai/behavior/AcquirePoi.java
-index 3e0fd09a0c0047cfe100e878186471090f8909a0..8ef45758a5eb950372cf9102632f3f6d24571677 100644
+index 3e0fd09a0c0047cfe100e878186471090f8909a0..bf07b10d9b8419f9bffc0f434936b6478da270b1 100644
 --- a/net/minecraft/world/entity/ai/behavior/AcquirePoi.java
 +++ b/net/minecraft/world/entity/ai/behavior/AcquirePoi.java
-@@ -93,21 +93,18 @@ public class AcquirePoi {
+@@ -93,21 +93,26 @@ public class AcquirePoi {
                                  }
                              }
                              // Paper end - optimise POI access
@@ -32,6 +32,14 @@ index 3e0fd09a0c0047cfe100e878186471090f8909a0..8ef45758a5eb950372cf9102632f3f6d
 +                                Path possiblePath = findPathToPois(mob, set);
 +
 +                                org.bxteam.divinemc.async.pathfinding.AsyncPath.applyAfterProcessing(possiblePath, path -> {
++                                    if (path == null || !path.canReach()) {
++                                        for (Pair<Holder<PoiType>, BlockPos> pair : set) {
++                                            AcquirePoi.JitteredLinearRetry retry = map.get(pair.getSecond().asLong());
++                                            if (retry != null) {
++                                                retry.markAttempt(time - 200L);
++                                            }
++                                        }
++                                    }
 +                                    processPath(acquirablePois, entityEventId, (Long2ObjectMap<JitteredLinearRetry>) map, memoryAccessor, level, mob, time, poiManager, set, path);
                                  });
                              } else {
@@ -39,13 +47,13 @@ index 3e0fd09a0c0047cfe100e878186471090f8909a0..8ef45758a5eb950372cf9102632f3f6d
 -                                    map.computeIfAbsent(pair.getSecond().asLong(), l -> new AcquirePoi.JitteredLinearRetry(level.random, time));
 -                                }
 +                                Path path = findPathToPois(mob, set);
-+                                    processPath(acquirablePois, entityEventId, (Long2ObjectMap<JitteredLinearRetry>) map, memoryAccessor, level, mob, time, poiManager, set, path);
++                                processPath(acquirablePois, entityEventId, (Long2ObjectMap<JitteredLinearRetry>) map, memoryAccessor, level, mob, time, poiManager, set, path);
                              }
 +                            // DivineMC end - Async Pathfinding
  
                              return true;
                          }
-@@ -119,6 +116,34 @@ public class AcquirePoi {
+@@ -119,6 +124,34 @@ public class AcquirePoi {
              : BehaviorBuilder.create(instance -> instance.group(instance.absent(existingAbsentMemory)).apply(instance, memoryAccessor -> oneShot));
      }
  
@@ -752,7 +760,7 @@ index f6a1781cb6365f078c1c36ad90fadc335571747f..126456d5ba4fd37349d46f5ea2932894
      }
  
 diff --git a/net/minecraft/world/level/pathfinder/PathFinder.java b/net/minecraft/world/level/pathfinder/PathFinder.java
-index 168b475b38b2872b27c1ab15f6846323ac16dd2c..582260770e4dd85513a7b4668b19c2729e13ae81 100644
+index 168b475b38b2872b27c1ab15f6846323ac16dd2c..839ac3e73fae1ac549199eb901b6815a0026bf7b 100644
 --- a/net/minecraft/world/level/pathfinder/PathFinder.java
 +++ b/net/minecraft/world/level/pathfinder/PathFinder.java
 @@ -19,6 +19,8 @@ import net.minecraft.world.entity.Mob;
@@ -837,7 +845,7 @@ index 168b475b38b2872b27c1ab15f6846323ac16dd2c..582260770e4dd85513a7b4668b19c272
 +        nodeEvaluator.done();
 +        org.bxteam.divinemc.async.pathfinding.NodeEvaluatorCache.returnNodeEvaluator(nodeEvaluator);
 +
-+        return new org.bxteam.divinemc.async.pathfinding.AsyncPath(Lists.newArrayList(), targets, () -> {
++        return new org.bxteam.divinemc.async.pathfinding.AsyncPath(this,Lists.newArrayList(), targets, finder -> {
 +            NodeEvaluator asyncEvaluator = generatorCapture.generate(
 +                org.bxteam.divinemc.async.pathfinding.NodeEvaluatorFeatures.unpack(nodeEvaluatorFeatures)
 +            );
@@ -858,7 +866,7 @@ index 168b475b38b2872b27c1ab15f6846323ac16dd2c..582260770e4dd85513a7b4668b19c272
 +                    ));
 +                }
 +
-+                return this.findPath(
++                return finder.findPath(
 +                    asyncEvaluator,
 +                    org.bxteam.divinemc.async.pathfinding.NodeEvaluatorCache.HEAP_LOCAL.get(),
 +                    org.bxteam.divinemc.async.pathfinding.NodeEvaluatorCache.NEIGHBORS_LOCAL.get(),

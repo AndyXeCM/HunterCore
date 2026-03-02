@@ -6,6 +6,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.level.pathfinder.PathFinder;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 @SuppressWarnings("NullableProblems")
 public final class AsyncPath extends Path {
@@ -33,34 +34,43 @@ public final class AsyncPath extends Path {
 
     private final ArrayList<Consumer<Path>> postProcessingCallbacks = new ArrayList<>(0);
     private final Set<BlockPos> targetPositions;
-    private @Nullable Supplier<Path> pathSupplier;
+    private @Nullable Function<PathFinder, Path> pathFunction;
+    private final PathFinder finder;
     private volatile @Nullable Path computedPath;
 
     private volatile BlockPos target;
     private volatile float distToTarget = 0;
     private volatile boolean canReach = true;
 
-    public AsyncPath(@NotNull List<Node> emptyNodeList,
+    public AsyncPath(@NotNull PathFinder finder,
+                     @NotNull List<Node> emptyNodeList,
                      @NotNull Set<BlockPos> targetPositions,
-                     @NotNull Supplier<Path> pathSupplier) {
+                     @NotNull Function<PathFinder, Path> pathFunction) {
         super(emptyNodeList, null, false);
 
+        this.finder = finder;
         this.nodes = emptyNodeList;
         this.targetPositions = targetPositions;
-        this.pathSupplier = pathSupplier;
+        this.pathFunction = pathFunction;
 
         queueProcessing();
     }
 
     private void queueProcessing() {
         if (EXECUTOR == null) {
-            this.computedPath = pathSupplier.get();
+            synchronized (finder) {
+                if (this.computedPath == null) {
+                    this.computedPath = Objects.requireNonNull(pathFunction).apply(finder);
+                }
+            }
             return;
         }
 
         CompletableFuture.runAsync(() -> {
-                if (this.computedPath == null) {
-                    this.computedPath = Objects.requireNonNull(pathSupplier).get();
+                synchronized (finder) {
+                    if (this.computedPath == null) {
+                        this.computedPath = Objects.requireNonNull(pathFunction).apply(finder);
+                    }
                 }
             }, EXECUTOR)
             .orTimeout(60L, TimeUnit.SECONDS)
@@ -80,7 +90,7 @@ public final class AsyncPath extends Path {
         this.distToTarget = completedPath.getDistToTarget();
         this.canReach = completedPath.canReach();
 
-        this.pathSupplier = null;
+        this.pathFunction = null;
 
         this.ready = true;
 
@@ -100,12 +110,16 @@ public final class AsyncPath extends Path {
             return;
         }
 
-        final Path computed = this.computedPath;
-        final Supplier<Path> task = this.pathSupplier;
+        Path computed = this.computedPath;
+        if (computed == null) {
+            synchronized (finder) {
+                if ((computed = this.computedPath) == null) {
+                    computed = (this.computedPath = Objects.requireNonNull(pathFunction).apply(finder));
+                }
+            }
+        }
 
-        final Path bestPath = computed != null ? computed : (this.computedPath = Objects.requireNonNull(task).get());
-
-        complete(bestPath);
+        complete(computed);
     }
 
     public boolean isProcessed() {
