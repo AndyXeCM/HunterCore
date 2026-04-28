@@ -5,7 +5,7 @@ Subject: [PATCH] Update Purpur rebrand settings
 
 
 diff --git a/src/main/java/org/purpurmc/purpur/PurpurConfig.java b/src/main/java/org/purpurmc/purpur/PurpurConfig.java
-index 31bf765d2dfa75d854f7f8e55bab7792ace843ab..e5244941506e99a8a2450e798483fed6fc328b85 100644
+index a337df7cdb4779fea9bbab039dcfab4aad6fa939..7b84a68cb7656b72eb23260679ecae16333b0a66 100644
 --- a/src/main/java/org/purpurmc/purpur/PurpurConfig.java
 +++ b/src/main/java/org/purpurmc/purpur/PurpurConfig.java
 @@ -230,10 +230,16 @@ public class PurpurConfig {
