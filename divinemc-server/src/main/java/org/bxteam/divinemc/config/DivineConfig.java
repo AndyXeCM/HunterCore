@@ -45,7 +45,7 @@ public class DivineConfig {
         Downloads: https://github.com/BX-Team/DivineMC/releases""";
 
     public static final Logger LOGGER = LogManager.getLogger(DivineConfig.class.getSimpleName());
-    public static final int CONFIG_VERSION = 7;
+    public static final int CONFIG_VERSION = 8;
 
     private static File configFile;
     public static final YamlFile config = new YamlFile();
@@ -359,7 +359,6 @@ public class DivineConfig {
         public static int maxViewDistance = 32;
         public static int playerNearChunkDetectionRange = 128;
         public static ChunkSystemAlgorithm chunkWorkerAlgorithm = ChunkSystemAlgorithm.MOONRISE;
-        public static boolean useEuclideanDistanceSquared = true;
         public static boolean endBiomeCacheEnabled = false;
         public static int endBiomeCacheCapacity = 1024;
         public static boolean smoothBedrockLayer = false;
@@ -433,8 +432,6 @@ public class DivineConfig {
                 " - MOONRISE: Paper's default algorithm. Conservative approach, uses fewer threads (CPU cores / 2).",
                 " - C2ME: More aggressive thread allocation than MOONRISE. Considers both CPU cores and available memory. May use more threads on high-end systems.",
                 " - C2ME_NEW: Modern C2ME algorithm. Balanced approach between MOONRISE and C2ME. Optimized for current hardware, slightly less aggressive than old C2ME."));
-            useEuclideanDistanceSquared = getBoolean(ConfigCategory.PERFORMANCE.key("chunks.use-euclidean-distance-squared"), useEuclideanDistanceSquared,
-                "If enabled, euclidean distance squared for chunk task ordering will be used.");
 
             endBiomeCacheEnabled = getBoolean(ConfigCategory.PERFORMANCE.key("chunks.end-biome-cache-enabled"), endBiomeCacheEnabled,
                 "Enables the end biome cache, which can accelerate The End worldgen.");
@@ -640,7 +637,6 @@ public class DivineConfig {
         public static boolean fluidAcceleration = true;
         public static boolean pickupAcceleration = true;
         public static boolean portalAcceleration = true;
-        public static boolean timeAcceleration = true;
         public static boolean randomTickSpeedAcceleration = true;
 
         // Sentry
@@ -688,7 +684,6 @@ public class DivineConfig {
             fluidAcceleration = getBoolean(ConfigCategory.MISC.key("lag-compensation.fluid-acceleration"), fluidAcceleration);
             pickupAcceleration = getBoolean(ConfigCategory.MISC.key("lag-compensation.pickup-acceleration"), pickupAcceleration);
             portalAcceleration = getBoolean(ConfigCategory.MISC.key("lag-compensation.portal-acceleration"), portalAcceleration);
-            timeAcceleration = getBoolean(ConfigCategory.MISC.key("lag-compensation.time-acceleration"), timeAcceleration);
             randomTickSpeedAcceleration = getBoolean(ConfigCategory.MISC.key("lag-compensation.random-tick-speed-acceleration"), randomTickSpeedAcceleration);
         }
 

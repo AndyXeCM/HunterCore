@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: NONPLAYT <76615486+NONPLAYT@users.noreply.github.com>
+Date: Tue, 14 Oct 2025 01:50:40 +0300
+Subject: [PATCH] Pufferfish: Better checking for useless move packets
+
+This patch is based on the following patch:
+"Better checking for useless move packets"
+By: Paul Sauve <paul@technove.co>
+As part of: Airplane (https://github.com/TECHNOVE/Airplane)
+Licensed under: GPL-3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+
+diff --git a/net/minecraft/server/level/ServerEntity.java b/net/minecraft/server/level/ServerEntity.java
+index 76dad2741f4da47ef870c5529b459b3986a4d261..6bcfafacbb69b693f8e4ee47fb15fec3afa3ebe0 100644
+--- a/net/minecraft/server/level/ServerEntity.java
++++ b/net/minecraft/server/level/ServerEntity.java
+@@ -181,18 +181,24 @@ public class ServerEntity {
+                     packet = ClientboundEntityPositionSyncPacket.of(this.entity);
+                     sentPosition = true;
+                     sentRotation = true;
+-                } else if ((!pos || !shouldSendRotation) && !(this.entity instanceof AbstractArrow)) {
+-                    if (pos) {
+-                        packet = new ClientboundMoveEntityPacket.Pos(this.entity.getId(), (short)xa, (short)ya, (short)za, this.entity.onGround());
+-                        sentPosition = true;
+-                    } else if (shouldSendRotation) {
+-                        packet = new ClientboundMoveEntityPacket.Rot(this.entity.getId(), yRotn, xRotn, this.entity.onGround());
+-                        sentRotation = true;
+-                    }
+                 } else {
+-                    packet = new ClientboundMoveEntityPacket.PosRot(this.entity.getId(), (short)xa, (short)ya, (short)za, yRotn, xRotn, this.entity.onGround());
+-                    sentPosition = true;
+-                    sentRotation = true;
++                    // DivineMC start - Pufferfish: Better checking for useless move packets
++                    if (pos || shouldSendRotation || this.entity instanceof AbstractArrow) {
++                        if ((!pos || !shouldSendRotation) && !(this.entity instanceof AbstractArrow)) {
++                            if (pos) {
++                                packet = new ClientboundMoveEntityPacket.Pos(this.entity.getId(), (short)xa, (short)ya, (short)za, this.entity.onGround());
++                                sentPosition = true;
++                            } else if (shouldSendRotation) {
++                                packet = new ClientboundMoveEntityPacket.Rot(this.entity.getId(), yRotn, xRotn, this.entity.onGround());
++                                sentRotation = true;
++                            }
++                        } else {
++                            packet = new ClientboundMoveEntityPacket.PosRot(this.entity.getId(), (short)xa, (short)ya, (short)za, yRotn, xRotn, this.entity.onGround());
++                            sentPosition = true;
++                            sentRotation = true;
++                        }
++                    }
++                    // DivineMC end - Pufferfish: Better checking for useless move packets
+                 }
+ 
+                 if (this.entity.needsSync || this.trackDelta || this.entity instanceof LivingEntity && ((LivingEntity)this.entity).isFallFlying()) {

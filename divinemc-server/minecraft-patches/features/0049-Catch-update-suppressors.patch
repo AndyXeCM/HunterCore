@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: NONPLAYT <76615486+NONPLAYT@users.noreply.github.com>
+Date: Sun, 23 Feb 2025 01:14:54 +0300
+Subject: [PATCH] Catch update suppressors
+
+
+diff --git a/net/minecraft/network/PacketProcessor.java b/net/minecraft/network/PacketProcessor.java
+index 197adf43de3618fbd4c72bb2a4736b1cd61fbee7..2b58aebbf8bdf80d41b157916488848f0d1dafd0 100644
+--- a/net/minecraft/network/PacketProcessor.java
++++ b/net/minecraft/network/PacketProcessor.java
+@@ -96,6 +96,10 @@ public class PacketProcessor implements AutoCloseable {
+             if (this.listener.shouldHandleMessage(this.packet)) {
+                 try {
+                     this.packet.handle(this.listener);
++                // DivineMC start - Catch update suppressors
++                } catch (org.bxteam.divinemc.util.exception.UpdateSuppressorException e) {
++                    LOGGER.info(e.getMessage());
++                // DivineMC end - Catch update suppressors
+                 } catch (Exception var3) {
+                     if (var3 instanceof ReportedException re && re.getCause() instanceof OutOfMemoryError) {
+                         throw PacketUtils.makeReportedException(var3, this.packet, this.listener);
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index b4ad63199b02f12cc66432c2249f85b90030cbbc..587688c285d5b67570ea95129b6555743d6e5cec 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -1862,6 +1862,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+             serverLevel.tickTimes10s.add(this.tickCount, tickDuration);
+             serverLevel.tickTimes60s.add(this.tickCount, tickDuration);
+             // DivineMC end - MSPT Tracking for each world
++        // DivineMC start - Catch update suppressors
++        } catch (org.bxteam.divinemc.util.exception.UpdateSuppressorException e) {
++            LOGGER.info(e.getMessage());
++        // DivineMC end - Catch update suppressors
+         } catch (Throwable levelTickingException) {
+             CrashReport crashReport = CrashReport.forThrowable(levelTickingException, "Exception ticking world");
+             serverLevel.fillReportDetails(crashReport);
+diff --git a/net/minecraft/world/level/block/ShulkerBoxBlock.java b/net/minecraft/world/level/block/ShulkerBoxBlock.java
+index e9052c18781115bb174f74b6f98449476d962f63..f1b709344151405df64c87880d78180810f4df95 100644
+--- a/net/minecraft/world/level/block/ShulkerBoxBlock.java
++++ b/net/minecraft/world/level/block/ShulkerBoxBlock.java
+@@ -181,7 +181,17 @@ public class ShulkerBoxBlock extends BaseEntityBlock {
+ 
+     @Override
+     protected int getAnalogOutputSignal(final BlockState state, final Level level, final BlockPos pos, final Direction direction) {
+-        return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
++        // DivineMC start - Catch update suppressors
++        try {
++            return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
++        } catch (ClassCastException ex) {
++            if (org.bxteam.divinemc.config.DivineConfig.FixesCategory.updateSuppressionCrashFix) {
++                throw new org.bxteam.divinemc.util.exception.UpdateSuppressorException(pos, this);
++            } else {
++                throw ex;
++            }
++        }
++        // DivineMC end - Catch update suppressors
+     }
+ 
+     public @Nullable DyeColor getColor() {
+diff --git a/net/minecraft/world/level/redstone/NeighborUpdater.java b/net/minecraft/world/level/redstone/NeighborUpdater.java
+index 353085151026b0d695be3c35d0638ecd39a962ce..e6a9f3b88aadbca04abbe0272b62880a87339308 100644
+--- a/net/minecraft/world/level/redstone/NeighborUpdater.java
++++ b/net/minecraft/world/level/redstone/NeighborUpdater.java
+@@ -84,9 +84,19 @@ public interface NeighborUpdater {
+             state.handleNeighborChanged(level, pos, changedBlock, orientation, movedByPiston);
+             // Spigot start
+         } catch (StackOverflowError ex) {
++            // DivineMC start - Catch update suppressors
++            if (org.bxteam.divinemc.config.DivineConfig.FixesCategory.updateSuppressionCrashFix) {
++                throw new org.bxteam.divinemc.util.exception.UpdateSuppressorException(pos, changedBlock);
++            }
++            // DivineMC end - Catch update suppressors
+             level.lastPhysicsProblem = pos.immutable();
+             // Spigot end
+         } catch (Throwable var9) {
++            // DivineMC start - Catch update suppressors
++            if (org.bxteam.divinemc.config.DivineConfig.FixesCategory.updateSuppressionCrashFix) {
++                throw new org.bxteam.divinemc.util.exception.UpdateSuppressorException(pos, changedBlock);
++            }
++            // DivineMC end - Catch update suppressors
+             CrashReport report = CrashReport.forThrowable(var9, "Exception while updating neighbours");
+             CrashReportCategory category = report.addCategory("Block being updated");
+             category.setDetail(

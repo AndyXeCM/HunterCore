@@ -4,7 +4,6 @@ import ca.spottedleaf.moonrise.common.list.IteratorSafeOrderedReferenceSet;
 import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
 import ca.spottedleaf.moonrise.common.util.TickThread;
 import com.mojang.datafixers.DataFixer;
-import com.mojang.logging.LogUtils;
 import io.papermc.paper.entity.activation.ActivationRange;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -34,12 +33,11 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
-import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
+import net.minecraft.world.level.storage.SavedDataStorage;
 import org.bxteam.divinemc.config.DivineConfig;
 import org.bxteam.divinemc.util.NamedAgnosticThreadFactory;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
 
 public final class RegionizedChunkTicking extends ServerChunkCache {
     public static final Executor REGION_EXECUTOR = Executors.newFixedThreadPool(DivineConfig.AsyncCategory.regionizedChunkTickingExecutorThreadCount,
@@ -52,16 +50,17 @@ public final class RegionizedChunkTicking extends ServerChunkCache {
         ServerLevel level,
         LevelStorageSource.LevelStorageAccess levelStorageAccess,
         DataFixer fixerUpper,
-        StructureTemplateManager structureManager,
-        Executor dispatcher,
+        StructureTemplateManager structureTemplateManager,
+        Executor executor,
         ChunkGenerator generator,
         int viewDistance,
         int simulationDistance,
         boolean sync,
         ChunkStatusUpdateListener chunkStatusListener,
-        Supplier<DimensionDataStorage> overworldDataStorage
+        Supplier<SavedDataStorage> overworldDataStorage,
+        final SavedDataStorage savedDataStorage
     ) {
-        super(level, levelStorageAccess, fixerUpper, structureManager, dispatcher, generator, viewDistance, simulationDistance, sync, chunkStatusListener, overworldDataStorage);
+        super(level, levelStorageAccess, fixerUpper, structureTemplateManager, executor, generator, viewDistance, simulationDistance, sync, chunkStatusListener, overworldDataStorage, savedDataStorage);
         this.avgTimeLogger = new AvgTimeLogger(level.serverLevelData.getLevelName());
     }
 
@@ -173,8 +172,8 @@ public final class RegionizedChunkTicking extends ServerChunkCache {
             playerTickDistances[i] = tickDist;
 
             boundaries[i] = new Rectangle(
-                pos.x - tickDist, pos.z - tickDist,
-                pos.x + tickDist, pos.z + tickDist
+                pos.x() - tickDist, pos.z() - tickDist,
+                pos.x() + tickDist, pos.z() + tickDist
             );
         }
 
@@ -219,7 +218,7 @@ public final class RegionizedChunkTicking extends ServerChunkCache {
 
                 for (int dx = -dist; dx <= dist; dx++) {
                     for (int dz = -dist; dz <= dist; dz++) {
-                        groupChunks.add(CoordinateUtils.getChunkKey(center.x + dx, center.z + dz));
+                        groupChunks.add(CoordinateUtils.getChunkKey(center.x() + dx, center.z() + dz));
                     }
                 }
             }
@@ -256,7 +255,7 @@ public final class RegionizedChunkTicking extends ServerChunkCache {
                     .parallel()
                     .filter(Objects::nonNull)
                     .forEach(entity -> {
-                        long chunkKey = entity.chunkPosition().longKey;
+                        long chunkKey = entity.chunkPosition().pack();
                         int regionIndex = chunkToRegion.get(chunkKey);
                         if (regionIndex != -1) {
                             RegionData targetRegion = regions.get(regionIndex);
