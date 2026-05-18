@@ -1,0 +1,50 @@
+--- a/net/minecraft/world/entity/Entity.java
++++ b/net/minecraft/world/entity/Entity.java
+@@ -390,6 +_,7 @@
+     public long activatedTick = Integer.MIN_VALUE;
+     public boolean isTemporarilyActive;
+     public long activatedImmunityTick = Integer.MIN_VALUE;
++    private boolean boundingBoxChanged = false; // DivineMC - VMP: skip entity move if movement is zero
+ 
+     public void inactiveTick() {
+     }
+@@ -1162,6 +_,7 @@
+     // Paper end - detailed watchdog information
+ 
+     public void move(final MoverType moverType, Vec3 delta) {
++        if (!this.boundingBoxChanged && delta.equals(Vec3.ZERO)) return; // DivineMC - VMP: skip entity move if movement is zero
+         final Vec3 originalMovement = delta; // Paper - Expose pre-collision velocity
+         // Paper start - detailed watchdog information
+         ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot move an entity off-main");
+@@ -2667,6 +_,7 @@
+             }
+ 
+             this.addAdditionalSaveData(output, includeAll); // CraftBukkit - pass on includeAll
++            if (org.bxteam.divinemc.config.DivineConfig.FixesCategory.fixMc2025) output.store("AABB", org.bxteam.divinemc.util.Codecs.AABB_CODEC, this.getBoundingBox()); // DivineMC - Fix MC-2025
+             if (this.isVehicle()) {
+                 ValueOutput.ValueOutputList passengersList = output.childrenList("Passengers");
+ 
+@@ -2777,6 +_,7 @@
+                 this.tags.clear();
+                 input.read("Tags", TAG_LIST_CODEC).ifPresent(this.tags::addAll);
+                 this.readAdditionalSaveData(input);
++                if (org.bxteam.divinemc.config.DivineConfig.FixesCategory.fixMc2025) input.read("AABB", org.bxteam.divinemc.util.Codecs.AABB_CODEC).ifPresent(this::setBoundingBox); // DivineMC - Fix MC-2025
+                 if (this.repositionEntityAfterLoad()) {
+                     this.reapplyPosition();
+                 }
+@@ -4298,6 +_,7 @@
+     }
+ 
+     public boolean canTeleport(final Level from, final Level to) {
++        if (!from.divineConfig.allowEntityPortalWithPassenger && (this.isPassenger() || this.isVehicle())) return false; // DivineMC - Allow entity teleport with passenger
+         if (!this.isAlive() || !this.valid) return false; // Paper - Fix item duplication and teleport issues
+         if (from.dimension() == Level.END && to.dimension() == Level.OVERWORLD) {
+             for (Entity passenger : this.getPassengers()) {
+@@ -4561,6 +_,7 @@
+     }
+ 
+     public final void setBoundingBox(final AABB bb) {
++        if (!this.bb.equals(bb)) this.boundingBoxChanged = true; // DivineMC - VMP: skip entity move if movement is zero
+         // CraftBukkit start - block invalid bounding boxes
+         double minX = bb.minX,
+                 minY = bb.minY,

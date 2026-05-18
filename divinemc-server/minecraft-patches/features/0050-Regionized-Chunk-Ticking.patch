@@ -21,7 +21,7 @@ index ed9f0c65b2823f05f5608f66187e4b885c16287b..f0f7cd236d62884cee188f8ded21d70a
              if (var2 instanceof ClosedChannelException) {
                  LOGGER.info("Connection closed during protocol change");
 diff --git a/net/minecraft/server/level/ChunkMap.java b/net/minecraft/server/level/ChunkMap.java
-index c65bba59f3fbf4e0cf06ef84a11d3a78b0365022..a9b251c9bd06a7b714e3b2cd664a8bb1e1feb329 100644
+index d6641018bac731dc4bd512d819020f02e02c0cd2..21547939d76df480d05ff501a66605a07b006865 100644
 --- a/net/minecraft/server/level/ChunkMap.java
 +++ b/net/minecraft/server/level/ChunkMap.java
 @@ -748,25 +748,28 @@ public class ChunkMap extends SimpleRegionStorage implements ChunkHolder.PlayerP
@@ -84,7 +84,7 @@ index c65bba59f3fbf4e0cf06ef84a11d3a78b0365022..a9b251c9bd06a7b714e3b2cd664a8bb1
          return false;
      }
 diff --git a/net/minecraft/server/level/ServerChunkCache.java b/net/minecraft/server/level/ServerChunkCache.java
-index 6b9ced21cf33cfcf435fee500d0927d68c8be89f..a43c1b709787f68d78eae7d6f7536bdb8b81ceb0 100644
+index c9ff57459142abdc45dd2948b075e198ee9044df..f5af5d2001f91d65096202eb0a06c9e527865ea2 100644
 --- a/net/minecraft/server/level/ServerChunkCache.java
 +++ b/net/minecraft/server/level/ServerChunkCache.java
 @@ -55,9 +55,9 @@ import org.jspecify.annotations.Nullable;
@@ -234,17 +234,7 @@ index 6b9ced21cf33cfcf435fee500d0927d68c8be89f..a43c1b709787f68d78eae7d6f7536bdb
          List<LevelChunk> spawningChunks = this.spawningChunks;
  
          try {
-@@ -638,7 +676,8 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
-             profiler.popPush("shuffleSpawningChunks");
-             // Paper start - chunk tick iteration optimisation
-             this.shuffleRandom.setSeed(this.level.getRandom().nextLong());
--            if (!this.level.paperConfig().entities.spawning.perPlayerMobSpawns) Util.shuffle(spawningChunks, this.level.getRandom()); // Paper - Optional per player mob spawns; do not need this when per-player is enabled
-+            if (!this.level.paperConfig().entities.spawning.perPlayerMobSpawns)
-+                Util.shuffle(spawningChunks, this.level.getRandom()); // Paper - Optional per player mob spawns; do not need this when per-player is enabled
-             // Paper end - chunk tick iteration optimisation
-             profiler.popPush("tickSpawningChunks");
- 
-@@ -648,16 +687,12 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
+@@ -650,16 +688,12 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
          } finally {
              spawningChunks.clear();
          }
@@ -265,7 +255,7 @@ index 6b9ced21cf33cfcf435fee500d0927d68c8be89f..a43c1b709787f68d78eae7d6f7536bdb
  
      private void tickSpawningChunk(
          final LevelChunk chunk, final long timeDiff, final List<MobCategory> spawningCategories, final NaturalSpawner.SpawnState spawnCookie
-@@ -886,7 +921,15 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
+@@ -888,7 +922,15 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
              if (serverChunkCache.runDistanceManagerUpdates()) {
                  return true;
              } else {
@@ -594,7 +584,7 @@ index e591ba2d21c3f8dcad10b12aad1613a30c3ce928..3a200b078179ed6f2bb63ba4587c7ef2
              try {
                  this.isUpdatingNavigations = true;
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index c5ce9ce1fecf1e6a62b9cd62dfc48544ba650e32..3c628cb7378802ffd858323e47e88dc25def8302 100644
+index 849a132610b2da96fa475cf624008e217967b472..c0d5e4f23bd6cbb95679e56fdb46d341d36f697a 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -458,6 +458,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -606,12 +596,12 @@ index c5ce9ce1fecf1e6a62b9cd62dfc48544ba650e32..3c628cb7378802ffd858323e47e88dc2
      // Paper start - rewrite chunk system
      private ca.spottedleaf.moonrise.patches.chunk_system.player.RegionizedPlayerChunkLoader.PlayerChunkLoaderData chunkLoader;
 diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
-index 0391203735171a4ae147e885b88faac827a6c086..d60d20900acbdb6a3d34851cf14f824eea876f7e 100644
+index d001f2680d6da37d7800f04ef47940fde667c156..549b76e6abf33c4f130b9b46be9eb6a34bf63dc1 100644
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
 @@ -120,7 +120,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
          .build();
-     public final List<TickingBlockEntity> blockEntityTickers = Lists.newArrayList();
+     public final org.bxteam.divinemc.util.BlockEntityTickersList blockEntityTickers = new org.bxteam.divinemc.util.BlockEntityTickersList(); // DivineMC - optimize block entity removals - Fix MC-117075
      protected final CollectingNeighborUpdater neighborUpdater;
 -    private final List<TickingBlockEntity> pendingBlockEntityTickers = Lists.newArrayList();
 +    private final List<TickingBlockEntity> pendingBlockEntityTickers = java.util.Collections.synchronizedList(Lists.newArrayList()); // DivineMC - Regionized Chunk Ticking

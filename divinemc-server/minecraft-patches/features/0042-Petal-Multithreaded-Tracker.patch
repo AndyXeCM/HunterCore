@@ -66,7 +66,7 @@ index 344260d191e4c80671062cd29ce0146a16ea7f1d..8d4264ab3e12aa898374f52811735676
          }
      }
 diff --git a/net/minecraft/server/level/ChunkMap.java b/net/minecraft/server/level/ChunkMap.java
-index 455e77bee02fb2d0907bf6f895fef99c186ac9bc..c65bba59f3fbf4e0cf06ef84a11d3a78b0365022 100644
+index 7dbb8e8947270c9c1a0a9c5a9a9893995e66c0d6..d6641018bac731dc4bd512d819020f02e02c0cd2 100644
 --- a/net/minecraft/server/level/ChunkMap.java
 +++ b/net/minecraft/server/level/ChunkMap.java
 @@ -252,9 +252,19 @@ public class ChunkMap extends SimpleRegionStorage implements ChunkHolder.PlayerP
@@ -399,7 +399,7 @@ index fcd5df18a628fbb4e5608378bd1f344455b4672b..76dad2741f4da47ef870c5529b459b39
      }
  
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index dab0b8e61e550d3a286d174ae30616e2ec4abd87..80cbbcf9f0a02e46cd97d841dbd66caaf28615a8 100644
+index 5c59b33b57ab2c82bc6cdf71792d23df34fa2f21..8f17c80fc5f95e5f647980444de8bde132cafa55 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -2681,7 +2681,6 @@ public class ServerLevel extends Level implements WorldGenLevel, ServerEntityGet
@@ -420,10 +420,10 @@ index dab0b8e61e550d3a286d174ae30616e2ec4abd87..80cbbcf9f0a02e46cd97d841dbd66caa
                          }
                      }
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 6a1bd6e335381dbf864ffa1cdd5709e5659a8841..3ea8cc8643401dee4e1d7fff2b0379f5ccc19220 100644
+index 4bffdb04fb9309bb901e4007aad5575ad6225cc2..cfea57ffa69c0174aa8cbe968542b3bb5d4e58d8 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -2008,7 +2008,6 @@ public class ServerGamePacketListenerImpl
+@@ -2011,7 +2011,6 @@ public class ServerGamePacketListenerImpl
      }
  
      public void internalTeleport(PositionMoveRotation destination, Set<Relative> relatives) {
@@ -432,10 +432,10 @@ index 6a1bd6e335381dbf864ffa1cdd5709e5659a8841..3ea8cc8643401dee4e1d7fff2b0379f5
          if (this.player.isRemoved()) {
              LOGGER.info("Attempt to teleport removed player {} restricted", this.player.getScoreboardName());
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index fdc047718f5d7e9850b6d48cf3c7d23cc0ea8ff4..91b4df9d9d89c1fa4dad37ae7f3f3d50de7b6202 100644
+index dfcd49b44820c2dafd8dd80d209b010401125f5a..a442afaf71e92dbff2acce33f2bac414ef48fda8 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -1373,13 +1373,13 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -1374,13 +1374,13 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
      }
  
      private void refreshDirtyAttributes() {
@@ -668,10 +668,10 @@ index e78ca5df8c341ca45795c240fa227728e37ab97c..03a025051b3c6ab6b0e9b3b44261a65e
  
      @Override
 diff --git a/net/minecraft/world/level/saveddata/maps/MapItemSavedData.java b/net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
-index 184dcadcd54ca0808f26d6ad002decb5d1bdabda..f58e62af626a7fa6700fca846226da1a2fc2a00a 100644
+index 95aa3747cb5feade85051e3db6d918fe8ad4fdbb..13233adb738043820d9c35d0181f1cebd9cd6e6a 100644
 --- a/net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
 +++ b/net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
-@@ -215,6 +215,7 @@ public class MapItemSavedData extends SavedData {
+@@ -216,6 +216,7 @@ public class MapItemSavedData extends SavedData {
  
          for (int i = 0; i < this.carriedBy.size(); i++) {
              MapItemSavedData.HoldingPlayer otherHoldingPlayer = this.carriedBy.get(i);

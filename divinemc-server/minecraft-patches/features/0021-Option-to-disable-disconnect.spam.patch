@@ -5,10 +5,10 @@ Subject: [PATCH] Option to disable disconnect.spam
 
 
 diff --git a/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 0069b240b1be6b80a979bfa9784fb4fd634e7440..74df20755af7f6db317f4906af8b71406ebc17de 100644
+index 9425af59ef66fef2a3d396732258d1324e0e7ae9..9755ea6b61aa01ed5f3f3dd2fe03852a72d09d1f 100644
 --- a/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -864,7 +864,7 @@ public class ServerGamePacketListenerImpl
+@@ -866,7 +866,7 @@ public class ServerGamePacketListenerImpl
      public void handleCustomCommandSuggestions(final ServerboundCommandSuggestionPacket packet) {
          // PacketUtils.ensureRunningOnSameThread(packet, this, this.player.level()); // Paper - AsyncTabCompleteEvent; run this async
          // CraftBukkit start
@@ -17,7 +17,7 @@ index 0069b240b1be6b80a979bfa9784fb4fd634e7440..74df20755af7f6db317f4906af8b7140
              this.disconnectAsync(Component.translatable("disconnect.spam"), org.bukkit.event.player.PlayerKickEvent.Cause.SPAM); // Paper - Kick event cause // Paper - add proper async disconnect
              return;
          }
-@@ -876,7 +876,7 @@ public class ServerGamePacketListenerImpl
+@@ -878,7 +878,7 @@ public class ServerGamePacketListenerImpl
          // Paper end - Don't suggest if tab-complete is disabled
          // Paper start
          final int index;
@@ -26,7 +26,7 @@ index 0069b240b1be6b80a979bfa9784fb4fd634e7440..74df20755af7f6db317f4906af8b7140
              this.disconnectAsync(Component.translatable("disconnect.spam"), org.bukkit.event.player.PlayerKickEvent.Cause.SPAM); // Paper - add proper async disconnect
              return;
          }
-@@ -936,6 +936,7 @@ public class ServerGamePacketListenerImpl
+@@ -938,6 +938,7 @@ public class ServerGamePacketListenerImpl
          ParseResults<CommandSourceStack> parse = this.server.getCommands().getDispatcher().parse(command, this.player.createCommandSourceStack());
          // Paper start - Handle non-recoverable exceptions
          if (!parse.getExceptions().isEmpty()
@@ -34,7 +34,7 @@ index 0069b240b1be6b80a979bfa9784fb4fd634e7440..74df20755af7f6db317f4906af8b7140
              && parse.getExceptions().values().stream().anyMatch(e -> e instanceof io.papermc.paper.brigadier.TagParseCommandSyntaxException)) {
              this.disconnect(Component.translatable("disconnect.spam"), org.bukkit.event.player.PlayerKickEvent.Cause.SPAM);
              return;
-@@ -2740,6 +2741,7 @@ public class ServerGamePacketListenerImpl
+@@ -2743,6 +2744,7 @@ public class ServerGamePacketListenerImpl
          // this.chatSpamThrottler.increment();
          if (!this.chatSpamThrottler.isIncrementAndUnderThreshold()
              // CraftBukkit end
@@ -42,7 +42,7 @@ index 0069b240b1be6b80a979bfa9784fb4fd634e7440..74df20755af7f6db317f4906af8b7140
              && !this.server.getPlayerList().isOp(this.player.nameAndId())
              && !this.server.isSingleplayerOwner(this.player.nameAndId())) {
              this.disconnectAsync(Component.translatable("disconnect.spam"), org.bukkit.event.player.PlayerKickEvent.Cause.SPAM); // Paper - kick event cause & add proper async disconnect
-@@ -3480,7 +3482,7 @@ public class ServerGamePacketListenerImpl
+@@ -3483,7 +3485,7 @@ public class ServerGamePacketListenerImpl
      public void handlePlaceRecipe(final ServerboundPlaceRecipePacket packet) {
          // Paper start - auto recipe limit
          if (!org.bukkit.Bukkit.isPrimaryThread()) {

@@ -1,0 +1,28 @@
+--- a/net/minecraft/stats/ServerStatsCounter.java
++++ b/net/minecraft/stats/ServerStatsCounter.java
+@@ -109,12 +_,6 @@
+         this.dirty.add(stat);
+     }
+ 
+-    private Set<Stat<?>> getDirty() {
+-        Set<Stat<?>> result = Sets.newHashSet(this.dirty);
+-        this.dirty.clear();
+-        return result;
+-    }
+-
+     public void parse(final DataFixer fixerUpper, final JsonElement element) {
+         Dynamic<JsonElement> data = new Dynamic<>(JsonOps.INSTANCE, element);
+         data = DataFixTypes.STATS.updateToCurrentVersion(fixerUpper, data, NbtUtils.getDataVersion(data, 1343));
+@@ -140,9 +_,11 @@
+     public void sendStats(final ServerPlayer player) {
+         Object2IntMap<Stat<?>> statsToSend = new Object2IntOpenHashMap<>();
+ 
+-        for (Stat<?> stat : this.getDirty()) {
++        for (Stat<?> stat : this.dirty) { // DivineMC - SparklyPaper: Skip dirty stats copy when requesting player stats
+             statsToSend.put(stat, this.getValue(stat));
+         }
++
++        this.dirty.clear(); // DivineMC - SparklyPaper: Clear dirty stats after copying
+ 
+         player.connection.send(new ClientboundAwardStatsPacket(statsToSend));
+     }

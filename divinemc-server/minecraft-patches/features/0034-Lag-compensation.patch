@@ -6,7 +6,7 @@ Subject: [PATCH] Lag compensation
 TODO: recheck GameRules
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 89b7b54bb99a67a5fccce80e23685107c1e51002..79d8b1544639023a8fc82fbc68d6fa5a87eedbbe 100644
+index ae2707f78a64418e7904dfe80cf671e9627e4498..ab4f83790360f984f566af1130239817f64fff6c 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -339,6 +339,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -17,7 +17,7 @@ index 89b7b54bb99a67a5fccce80e23685107c1e51002..79d8b1544639023a8fc82fbc68d6fa5a
      // Paper start - improve tick loop
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes1s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(1L));
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes5s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(5L));
-@@ -1686,6 +1687,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1694,6 +1695,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          }
  
          this.server.spark.tickStart(); // Paper - spark
@@ -26,7 +26,7 @@ index 89b7b54bb99a67a5fccce80e23685107c1e51002..79d8b1544639023a8fc82fbc68d6fa5a
          this.tickCount++;
          this.tickRateManager.tick();
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 09926cf5afb837689c9eef42a87989e3f17136ec..6a6bb7f0e145303bc95ff0687b5c800d20129aae 100644
+index 25d39f0edc5c0a6d3d9ed99b1dbe3013a077f804..3c0390c576f2f861978992809bdc7c29d01dc4e7 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -238,6 +238,7 @@ public class ServerLevel extends Level implements WorldGenLevel, ServerEntityGet
@@ -47,7 +47,7 @@ index 09926cf5afb837689c9eef42a87989e3f17136ec..6a6bb7f0e145303bc95ff0687b5c800d
          if (runs) {
              this.tickTime();
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index ac7aae1b23d6b36b10a309f4b1beda85568e8a6c..fdc047718f5d7e9850b6d48cf3c7d23cc0ea8ff4 100644
+index 63965c8edfd6cc331958addc308f338752ce5442..dfcd49b44820c2dafd8dd80d209b010401125f5a 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -524,6 +524,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -192,10 +192,10 @@ index 1003870bab970d708936181679cc41bb2d575186..2263649d7e4a2f46ddbbeadd63fd8f05
      }
  
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index a9811151bae5a3a138e8c1807e4e7482ff91b560..19267a69624e2f0104d2c4f4ee86e547fd11fab0 100644
+index 02cbbfe334d3f64f68d52d33b65ded8339f8d7a0..26ff9ac9745fbff731e5161bc83beb2f943cb0d0 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
-@@ -943,6 +943,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -950,6 +950,19 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
              this.ticker = ticker;
          }
  
@@ -215,7 +215,7 @@ index a9811151bae5a3a138e8c1807e4e7482ff91b560..19267a69624e2f0104d2c4f4ee86e547
          @Override
          public void tick() {
              if (!this.blockEntity.isRemoved() && this.blockEntity.hasLevel()) {
-@@ -953,7 +966,11 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -960,7 +973,11 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
                          profiler.push(this::getType);
                          BlockState blockState = LevelChunk.this.getBlockState(pos);
                          if (this.blockEntity.getType().isValid(blockState)) {

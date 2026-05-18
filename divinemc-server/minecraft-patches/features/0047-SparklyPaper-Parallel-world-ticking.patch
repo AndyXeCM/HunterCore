@@ -111,7 +111,7 @@ index 758524e017313f9ddc80dd06ab8ebc26f50bb2a0..d92651474c8639e0b24b9d07e14aaf09
                      List<org.bukkit.block.BlockState> states = new java.util.ArrayList<>(level.capturedBlockStates.values());
                      level.capturedBlockStates.clear();
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 1cd0fa6edb1dd78e1e3bec460d9fbae07740a438..913fd76861c1327c336d9fd30e03a78e646bcdd6 100644
+index 78fad45440e676e6c476083a77ac92b7443fe906..cb8068dff87f406d05548e9394857b6bf4d4c0df 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -341,6 +341,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -172,7 +172,7 @@ index 1cd0fa6edb1dd78e1e3bec460d9fbae07740a438..913fd76861c1327c336d9fd30e03a78e
      }
  
      @Override
-@@ -1836,6 +1849,18 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1844,6 +1857,18 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
      public final io.papermc.paper.threadedregions.EntityScheduler.EntitySchedulerTickList entitySchedulerTickList = new io.papermc.paper.threadedregions.EntityScheduler.EntitySchedulerTickList(); // Paper - optimise Folia entity scheduler
  
@@ -191,7 +191,7 @@ index 1cd0fa6edb1dd78e1e3bec460d9fbae07740a438..913fd76861c1327c336d9fd30e03a78e
      protected void tickChildren(final BooleanSupplier haveTime) {
          ProfilerFiller profiler = Profiler.get();
          this.getPlayerList().getPlayers().forEach(playerx -> playerx.connection.suspendFlushing());
-@@ -1886,27 +1911,44 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1894,27 +1919,44 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          this.updateEffectiveRespawnData();
  
          this.isIteratingOverLevels = true; // Paper - Throw exception on world create while being ticked
@@ -254,7 +254,7 @@ index 1cd0fa6edb1dd78e1e3bec460d9fbae07740a438..913fd76861c1327c336d9fd30e03a78e
          this.isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
  
          profiler.popPush("connection");
-@@ -1997,6 +2039,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -2005,6 +2047,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          Map<ResourceKey<Level>, ServerLevel> oldLevels = this.levels;
          Map<ResourceKey<Level>, ServerLevel> newLevels = Maps.newLinkedHashMap(oldLevels);
          newLevels.remove(level.dimension());
@@ -263,7 +263,7 @@ index 1cd0fa6edb1dd78e1e3bec460d9fbae07740a438..913fd76861c1327c336d9fd30e03a78e
      }
      // CraftBukkit end
 diff --git a/net/minecraft/server/PlayerAdvancements.java b/net/minecraft/server/PlayerAdvancements.java
-index 6ced43c403344e811058f84d0c29eed23e8ce391..7d846890b8cd6ba7a1ff9cafd956d3db050351e0 100644
+index 582282bbbb073b83dd6d3457be792381325d0469..dd77ba76086e5899cf7a7fb05799c9fd7ab66635 100644
 --- a/net/minecraft/server/PlayerAdvancements.java
 +++ b/net/minecraft/server/PlayerAdvancements.java
 @@ -53,7 +53,7 @@ public class PlayerAdvancements {
@@ -275,7 +275,7 @@ index 6ced43c403344e811058f84d0c29eed23e8ce391..7d846890b8cd6ba7a1ff9cafd956d3db
      private final Set<AdvancementNode> rootsToUpdate = new HashSet<>();
      private ServerPlayer player;
      private @Nullable AdvancementHolder lastSelectedTab;
-@@ -266,7 +266,12 @@ public class PlayerAdvancements {
+@@ -271,7 +271,12 @@ public class PlayerAdvancements {
          criterion.trigger().removePlayerListener(this, new CriterionTrigger.Listener<>(criterion.triggerInstance(), holder, key));
      }
  
@@ -288,7 +288,7 @@ index 6ced43c403344e811058f84d0c29eed23e8ce391..7d846890b8cd6ba7a1ff9cafd956d3db
          if (this.isFirstPacket || !this.rootsToUpdate.isEmpty() || !this.progressChanged.isEmpty()) {
              Map<Identifier, AdvancementProgress> progress = new HashMap<>();
              Set<AdvancementHolder> added = new java.util.TreeSet<>(java.util.Comparator.comparing(adv -> adv.id().toString())); // Paper - Changed from HashSet to TreeSet ordered alphabetically.
-@@ -278,6 +283,7 @@ public class PlayerAdvancements {
+@@ -283,6 +288,7 @@ public class PlayerAdvancements {
  
              this.rootsToUpdate.clear();
  
@@ -296,7 +296,7 @@ index 6ced43c403344e811058f84d0c29eed23e8ce391..7d846890b8cd6ba7a1ff9cafd956d3db
              for (AdvancementHolder holder : this.progressChanged) {
                  if (this.visible.contains(holder)) {
                      progress.put(holder.id(), this.progress.get(holder));
-@@ -287,6 +293,27 @@ public class PlayerAdvancements {
+@@ -292,6 +298,27 @@ public class PlayerAdvancements {
              this.progressChanged.clear();
              if (!progress.isEmpty() || !added.isEmpty() || !removed.isEmpty()) {
                  player.connection.send(new ClientboundUpdateAdvancementsPacket(this.isFirstPacket, added, removed, progress, showAdvancements));
@@ -325,12 +325,12 @@ index 6ced43c403344e811058f84d0c29eed23e8ce391..7d846890b8cd6ba7a1ff9cafd956d3db
          }
  
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 1b52ed3479b32b30fb1c99593efb83b6fa384d17..c418beb622e5754ba96eaa057496fc2615cb5fce 100644
+index 38b68ed6575ed7338a5c0173ce232e919835d2ba..fd44995de02626ae2209fcfdfa3e398e2724434d 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -318,6 +318,13 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
-         */// Purpur end - Purpur config files // Purpur end - Migrate Setting to reintroduce end void rings
-         com.destroystokyo.paper.VersionHistoryManager.INSTANCE.getClass(); // Paper - load version history now
+@@ -338,6 +338,13 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+         }
+         // DivineMC end - Pufferfish: SIMD Support
  
 +        // DivineMC start - Parallel world ticking
 +        if (org.bxteam.divinemc.config.DivineConfig.AsyncCategory.enableParallelWorldTicking) {
@@ -343,7 +343,7 @@ index 1b52ed3479b32b30fb1c99593efb83b6fa384d17..c418beb622e5754ba96eaa057496fc26
          LOGGER.info("Default game type: {}", properties.gameMode.get());
          // Paper start - Unix domain socket support
 diff --git a/net/minecraft/server/level/ServerChunkCache.java b/net/minecraft/server/level/ServerChunkCache.java
-index 2e87eb331d87be22982e1404729e9aac1af0d124..6b9ced21cf33cfcf435fee500d0927d68c8be89f 100644
+index 9d877ddbe82d959f98a052732bcfe4bac7f01029..c9ff57459142abdc45dd2948b075e198ee9044df 100644
 --- a/net/minecraft/server/level/ServerChunkCache.java
 +++ b/net/minecraft/server/level/ServerChunkCache.java
 @@ -179,8 +179,12 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
@@ -469,7 +469,7 @@ index 8f17c80fc5f95e5f647980444de8bde132cafa55..415b9e2016547e81ae82fcbe7d92e399
          // Paper start - extra debug info
          if (entity.valid) {
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index a41e8e61df1f3d7a861cd1b4060bc3ec424d45bd..c5ce9ce1fecf1e6a62b9cd62dfc48544ba650e32 100644
+index 116c7fe49da3c1eb6750a7e304356a7ff9cb09d1..849a132610b2da96fa475cf624008e217967b472 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -457,6 +457,7 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -522,7 +522,7 @@ index a41e8e61df1f3d7a861cd1b4060bc3ec424d45bd..c5ce9ce1fecf1e6a62b9cd62dfc48544
          // Paper end - Inventory close reason
          this.connection.send(new ClientboundContainerClosePacket(this.containerMenu.containerId));
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index d9ebb024c24bc1827036ce63172a8a938cd7858f..569d4a38797e3ec9b0f4332d530a2afff31f9fb3 100644
+index 1689ca02bcb6ab053d06d141a6797e1ea40d42eb..0b83585a2f2b134a941db3cf774638a302835331 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
 @@ -157,6 +157,7 @@ public abstract class PlayerList {
@@ -637,10 +637,10 @@ index 434f2870d64b1f5ba85338cbd9aff62feaea09f7..f58be696c5bdfbd0ddeb24c89e390402
              if (isLocatorBarEnabledFor(player)) {
                  if (!connection.isBroken()) {
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index b14800d40eedc5652daf185af6f1a33fe35dd067..06eb55f41eceeab8ed3943e0c63efe8733d6d4b6 100644
+index a65590babafb1fd822e314c96d4933571a8c7c7f..5a64bebee964de1734f02478b98fca380433c93a 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -3597,13 +3597,32 @@ public abstract class Entity
+@@ -3601,13 +3601,32 @@ public abstract class Entity
                      ProfilerFiller profiler = Profiler.get();
                      profiler.push("portal");
                      this.setPortalCooldown();
@@ -678,7 +678,7 @@ index b14800d40eedc5652daf185af6f1a33fe35dd067..06eb55f41eceeab8ed3943e0c63efe87
  
                      profiler.pop();
                  } else if (this.portalProcess.hasExpired()) {
-@@ -4178,6 +4197,7 @@ public abstract class Entity
+@@ -4182,6 +4201,7 @@ public abstract class Entity
      }
  
      private @Nullable Entity teleportCrossDimension(final ServerLevel oldLevel, final ServerLevel newLevel, final TeleportTransition transition) {
@@ -967,7 +967,7 @@ index 17b146b2f2feaba7a8e5455b1d21bc3f3e613a8f..dc72cf09b2c738ddaec1d3a41e4f714c
                  level.capturedBlockStates.clear();
                  org.bukkit.event.world.StructureGrowEvent structureEvent = null;
 diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
-index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac827a6c086 100644
+index 5626ccf659f7bab59f80402be2bdb00c99287aac..d001f2680d6da37d7800f04ef47940fde667c156 100644
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
 @@ -176,6 +176,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
@@ -994,8 +994,8 @@ index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac8
          // CraftBukkit start - tree generation
          if (this.captureTreeGeneration) {
              // Paper start - Protect Bedrock and End Portal/Frames from being destroyed
-@@ -1562,11 +1565,12 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
-                 toRemove.add(ticker); // Paper - Fix MC-117075 use removeAll
+@@ -1560,11 +1563,12 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+                 this.blockEntityTickers.markAsRemoved(this.tileTickPosition); // DivineMC - optimize block entity removals - Fix MC-117075
              } else if (tickBlockEntities && this.shouldTickBlocksAt(ticker.getPos())) {
                  ticker.tick();
 -                // Paper start - rewrite chunk system
@@ -1010,8 +1010,8 @@ index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac8
 +                // DivineMC end - Parallel world ticking
              }
          }
- 
-@@ -1585,7 +1589,11 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+         this.blockEntityTickers.removeMarkedEntries(); // DivineMC - optimize block entity removals - Fix MC-117075
+@@ -1584,7 +1588,11 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
              entity.discard(org.bukkit.event.entity.EntityRemoveEvent.Cause.DISCARD);
              // Paper end - Prevent block entity and entity crashes
          }
@@ -1024,7 +1024,7 @@ index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac8
      }
  
      // Paper start - Option to prevent armor stands from doing entity lookups
-@@ -1736,6 +1744,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+@@ -1735,6 +1743,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
  
      @Override
      public @Nullable BlockEntity getBlockEntity(final BlockPos pos) {
@@ -1032,7 +1032,7 @@ index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac8
          // Paper start - Perf: Optimize capturedTileEntities lookup
          net.minecraft.world.level.block.entity.BlockEntity blockEntity;
          if (!this.capturedTileEntities.isEmpty() && (blockEntity = this.capturedTileEntities.get(pos)) != null) {
-@@ -1752,6 +1761,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+@@ -1751,6 +1760,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
      }
  
      public void setBlockEntity(final BlockEntity blockEntity) {
@@ -1040,7 +1040,7 @@ index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac8
          BlockPos pos = blockEntity.getBlockPos();
          if (this.isInValidBounds(pos)) {
              // CraftBukkit start
-@@ -1824,6 +1834,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+@@ -1823,6 +1833,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
  
      @Override
      public List<Entity> getEntities(final @Nullable Entity except, final AABB bb, final Predicate<? super Entity> selector) {
@@ -1048,7 +1048,7 @@ index 76526d5128f1238e720099770f4b782f6f78f339..0391203735171a4ae147e885b88faac8
          Profiler.get().incrementCounter("getEntities");
          // Paper start - rewrite chunk system
          final List<Entity> ret = new java.util.ArrayList<>();
-@@ -2167,8 +2178,15 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+@@ -2166,8 +2177,15 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
      public abstract RecipeAccess recipeAccess();
  
      public BlockPos getBlockRandomPos(final int xo, final int yo, final int zo, final int yMask) {
@@ -1356,10 +1356,10 @@ index 4fbd75fcb86b5520ceee3218a53a661c9fc0ab44..3ff186dcc4effaa8b280d8e9129c9171
      // CraftBukkit end
  }
 diff --git a/net/minecraft/world/level/chunk/LevelChunk.java b/net/minecraft/world/level/chunk/LevelChunk.java
-index 19267a69624e2f0104d2c4f4ee86e547fd11fab0..ae302fb52effe914c73b19e768543e846edbc56a 100644
+index 26ff9ac9745fbff731e5161bc83beb2f943cb0d0..24a880c588c31d3f2e24e1fbf366789095e62fb8 100644
 --- a/net/minecraft/world/level/chunk/LevelChunk.java
 +++ b/net/minecraft/world/level/chunk/LevelChunk.java
-@@ -366,6 +366,7 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
+@@ -373,6 +373,7 @@ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spot
  
      @Override
      public @Nullable BlockState setBlockState(final BlockPos pos, final BlockState state, @Block.UpdateFlags final int flags) {

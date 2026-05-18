@@ -39,7 +39,7 @@ index 507e45c8b9064938a22716e18f6a76d591f76525..8fe7b484f26e5c0744f9a13d3064db0c
 +    // DivineMC end - Do not send spectator change packet
  }
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index b30020ab34e3950dae10ad2099d4fd94ec25d029..ca5d4faeebe1df0aca66c113bde852c5ef71bbc6 100644
+index a7751a2f709751e4e36caa160c39b1547a123984..d1bc66fd9129ffaf8b1b9e682062b12dbc6cfa38 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
 @@ -266,6 +266,7 @@ public abstract class PlayerList {
@@ -71,7 +71,7 @@ index b30020ab34e3950dae10ad2099d4fd94ec25d029..ca5d4faeebe1df0aca66c113bde852c5
          }
          // Paper end - Use single player info update packet on join
          player.sentListPacket = true;
-@@ -1349,4 +1353,69 @@ public abstract class PlayerList {
+@@ -1350,4 +1354,69 @@ public abstract class PlayerList {
      public boolean isAllowCommandsForAllPlayers() {
          return this.allowCommandsForAllPlayers;
      }

@@ -5,10 +5,10 @@ Subject: [PATCH] MSPT Tracking for each world
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 913fd76861c1327c336d9fd30e03a78e646bcdd6..b4ad63199b02f12cc66432c2249f85b90030cbbc 100644
+index cb8068dff87f406d05548e9394857b6bf4d4c0df..ce26c8cd35c39ccf66e1b4d6fded520fab745c03 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1852,7 +1852,16 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1860,7 +1860,16 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      // DivineMC start - Parallel world ticking
      private void tickLevel(ServerLevel serverLevel, BooleanSupplier haveTime) {
          try {

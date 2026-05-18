@@ -204,10 +204,10 @@ index a76e0acae9728e5f2a92ced6e58128b0ea6414f4..c9369e70665a2d6638a7b94e634c646f
          private static final String PREFIX = "data:image/png;base64,";
          public static final Codec<ServerStatus.Favicon> CODEC = Codec.STRING.comapFlatMap(string -> {
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index ce3bf0e4b0fc6bb9f7266f65dcf7a4bbaa894b4e..0aa157ca7659cf2895aa0c39bdeab4e6502e9d2d 100644
+index e5313e665a681c1ca56880793702a5f891633094..050339c229b4bf1dcb0f6357b9c8f5ee7eacf5f6 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -845,6 +845,7 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+@@ -869,6 +869,7 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
  
      @Override
      public boolean enforceSecureProfile() {
@@ -287,7 +287,7 @@ index 42071e248d9d5c5a53d0807f8aa9dbf23fec77c5..c83155a2c0bbb046614ec06794af43dc
          if (packet == null) {
              return;
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index 92114d22af152e90c45292050e8ccdc81fdf0810..d9ebb024c24bc1827036ce63172a8a938cd7858f 100644
+index c19d2e265aa8c6f36eca0eaca4e28d92308f9339..1689ca02bcb6ab053d06d141a6797e1ea40d42eb 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
 @@ -189,7 +189,7 @@ public abstract class PlayerList {
@@ -299,7 +299,7 @@ index 92114d22af152e90c45292050e8ccdc81fdf0810..d9ebb024c24bc1827036ce63172a8a93
              )
          );
          player.getBukkitEntity().sendSupportedChannels(); // CraftBukkit
-@@ -1203,6 +1203,7 @@ public abstract class PlayerList {
+@@ -1204,6 +1204,7 @@ public abstract class PlayerList {
      }
  
      public boolean verifyChatTrusted(final PlayerChatMessage message) {

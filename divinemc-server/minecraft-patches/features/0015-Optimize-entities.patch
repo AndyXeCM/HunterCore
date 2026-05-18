@@ -5,10 +5,10 @@ Subject: [PATCH] Optimize entities
 
 
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index b393a3e0b2aea39c392b8975404fd57f4151a3e9..c04a4a9f9e61d447a74dc60433e928e006cfb5b8 100644
+index 5946ed73f9a6511d91ac81c591d20bc44d6fc0cb..551dad79688456726edbfcb4caed2d1bfeeecbaa 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -1782,6 +1782,10 @@ public abstract class Entity
+@@ -1784,6 +1784,10 @@ public abstract class Entity
          final int maxMovementIterations
      ) {
          AABB deflatedBoundingBoxAtTarget = this.makeBoundingBox(to).deflate(1.0E-5F);
@@ -19,7 +19,7 @@ index b393a3e0b2aea39c392b8975404fd57f4151a3e9..c04a4a9f9e61d447a74dc60433e928e0
          boolean movedFar = from.distanceToSqr(to) > Mth.square(0.9999900000002526);
          boolean debugEntityBlockIntersections = this.level instanceof ServerLevel serverLevel
              && serverLevel.getServer().debugSubscribers().hasAnySubscriberFor(DebugSubscriptions.ENTITY_BLOCK_INTERSECTIONS);
-@@ -1797,7 +1801,21 @@ public abstract class Entity
+@@ -1799,7 +1803,21 @@ public abstract class Entity
                      return false;
                  } else {
                      iterations.set(iteration);

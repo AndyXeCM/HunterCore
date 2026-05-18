@@ -31,7 +31,7 @@ index a812a666326be8cf9cb7169f7b5701f36ffb70eb..1e8d19b85247fbfc770a72a1f24bc250
          }
      }
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index 7a4e74ddc8a9341bb3266a8a781e806b52d542d3..dab0b8e61e550d3a286d174ae30616e2ec4abd87 100644
+index 49d001385035c404126990081b262ed9bf217cc9..5c59b33b57ab2c82bc6cdf71792d23df34fa2f21 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -896,6 +896,7 @@ public class ServerLevel extends Level implements WorldGenLevel, ServerEntityGet
@@ -43,7 +43,7 @@ index 7a4e74ddc8a9341bb3266a8a781e806b52d542d3..dab0b8e61e550d3a286d174ae30616e2
                              if (!tickRateManager.isEntityFrozen(entity)) {
                                  profiler.push("checkDespawn");
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index c04a4a9f9e61d447a74dc60433e928e006cfb5b8..b14800d40eedc5652daf185af6f1a33fe35dd067 100644
+index 551dad79688456726edbfcb4caed2d1bfeeecbaa..a65590babafb1fd822e314c96d4933571a8c7c7f 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -383,6 +383,8 @@ public abstract class Entity
@@ -68,7 +68,7 @@ index 5361176ac288a6c269caf6bfa139c2b6117db62d..89ed7f58755616e08af206008ebacaea
      private @Nullable Component description;
      private final Optional<ResourceKey<LootTable>> lootTable;
 diff --git a/net/minecraft/world/entity/Mob.java b/net/minecraft/world/entity/Mob.java
-index 9444390caf0a5a39ffb3474bf248c3a87d02ce76..d62617b41e9ecd1069d70799aa332898e0283122 100644
+index 2a3a4169b24a4940fffb3dccbd8a6d8c90d1aed0..be4410eca220cb782243fea99889ce73b41bb424 100644
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
 @@ -217,10 +217,10 @@ public abstract class Mob extends LivingEntity implements Targeting, EquipmentUs
@@ -84,7 +84,7 @@ index 9444390caf0a5a39ffb3474bf248c3a87d02ce76..d62617b41e9ecd1069d70799aa332898
              this.targetSelector.tick();
          }
      }
-@@ -835,17 +835,17 @@ public abstract class Mob extends LivingEntity implements Targeting, EquipmentUs
+@@ -837,17 +837,17 @@ public abstract class Mob extends LivingEntity implements Targeting, EquipmentUs
          int idBasedTickCount = this.tickCount + this.getId();
          if (idBasedTickCount % 2 != 0 && this.tickCount > 1) {
              profiler.push("targetSelector");

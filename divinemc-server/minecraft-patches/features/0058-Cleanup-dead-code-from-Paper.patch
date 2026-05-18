@@ -99,10 +99,10 @@ index 3a200b078179ed6f2bb63ba4587c7ef283135d65..b7ba54068f8d9aa796c8f134113041ce
  
      private void tickPassenger(final Entity vehicle, final Entity entity, final boolean isActive) { // Paper - EAR 2
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 06eb55f41eceeab8ed3943e0c63efe8733d6d4b6..9a31d08a2b78b647226e9ac64ec42b78da197735 100644
+index 5a64bebee964de1734f02478b98fca380433c93a..058cacc34b804a90d62d49bf9229768632675cfb 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -1153,28 +1153,9 @@ public abstract class Entity
+@@ -1154,29 +1154,10 @@ public abstract class Entity
          return this.onGround;
      }
  
@@ -117,6 +117,7 @@ index 06eb55f41eceeab8ed3943e0c63efe8733d6d4b6..9a31d08a2b78b647226e9ac64ec42b78
 -    // Paper end - detailed watchdog information
 -
      public void move(final MoverType moverType, Vec3 delta) {
+         if (!this.boundingBoxChanged && delta.equals(Vec3.ZERO)) return; // DivineMC - VMP: skip entity move if movement is zero
          final Vec3 originalMovement = delta; // Paper - Expose pre-collision velocity
 -        // Paper start - detailed watchdog information
          ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot move an entity off-main");
@@ -131,7 +132,7 @@ index 06eb55f41eceeab8ed3943e0c63efe8733d6d4b6..9a31d08a2b78b647226e9ac64ec42b78
          if (this.noPhysics) {
              this.setPos(this.getX() + delta.x, this.getY() + delta.y, this.getZ() + delta.z);
              this.horizontalCollision = false;
-@@ -1302,13 +1283,6 @@ public abstract class Entity
+@@ -1304,13 +1285,6 @@ public abstract class Entity
                  profiler.pop();
              }
          }
@@ -145,7 +146,7 @@ index 06eb55f41eceeab8ed3943e0c63efe8733d6d4b6..9a31d08a2b78b647226e9ac64ec42b78
      }
  
      private void applyMovementEmissionAndPlaySound(
-@@ -4959,9 +4933,7 @@ public abstract class Entity
+@@ -4965,9 +4939,7 @@ public abstract class Entity
  
      public void setDeltaMovement(final Vec3 deltaMovement) {
          if (deltaMovement.isFinite()) {
@@ -155,7 +156,7 @@ index 06eb55f41eceeab8ed3943e0c63efe8733d6d4b6..9a31d08a2b78b647226e9ac64ec42b78
          }
      }
  
-@@ -5066,9 +5038,7 @@ public abstract class Entity
+@@ -5072,9 +5044,7 @@ public abstract class Entity
          }
          // Paper end - Block invalid positions and bounding box
          if (this.position.x != x || this.position.y != y || this.position.z != z) {
