@@ -354,6 +354,9 @@ public class DivineConfig {
 
     public static class PerformanceCategory {
         // Chunk settings
+        public static boolean nativeAccelerationEnabled = true;
+        public static boolean allowAVX512 = false;
+        public static int isaTargetLevelOverride = -1;
         public static long chunkDataCacheSoftLimit = 8192L;
         public static long chunkDataCacheLimit = 32678L;
         public static int maxViewDistance = 32;
@@ -414,6 +417,21 @@ public class DivineConfig {
         }
 
         private static void chunkSettings() {
+            nativeAccelerationEnabled = getBoolean(ConfigCategory.PERFORMANCE.key("chunks.native-acceleration.enabled"), nativeAccelerationEnabled);
+
+            allowAVX512 = getBoolean(ConfigCategory.PERFORMANCE.key("chunks.native-acceleration.allow-avx512"), allowAVX512,
+                "Enables AVX512 support for natives-math optimizations",
+                "",
+                "Read more about AVX512: https://en.wikipedia.org/wiki/AVX-512");
+            isaTargetLevelOverride = getInt(ConfigCategory.PERFORMANCE.key("chunks.native-acceleration.isa-target-level-override"), isaTargetLevelOverride,
+                "Overrides the ISA target located by the native loader, which allows forcing AVX512 (must be a value between 6-9 for AVX512 support).",
+                "Value must be between 1-9, and -1 to disable override");
+
+            if (isaTargetLevelOverride < -1 || isaTargetLevelOverride > 9) {
+                LOGGER.warn("Invalid ISA target level override: {}, resetting to -1", isaTargetLevelOverride);
+                isaTargetLevelOverride = -1;
+            }
+
             chunkDataCacheSoftLimit = getLong(ConfigCategory.PERFORMANCE.key("chunks.chunk-data-cache-soft-limit"), chunkDataCacheSoftLimit);
             chunkDataCacheLimit = getLong(ConfigCategory.PERFORMANCE.key("chunks.chunk-data-cache-limit"), chunkDataCacheLimit);
             maxViewDistance = getInt(ConfigCategory.PERFORMANCE.key("chunks.max-view-distance"), maxViewDistance,
