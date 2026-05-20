@@ -9,10 +9,10 @@ As part of: C2ME (https://github.com/RelativityMC/C2ME-fabric)
 Licensed under: MIT (https://opensource.org/licenses/MIT)
 
 diff --git a/net/minecraft/server/Main.java b/net/minecraft/server/Main.java
-index 3d5b7fd67d203b09cb68a14b062d24d11daab19f..27be72cc6d015d51aa588cf3b5e0e96dbf3cf674 100644
+index 3d5b7fd67d203b09cb68a14b062d24d11daab19f..2241072044b1e97b22a716b90c839b7c1b5824f7 100644
 --- a/net/minecraft/server/Main.java
 +++ b/net/minecraft/server/Main.java
-@@ -106,6 +106,18 @@ public class Main {
+@@ -106,6 +106,26 @@ public class Main {
              org.purpurmc.purpur.PurpurConfig.registerMinecraftDisabledCommands = purpurConfiguration.getBoolean("settings.register-minecraft-disabled-commands"); // Purpur - register disabled minecraft commands
              // Purpur end - Add toggle for enchant level clamping - load config files early
  
@@ -20,6 +20,14 @@ index 3d5b7fd67d203b09cb68a14b062d24d11daab19f..27be72cc6d015d51aa588cf3b5e0e96d
 +            org.bukkit.configuration.file.YamlConfiguration divinemcConfiguration = io.papermc.paper.configuration.PaperConfigurations.loadLegacyConfigFile((File) options.valueOf("divinemc-settings"));
 +            boolean divinemcNativeMathEnabled = divinemcConfiguration.getBoolean("performance.chunks.native-acceleration.enabled", true);
 +            if (divinemcNativeMathEnabled) {
++                org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.allowAVX512 =
++                    divinemcConfiguration.getBoolean("performance.chunks.native-acceleration.allow-avx512", false);
++                int divinemcIsaTargetLevelOverride =
++                    divinemcConfiguration.getInt("performance.chunks.native-acceleration.isa-target-level-override", -1);
++                if (divinemcIsaTargetLevelOverride < -1 || divinemcIsaTargetLevelOverride > 9) {
++                    divinemcIsaTargetLevelOverride = -1;
++                }
++                org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.isaTargetLevelOverride = divinemcIsaTargetLevelOverride;
 +                try {
 +                    Class.forName("org.bxteam.divinemc.math.NativeLoader").getField("lookup").get(null);
 +                } catch (Throwable e) {
