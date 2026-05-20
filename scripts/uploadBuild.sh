@@ -15,34 +15,29 @@ tagid="$mcversion-$BUILD_NUMBER-$commitid"
 jarName="divinemc-$mcversion-$BUILD_NUMBER.jar"
 divinemcid="DivineMC-$tagid"
 
-mv divinemc-server/build/libs/divinemc-paperclip-"$version"-mojmap.jar "$jarName"
+mv divinemc-server/build/libs/divinemc-paperclip-"$version".jar "$jarName"
 
 echo "📦 Collecting commits..."
-last_tag=$(git describe --tags --abbrev=0)
-number=$(git log --oneline "$last_tag"..HEAD | wc -l)
+last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+if [ -n "$last_tag" ]; then
+  number=$(git log --oneline "$last_tag"..HEAD | wc -l | tr -d ' ')
+else
+  number=10
+fi
 
-commits_json="["
-first=true
+commits_json="[]"
+if [ "$number" -gt 0 ]; then
+  while IFS= read -r line; do
+    commit_sha=$(echo "$line" | awk '{print $1}')
+    commit_message=$(echo "$line" | cut -d' ' -f2-)
+    commit_time=$(git show -s --format=%cI "$commit_sha")
+    commits_json=$(echo "$commits_json" | jq --arg sha "$commit_sha" --arg msg "$commit_message" --arg time "$commit_time" \
+      '. + [{"sha": $sha, "message": $msg, "time": $time}]')
+  done < <(git log --pretty='%h %s' "-$number")
+fi
 
-while IFS= read -r line; do
-  commit_sha=$(echo "$line" | awk '{print $1}')
-  commit_message=$(echo "$line" | cut -d' ' -f2-)
-  commit_time=$(git show -s --format=%cI "$commit_sha")
-
-  if [ "$first" = true ]; then
-    first=false
-  else
-    commits_json+=","
-  fi
-
-  escaped_message=$(echo "$commit_message" | sed 's/"/\\"/g')
-
-  commits_json+="{\"sha\":\"$commit_sha\",\"message\":\"$escaped_message\",\"time\":\"$commit_time\"}"
-done < <(git log --pretty='%h %s' "-$number")
-
-commits_json+="]"
-
-metadata_json="{\"buildNumber\":$BUILD_NUMBER,\"channel\":\"$api_channel\",\"commits\":$commits_json}"
+metadata_json=$(jq -n --argjson bn "$BUILD_NUMBER" --arg ch "$api_channel" --argjson commits "$commits_json" \
+  '{"buildNumber": $bn, "channel": $ch, "commits": $commits}')
 
 echo "$metadata_json" | jq . > metadata.json 2>/dev/null || echo "$metadata_json" > metadata.json
 

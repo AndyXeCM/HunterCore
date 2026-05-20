@@ -40,7 +40,6 @@ for (name in listOf("divinemc-api", "divinemc-server")) {
     findProject(":$projName")!!.projectDir = file(name)
 }
 
-
 gradle.lifecycle.beforeProject {
     val mcVersion = providers.gradleProperty("mcVersion").get().trim()
     val divinemcChannel = providers.gradleProperty("channel").get().trim()

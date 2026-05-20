@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout DivineMC repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: 'DivineMC'
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout Purpur repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: 'Purpur'
           repository: "PurpurMC/Purpur"
@@ -49,11 +49,11 @@ jobs:
           git config --global user.name "Github Action"
           chmod +x gradlew
 
-      - name: Setup JDK 21
+      - name: Setup JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
 
       - name: Running tests before push
         run: |
