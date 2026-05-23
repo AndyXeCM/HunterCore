@@ -5,7 +5,7 @@ Subject: [PATCH] Clump experience orbs
 
 
 diff --git a/net/minecraft/world/entity/ExperienceOrb.java b/net/minecraft/world/entity/ExperienceOrb.java
-index af01fa152d57a0e6034a4ca055802da281e715c8..5b9ef60ea9a9ee9fee03cce2e9c016d9ab1ee654 100644
+index af01fa152d57a0e6034a4ca055802da281e715c8..e3f24be4132577bcc949a6961fddd065d7ffecc7 100644
 --- a/net/minecraft/world/entity/ExperienceOrb.java
 +++ b/net/minecraft/world/entity/ExperienceOrb.java
 @@ -47,6 +47,10 @@ public class ExperienceOrb extends Entity {
@@ -184,10 +184,12 @@ index af01fa152d57a0e6034a4ca055802da281e715c8..5b9ef60ea9a9ee9fee03cce2e9c016d9
 +    // DivineMC end - Clump experience orbs
 +
      private int repairPlayerItems(final ServerPlayer player, final int amount) {
-         Optional<EnchantedItemInUse> selected = level().purpurConfig.useBetterMending ? EnchantmentHelper.getMostDamagedItemWith(EnchantmentEffectComponents.REPAIR_WITH_XP, player) :EnchantmentHelper.getRandomItemWith(// Purpur - Add option to mend the most damaged equipment first
-             EnchantmentEffectComponents.REPAIR_WITH_XP, player, ItemStack::isDamaged);
-+
+-        Optional<EnchantedItemInUse> selected = level().purpurConfig.useBetterMending ? EnchantmentHelper.getMostDamagedItemWith(EnchantmentEffectComponents.REPAIR_WITH_XP, player) :EnchantmentHelper.getRandomItemWith(// Purpur - Add option to mend the most damaged equipment first
+-            EnchantmentEffectComponents.REPAIR_WITH_XP, player, ItemStack::isDamaged);
 +        // DivineMC start - Clump experience orbs
++        Optional<EnchantedItemInUse> selected = clumps$captureCurrentEntry(level().purpurConfig.useBetterMending ? EnchantmentHelper.getMostDamagedItemWith(EnchantmentEffectComponents.REPAIR_WITH_XP, player) :EnchantmentHelper.getRandomItemWith(// Purpur - Add option to mend the most damaged equipment first
++            EnchantmentEffectComponents.REPAIR_WITH_XP, player, ItemStack::isDamaged));
++
 +        if (org.bxteam.divinemc.config.DivineConfig.PerformanceCategory.clumpOrbs) {
 +            return clumps$currentEntry
 +                .map(foundItem -> {

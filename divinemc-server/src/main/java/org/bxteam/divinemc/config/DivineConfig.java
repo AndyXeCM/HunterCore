@@ -372,7 +372,7 @@ public class DivineConfig {
         // General optimizations
         public static boolean disableMethodProfiler = true;
         public static boolean skipUselessSecondaryPoiSensor = true;
-        public static boolean clumpOrbs = true;
+        public static boolean clumpOrbs = false;
         public static boolean enableSuffocationOptimization = true;
         public static boolean useCompactBitStorage = false;
         public static boolean commandBlockParseResultsCaching = true;
