@@ -731,7 +731,7 @@ public class DivineConfig {
         public static boolean disableDisconnectSpam = false;
         public static boolean dontRespondPingBeforeStart = true;
         public static boolean sendSpectatorChangePacket = true;
-        public static boolean playerProfileResultCachingEnabled = true;
+        public static boolean playerProfileResultCachingEnabled = false;
         public static int playerProfileResultCachingTimeout = 1440;
 
         // No chat reports
@@ -771,7 +771,11 @@ public class DivineConfig {
                 "When disabled, tab list will not show that the player have entered the spectator mode. Otherwise, it will act as normal spectator change packet.");
 
             playerProfileResultCachingEnabled = getBoolean(ConfigCategory.NETWORK.key("player-profile-result-caching.enabled"), playerProfileResultCachingEnabled,
-                "Enables caching of player profile results on first join.");
+                "Enables caching of player profile results on first join.",
+                "WARNING: When enabled, a cached premium profile can allow an offline (cracked) player",
+                "to bypass online-mode authentication by joining with the same username after the",
+                "premium player has logged in. Disable this if you run an online-mode server without",
+                "a proxy or login plugin. Default: false is recommended for online-mode servers.");
             playerProfileResultCachingTimeout = getInt(ConfigCategory.NETWORK.key("player-profile-result-caching.timeout"), playerProfileResultCachingTimeout,
                 "The amount of time in minutes to cache player profile results.");
         }
