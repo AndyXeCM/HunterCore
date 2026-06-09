@@ -241,6 +241,20 @@ final class HunterWebPanelManager {
         numberField(json, "npcs", this.plugin.actorLiveCount("npcs"));
         json.append('}');
 
+        json.append(",\"optimization\":{");
+        numberField(json, "cpuThreads", Runtime.getRuntime().availableProcessors()).append(',');
+        field(json, "paperWorkers", System.getProperty("Paper.WorkerThreadCount", "auto")).append(',');
+        field(json, "divineWorkers", System.getProperty("DivineMC.WorkerThreadCount", "auto")).append(',');
+        field(json, "nettyIoThreads", System.getProperty("io.netty.eventLoopThreads", "auto")).append(',');
+        field(json, "forkJoinParallelism", System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "auto")).append(',');
+        numberField(json, "hunterToolsWorkers", this.preferences.intValue("optimizations.hunter-tools.render-workers", 4)).append(',');
+        booleanField(json, "asyncActorLoad", this.preferences.booleanValue("optimizations.hunter-tools.actor-async-load", true)).append(',');
+        booleanField(json, "actorBatchSave", this.preferences.booleanValue("optimizations.hunter-tools.actor-batch-save", true)).append(',');
+        numberField(json, "webPanelWorkers", this.preferences.intValue("optimizations.hunter-tools.web-panel-workers", 4)).append(',');
+        numberField(json, "guestStatusCacheMillis", this.preferences.intValue("modules.web-panel.status-cache-millis", 1000)).append(',');
+        numberField(json, "bundledPluginInstallWorkers", this.preferences.intValue("optimizations.bundled-plugin-parallel-install.max-workers", 4));
+        json.append('}');
+
         json.append(",\"worlds\":[");
         boolean first = true;
         for (final World world : Bukkit.getWorlds()) {
@@ -704,6 +718,10 @@ final class HunterWebPanelManager {
                 <div id="pluginList" class="list muted">Login to view plugin detail.</div>
               </article>
               <article>
+                <h2>Optimization</h2>
+                <div id="optimizationList" class="list"></div>
+              </article>
+              <article>
                 <h2>Command</h2>
                 <form id="commandForm" class="command">
                   <input id="commandInput" placeholder="list">
@@ -787,6 +805,16 @@ final class HunterWebPanelManager {
           $('players').textContent = `${data.server.online}/${data.server.maxPlayers}`;
           $('memory').textContent = data.server.memory;
           $('worlds').innerHTML = data.worlds.map(w => item(w.name, `${w.players} players · ${w.loadedChunks} chunks`)).join('');
+          $('optimizationList').innerHTML = [
+            item('CPU threads', data.optimization.cpuThreads),
+            item('Paper workers', data.optimization.paperWorkers),
+            item('DivineMC workers', data.optimization.divineWorkers),
+            item('Netty IO', data.optimization.nettyIoThreads),
+            item('ForkJoin', data.optimization.forkJoinParallelism),
+            item('HunterTools workers', data.optimization.hunterToolsWorkers),
+            item('Web workers', data.optimization.webPanelWorkers),
+            item('Guest cache', `${data.optimization.guestStatusCacheMillis}ms`)
+          ].join('');
           $('logoutButton').hidden = !state.session;
           $('loginForm').classList.toggle('isLoggedIn', !!state.session);
           if (data.players) $('playerList').innerHTML = data.players.map(p => item(p.name, `${p.world} · ${p.ping}ms`)).join('') || '<p class="muted">No players online.</p>';

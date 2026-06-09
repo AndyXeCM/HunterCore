@@ -283,6 +283,12 @@ download_github_release_asset \
   "a6b5ed97f43a5cf5bbaf00a7c8cd23c5afc9bd003f849875af8b36e6cf77d01d"
 manifest_entry "vault" "Vault" "1.7.3" "Vault-1.7.3.jar" "https://github.com/MilkBowl/Vault/releases/tag/1.7.3"
 
+download_file \
+  "https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar" \
+  "$PLUGINS_DIR/ProtocolLib-5.4.0.jar" \
+  "ee2e7ab9b5386f2d103081c4d108e61b1035df2ca692b53d6e2409fb1f5caccf"
+manifest_entry "protocollib" "ProtocolLib" "5.4.0" "ProtocolLib-5.4.0.jar" "https://github.com/dmulloy2/ProtocolLib/releases/tag/5.4.0"
+
 download_file_sha512 \
   "https://cdn.modrinth.com/data/1u6JkXh5/versions/yDUBafTJ/worldedit-bukkit-7.4.3.jar" \
   "$PLUGINS_DIR/worldedit-bukkit-7.4.3.jar" \

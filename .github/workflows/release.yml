@@ -88,6 +88,7 @@ jobs:
           - Chunky 1.5.3
           - PlaceholderAPI 2.12.2
           - Vault 1.7.3
+          - ProtocolLib 5.4.0
           - WorldEdit 7.4.3
           - WorldGuard 7.0.17
           - Multiverse-Core 5.7.0
@@ -104,7 +105,8 @@ jobs:
           - Built-in HunterCore web panel with guest map/status, player users, and admin command execution
           - Web panel CSRF protection plus per-user command execution and allowed-command overrides
           - BlueMap web map bundle; first use requires accepting BlueMap's resource download in plugins/BlueMap/core.conf
-          - Common server foundation plugins: PlaceholderAPI, Vault, WorldEdit, and WorldGuard
+          - Common server foundation plugins: PlaceholderAPI, Vault, ProtocolLib, WorldEdit, and WorldGuard
+          - Web panel optimization summary for CPU, worker, Netty, ForkJoin, and HunterTools web worker settings
           - Cached guest status responses for lower public web panel main-thread pressure
           - Configurable module and command toggles
           - Parallel bundled plugin install plus async HunterTools rendering/saving/actor loading/web serving

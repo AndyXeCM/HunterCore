@@ -32,6 +32,7 @@ BlueMap 5.20
 Chunky 1.5.3
 PlaceholderAPI 2.12.2
 Vault 1.7.3
+ProtocolLib 5.4.0
 WorldEdit 7.4.3
 WorldGuard 7.0.17
 Multiverse-Core 5.7.0
@@ -168,7 +169,7 @@ modules:
 
 BlueMap 5.20 会作为内置插件安装，默认网页地图端口由 BlueMap 自己管理，HunterCore 面板会用 `map-url` 嵌入或跳转到地图。BlueMap 首次运行需要你在 `plugins/BlueMap/core.conf` 里阅读并确认 `accept-download`，它会下载 Mojang 客户端资源用于地图渲染。Chunky 1.5.3 也被内置，适合预生成区块、降低真实开服时的探索卡顿。
 
-PlaceholderAPI、Vault、WorldEdit 和 WorldGuard 也会作为基础服主工具内置：PAPI 提供变量生态，Vault 提供经济/权限桥接，WorldEdit/WorldGuard 提供地图编辑和区域保护。它们都能通过 `bundled-plugins.plugins.<plugin-id>` 单独关闭。
+PlaceholderAPI、Vault、ProtocolLib、WorldEdit 和 WorldGuard 也会作为基础服主工具内置：PAPI 提供变量生态，Vault 提供经济/权限桥接，ProtocolLib 提供协议包扩展底座，WorldEdit/WorldGuard 提供地图编辑和区域保护。它们都能通过 `bundled-plugins.plugins.<plugin-id>` 单独关闭。
 
 ## 优化
 
@@ -193,7 +194,7 @@ optimizations.cpu.common-pool-parallelism
 
 内置插件安装阶段会并行校验/写入不同 jar。HunterTools 的 sidebar 文本渲染、假人/NPC 配置加载、网页面板请求处理、GC 请求和配置保存会移出主线程，最终 Bukkit 状态修改仍回到主线程执行，避免破坏 Bukkit/Paper 线程安全规则。网页面板的游客状态接口默认有 1 秒缓存，降低公开面板刷新对主线程的压力。
 
-HunterCore 还会在启动时按 CPU 核心数设置保守的多线程默认值，包括 Paper/DivineMC worker threads、Netty IO threads 和 ForkJoin common pool parallelism。你通过 JVM 参数显式设置过的值不会被覆盖。
+HunterCore 还会在启动时按 CPU 核心数设置保守的多线程默认值，包括 Paper/DivineMC worker threads、Netty IO threads 和 ForkJoin common pool parallelism。你通过 JVM 参数显式设置过的值不会被覆盖。网页面板也会显示 CPU、worker、Netty、ForkJoin 和 HunterTools web worker 设置，便于远程检查当前优化状态。
 
 ## 构建
 
