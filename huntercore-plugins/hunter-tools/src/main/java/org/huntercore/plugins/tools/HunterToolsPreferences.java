@@ -315,6 +315,7 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.web-panel.port", 8088);
         changed |= this.setDefault("modules.web-panel.public-map", true);
         changed |= this.setDefault("modules.web-panel.map-url", "http://%host%:8100/");
+        changed |= this.setDefault("modules.web-panel.status-cache-millis", 1000);
         changed |= this.setDefault("modules.web-panel.session-minutes", 360);
         changed |= this.setDefault("modules.web-panel.command-timeout-seconds", 10);
         changed |= this.setDefault("modules.web-panel.admin-command-execution", true);

@@ -25,6 +25,35 @@ sha512_file() {
   fi
 }
 
+curl_to_file() {
+  local url="$1"
+  local target="$2"
+  local attempts="${3:-6}"
+  local attempt status
+
+  for attempt in $(seq 1 "$attempts"); do
+    set +e
+    if [[ -s "$target" ]]; then
+      curl -fL --retry 3 --retry-delay 2 --connect-timeout 30 --speed-limit 1024 --speed-time 30 -C - -o "$target" "$url"
+    else
+      curl -fL --retry 3 --retry-delay 2 --connect-timeout 30 --speed-limit 1024 --speed-time 30 -o "$target" "$url"
+    fi
+    status="$?"
+    set -e
+
+    if [[ "$status" == "0" ]]; then
+      return 0
+    fi
+
+    if [[ "$status" == "33" ]]; then
+      rm -f "$target"
+    fi
+    sleep "$attempt"
+  done
+
+  return "$status"
+}
+
 download_file() {
   local url="$1"
   local target="$2"
@@ -35,7 +64,7 @@ download_file() {
   fi
 
   local tmp="$target.tmp"
-  curl -fL --retry 3 --retry-delay 2 -o "$tmp" "$url"
+  curl_to_file "$url" "$tmp"
   if [[ -n "$expected_sha" ]]; then
     local actual_sha
     actual_sha="$(sha256_file "$tmp")"
@@ -58,7 +87,7 @@ download_file_sha512() {
   fi
 
   local tmp="$target.tmp"
-  curl -fL --retry 3 --retry-delay 2 -o "$tmp" "$url"
+  curl_to_file "$url" "$tmp"
   local actual_sha
   actual_sha="$(sha512_file "$tmp")"
   if [[ "$actual_sha" != "$expected_sha" ]]; then
@@ -239,6 +268,32 @@ download_file_sha512 \
   "$PLUGINS_DIR/Chunky-Bukkit-1.5.3.jar" \
   "43ffecc6e6a734b752da41575bbb316526c124c3f878942437d5133c377bfbd9b78bda975520dc074d7158c15dade58a444ccd0fd8d8a25d165b6fc450140422"
 manifest_entry "chunky" "Chunky" "1.5.3" "Chunky-Bukkit-1.5.3.jar" "https://modrinth.com/plugin/chunky/version/1.5.3"
+
+download_file_sha512 \
+  "https://cdn.modrinth.com/data/lKEzGugV/versions/UmbIiI5H/PlaceholderAPI-2.12.2.jar" \
+  "$PLUGINS_DIR/PlaceholderAPI-2.12.2.jar" \
+  "94addf996ba45e16dbded3fcaf05e8b442212ce0d577f7edc42b743ad9532c1e24115263976126d36f27c0868ab1c03c40c2d13947985124b92dabca4527dddb"
+manifest_entry "placeholderapi" "PlaceholderAPI" "2.12.2" "PlaceholderAPI-2.12.2.jar" "https://modrinth.com/plugin/placeholderapi/version/2.12.2"
+
+download_github_release_asset \
+  "MilkBowl/Vault" \
+  "1.7.3" \
+  "Vault.jar" \
+  "$PLUGINS_DIR/Vault-1.7.3.jar" \
+  "a6b5ed97f43a5cf5bbaf00a7c8cd23c5afc9bd003f849875af8b36e6cf77d01d"
+manifest_entry "vault" "Vault" "1.7.3" "Vault-1.7.3.jar" "https://github.com/MilkBowl/Vault/releases/tag/1.7.3"
+
+download_file_sha512 \
+  "https://cdn.modrinth.com/data/1u6JkXh5/versions/yDUBafTJ/worldedit-bukkit-7.4.3.jar" \
+  "$PLUGINS_DIR/worldedit-bukkit-7.4.3.jar" \
+  "43d2f8865a06d63c71d2b8bc0ded66c2c7f5e413db1a64bc2f665db3bf25ec28ae40789884af4bdaf40740a6632196494d2897fa77675f0babfaf79f18400853"
+manifest_entry "worldedit" "WorldEdit" "7.4.3" "worldedit-bukkit-7.4.3.jar" "https://modrinth.com/plugin/worldedit/version/7.4.3"
+
+download_file_sha512 \
+  "https://cdn.modrinth.com/data/DKY9btbd/versions/pI4UHLJL/worldguard-bukkit-7.0.17.jar" \
+  "$PLUGINS_DIR/worldguard-bukkit-7.0.17.jar" \
+  "5da539cf8618079f9e7f5a0ab578c62d31ebd88e35b39ca047a2f9115e397e0d4dd781a94ca373e93333fce3371f7eaf503cd0b6abb6363085e3f4968ea51e4b"
+manifest_entry "worldguard" "WorldGuard" "7.0.17" "worldguard-bukkit-7.0.17.jar" "https://modrinth.com/plugin/worldguard/version/7.0.17"
 
 download_github_release_asset \
   "Multiverse/Multiverse-Core" \

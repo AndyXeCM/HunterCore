@@ -46,6 +46,7 @@ final class HunterWebPanelManager {
     private final Map<String, WebSession> sessions = new ConcurrentHashMap<>();
     private HttpServer server;
     private ExecutorService executor;
+    private volatile CachedResponse guestStatusCache;
 
     HunterWebPanelManager(final HunterToolsPlugin plugin, final HunterToolsPreferences preferences) {
         this.plugin = plugin;
@@ -87,6 +88,7 @@ final class HunterWebPanelManager {
             this.executor.shutdownNow();
             this.executor = null;
         }
+        this.guestStatusCache = null;
     }
 
     boolean running() {
@@ -201,8 +203,22 @@ final class HunterWebPanelManager {
     private String statusJson(final HttpExchange exchange) throws InterruptedException, ExecutionException, TimeoutException {
         final WebSession session = this.session(exchange);
         final boolean detailed = session != null;
+        if (!detailed) {
+            final CachedResponse cached = this.guestStatusCache;
+            if (cached != null && cached.expiresAtMillis() > System.currentTimeMillis()) {
+                return cached.body();
+            }
+        }
+
         final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
-        return Bukkit.getScheduler().callSyncMethod(this.plugin, () -> this.buildStatusJson(session, detailed)).get(timeout, TimeUnit.SECONDS);
+        final String json = Bukkit.getScheduler().callSyncMethod(this.plugin, () -> this.buildStatusJson(session, detailed)).get(timeout, TimeUnit.SECONDS);
+        if (!detailed) {
+            final int cacheMillis = Math.max(0, this.preferences.intValue("modules.web-panel.status-cache-millis", 1000));
+            if (cacheMillis > 0) {
+                this.guestStatusCache = new CachedResponse(json, System.currentTimeMillis() + cacheMillis);
+            }
+        }
+        return json;
     }
 
     private String buildStatusJson(final WebSession session, final boolean detailed) {
@@ -568,6 +584,9 @@ final class HunterWebPanelManager {
         boolean admin() {
             return this.role.equals("admin");
         }
+    }
+
+    private record CachedResponse(String body, long expiresAtMillis) {
     }
 
     private static final class MethodMismatchException extends RuntimeException {

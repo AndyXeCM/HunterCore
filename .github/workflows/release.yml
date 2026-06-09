@@ -86,6 +86,10 @@ jobs:
           - ViaRewind 4.1.1
           - BlueMap 5.20
           - Chunky 1.5.3
+          - PlaceholderAPI 2.12.2
+          - Vault 1.7.3
+          - WorldEdit 7.4.3
+          - WorldGuard 7.0.17
           - Multiverse-Core 5.7.0
           - LuckPerms 5.5.55
           - CoreProtect 23.2
@@ -99,6 +103,8 @@ jobs:
           - HunterTools fake players and NPCs with persistent preferences.yml definitions
           - Built-in HunterCore web panel with guest map/status, player users, and admin command execution
           - BlueMap web map bundle; first use requires accepting BlueMap's resource download in plugins/BlueMap/core.conf
+          - Common server foundation plugins: PlaceholderAPI, Vault, WorldEdit, and WorldGuard
+          - Cached guest status responses for lower public web panel main-thread pressure
           - Configurable module and command toggles
           - Parallel bundled plugin install plus async HunterTools rendering/saving/actor loading/web serving
           - CPU-aware Paper/DivineMC worker, Netty IO, and ForkJoin defaults

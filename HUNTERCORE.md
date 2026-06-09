@@ -39,6 +39,10 @@ ViaBackwards 5.9.1
 ViaRewind 4.1.1
 BlueMap 5.20
 Chunky 1.5.3
+PlaceholderAPI 2.12.2
+Vault 1.7.3
+WorldEdit 7.4.3
+WorldGuard 7.0.17
 Multiverse-Core 5.7.0
 LuckPerms 5.5.55
 CoreProtect 23.2
@@ -114,6 +118,8 @@ Create web users from console or an op account:
 
 BlueMap is bundled for the web map, and Chunky is bundled for chunk pre-generation/performance prep. BlueMap still requires the server owner to read and set `accept-download` in `plugins/BlueMap/core.conf` on first use because it downloads Mojang client resources for rendering.
 
+PlaceholderAPI, Vault, WorldEdit, and WorldGuard are bundled as a common server foundation for placeholders, economy/permission bridging, map editing, and region protection. Each one can still be disabled under `bundled-plugins.plugins.<plugin-id>`.
+
 ## Optimizations
 
 The first optimization batch is intentionally conservative:
@@ -135,7 +141,7 @@ optimizations.cpu.netty-io-threads
 optimizations.cpu.common-pool-parallelism
 ```
 
-Bundled plugin install work is parallelized across different jar files. HunterTools renders sidebar text, loads fake player/NPC definitions, serves the web panel, saves preferences, and requests GC off the main thread, then returns to the Bukkit main thread for player/server mutations.
+Bundled plugin install work is parallelized across different jar files. HunterTools renders sidebar text, loads fake player/NPC definitions, serves the web panel, saves preferences, and requests GC off the main thread, then returns to the Bukkit main thread for player/server mutations. Public guest status responses are cached for 1 second by default with `modules.web-panel.status-cache-millis`.
 
 HunterCore also applies CPU-aware startup defaults for Paper/DivineMC worker threads, Netty IO threads, and ForkJoin common pool parallelism. Existing JVM flags are preserved by default.
 
