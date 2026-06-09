@@ -57,7 +57,7 @@ download_github_release_asset() {
     mkdir -p "$tmp_dir"
     gh release download "$tag" --repo "$repo" --pattern "$pattern" --dir "$tmp_dir" --clobber
     local downloaded
-    downloaded="$(find "$tmp_dir" -maxdepth 1 -type f -name "$pattern" | head -n 1)"
+    downloaded="$(find "$tmp_dir" -maxdepth 1 -type f -name "$pattern" -print -quit)"
     if [[ -z "$downloaded" ]]; then
       echo "GitHub release asset $repo $tag $pattern was not downloaded." >&2
       exit 1
@@ -102,8 +102,7 @@ YAML
 prepare_luckperms() {
   local artifact_id zip_file extracted jar_path file_name version
   artifact_id="$(gh api 'repos/LuckPerms/LuckPerms/actions/artifacts?per_page=100' \
-    --jq '.artifacts[] | select(.name == "jars" and .expired == false and .workflow_run.head_branch == "master") | .id' \
-    | head -n 1)"
+    --jq '[.artifacts[] | select(.name == "jars" and .expired == false and .workflow_run.head_branch == "master") | .id][0] // ""')"
   if [[ -z "$artifact_id" ]]; then
     echo "Unable to find a non-expired LuckPerms jars artifact on GitHub Actions." >&2
     exit 1
@@ -117,7 +116,7 @@ prepare_luckperms() {
   rm -rf "$extracted"
   mkdir -p "$extracted"
   unzip -q "$zip_file" -d "$extracted"
-  jar_path="$(find "$extracted" -path '*/bukkit/loader/build/libs/LuckPerms-Bukkit-*.jar' -type f | head -n 1)"
+  jar_path="$(find "$extracted" -path '*/bukkit/loader/build/libs/LuckPerms-Bukkit-*.jar' -type f -print -quit)"
   if [[ -z "$jar_path" ]]; then
     echo "LuckPerms Bukkit jar was not found in artifact $artifact_id." >&2
     exit 1
@@ -160,7 +159,7 @@ prepare_coreprotect() {
 
   local jar_path="$source_dir/target/CoreProtect-$version.jar"
   if [[ ! -f "$jar_path" ]]; then
-    jar_path="$(find "$source_dir/target" -maxdepth 1 -type f -name 'CoreProtect-*.jar' ! -name '*sources*' ! -name 'original-*' | head -n 1)"
+    jar_path="$(find "$source_dir/target" -maxdepth 1 -type f -name 'CoreProtect-*.jar' ! -name '*sources*' ! -name 'original-*' -print -quit)"
   fi
   if [[ -z "$jar_path" || ! -f "$jar_path" ]]; then
     echo "CoreProtect jar was not produced by Maven." >&2
