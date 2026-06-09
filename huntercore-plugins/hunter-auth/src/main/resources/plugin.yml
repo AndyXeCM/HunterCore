@@ -1,0 +1,35 @@
+name: HunterAuth
+version: ${version}
+main: org.huntercore.plugins.auth.HunterAuthPlugin
+api-version: '1.21'
+author: HunterCore
+description: Built-in HunterCore offline-mode login plugin.
+commands:
+  register:
+    description: Register your HunterAuth password.
+    usage: /register <password> <password>
+    aliases: [reg]
+    permission: hunterauth.command.register
+  login:
+    description: Log in with your HunterAuth password.
+    usage: /login <password>
+    aliases: [l]
+    permission: hunterauth.command.login
+  logout:
+    description: Lock your session.
+    usage: /logout
+    permission: hunterauth.command.logout
+  changepassword:
+    description: Change your HunterAuth password.
+    usage: /changepassword <old> <new>
+    aliases: [changepw]
+    permission: hunterauth.command.changepassword
+permissions:
+  hunterauth.command.register:
+    default: true
+  hunterauth.command.login:
+    default: true
+  hunterauth.command.logout:
+    default: true
+  hunterauth.command.changepassword:
+    default: true

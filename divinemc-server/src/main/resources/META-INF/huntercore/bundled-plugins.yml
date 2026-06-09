@@ -1,0 +1,13 @@
+plugins:
+  - id: hunter-tpa
+    name: HunterTPA
+    version: builtin
+    file: HunterTPA.jar
+    source: "builtin:huntercore-plugins/hunter-tpa"
+    resource: META-INF/huntercore/bundled-plugins/HunterTPA.jar
+  - id: hunter-auth
+    name: HunterAuth
+    version: builtin
+    file: HunterAuth.jar
+    source: "builtin:huntercore-plugins/hunter-auth"
+    resource: META-INF/huntercore/bundled-plugins/HunterAuth.jar

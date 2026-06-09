@@ -1,0 +1,32 @@
+name: HunterTPA
+version: ${version}
+main: org.huntercore.plugins.tpa.HunterTpaPlugin
+api-version: '1.21'
+author: HunterCore
+description: Built-in HunterCore teleport request plugin.
+commands:
+  tpa:
+    description: Request to teleport to another player.
+    usage: /tpa <player>
+    permission: huntertpa.command.tpa
+  tpaccept:
+    description: Accept a teleport request.
+    usage: /tpaccept [player]
+    permission: huntertpa.command.tpaccept
+  tpdeny:
+    description: Deny a teleport request.
+    usage: /tpdeny [player]
+    permission: huntertpa.command.tpdeny
+  tpcancel:
+    description: Cancel your outgoing teleport request.
+    usage: /tpcancel
+    permission: huntertpa.command.tpcancel
+permissions:
+  huntertpa.command.tpa:
+    default: true
+  huntertpa.command.tpaccept:
+    default: true
+  huntertpa.command.tpdeny:
+    default: true
+  huntertpa.command.tpcancel:
+    default: true

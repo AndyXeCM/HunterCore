@@ -23,5 +23,6 @@ public final class DivineCommands {
         COMMANDS.forEach((s, command) -> {
             server.server.getCommandMap().register(s, "DivineMC", command);
         });
+        org.huntercore.command.HunterCommands.registerCommands(server); // HunterCore
     }
 }

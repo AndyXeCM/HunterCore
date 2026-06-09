@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: AndyXeCM <AndyXeCM@users.noreply.github.com>
+Date: Tue, 9 Jun 2026 13:55:00 +0800
+Subject: [PATCH] HunterCore bootstrap hooks
+
+
+diff --git a/src/main/java/io/papermc/paper/command/PaperCommands.java b/src/main/java/io/papermc/paper/command/PaperCommands.java
+index 6dfd0b1a8ee422526b4ce638ff97f27b685855378..85119fc6e06032dd87fcba5bb8330d6021e975d7 100644
+--- a/src/main/java/io/papermc/paper/command/PaperCommands.java
++++ b/src/main/java/io/papermc/paper/command/PaperCommands.java
+@@ -32,7 +32,8 @@ public final class PaperCommands {
+ 
+     public static void registerCommands() {
+         // Paper commands go here
+-        registerInternalCommand(PaperVersionCommand.create(), "bukkit", PaperVersionCommand.DESCRIPTION, List.of("ver", "about"), Set.of());
++        registerInternalCommand(PaperVersionCommand.create(), "bukkit", PaperVersionCommand.DESCRIPTION, List.of("ver"), Set.of());
++        registerInternalCommand(org.huntercore.command.HunterAboutInternalCommand.create(), "huntercore", org.huntercore.command.HunterAboutInternalCommand.DESCRIPTION, List.of(), Set.of()); // HunterCore
+         registerInternalCommand(PaperPluginsCommand.create(), "bukkit", PaperPluginsCommand.DESCRIPTION, List.of("pl"), Set.of());
+     }
+ 
+diff --git a/src/main/java/io/papermc/paper/plugin/PluginInitializerManager.java b/src/main/java/io/papermc/paper/plugin/PluginInitializerManager.java
+index d4dbd4eccb327708f82c8944bf092e0a7699bd7b..33a2fd2d173688ff65ab3aa53d1f05afb0732753 100644
+--- a/src/main/java/io/papermc/paper/plugin/PluginInitializerManager.java
++++ b/src/main/java/io/papermc/paper/plugin/PluginInitializerManager.java
+@@ -100,6 +100,8 @@ public class PluginInitializerManager {
+         // We have to load the bukkit configuration inorder to get the update folder location.
+         io.papermc.paper.plugin.PluginInitializerManager pluginSystem = io.papermc.paper.plugin.PluginInitializerManager.init(optionSet);
+ 
++        org.huntercore.plugin.HunterBundledPluginInstaller.install(pluginSystem.pluginDirectoryPath()); // HunterCore - bundled plugins
++
+         // Register the default plugin directory
+         io.papermc.paper.plugin.util.EntrypointUtil.registerProvidersFromSource(io.papermc.paper.plugin.provider.source.DirectoryProviderSource.INSTANCE, pluginSystem.pluginDirectoryPath());
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index ca85f1594d1415bcefc0d92bb38fb9a9d2fb6cfd..388e7d0791507ab887c8f69eef957a4d55107382 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -1043,6 +1043,7 @@ public final class CraftServer implements Server {
+         io.papermc.paper.command.PaperCommands.registerCommands(this.console); // Paper
+         this.spark.registerCommandBeforePlugins(this); // Paper - spark
+         org.purpurmc.purpur.PurpurConfig.registerCommands(); // Purpur - Purpur config files
++        org.bxteam.divinemc.command.DivineCommands.registerCommands(this.console); // HunterCore - keep DivineMC/HunterCore commands after reload
+         this.overrideAllCommandBlockCommands = this.commandsConfiguration.getStringList("command-block-overrides").contains("*");
+         this.ignoreVanillaPermissions = this.commandsConfiguration.getBoolean("ignore-vanilla-permissions");
+         org.leavesmc.leaves.protocol.core.LeavesProtocolManager.handleServerReload(); // DivineMC - Leaves Protocol Core

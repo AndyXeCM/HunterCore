@@ -32,12 +32,12 @@ if (!file(".git").exists()) {
     error(errorText)
 }
 
-rootProject.name = "DivineMC"
+rootProject.name = "HunterCore"
 
-for (name in listOf("divinemc-api", "divinemc-server")) {
+for (name in listOf("divinemc-api", "divinemc-server", "huntercore-plugins:hunter-tpa", "huntercore-plugins:hunter-auth")) {
     val projName = name.lowercase(Locale.ENGLISH)
     include(projName)
-    findProject(":$projName")!!.projectDir = file(name)
+    findProject(":$projName")!!.projectDir = file(name.replace(":", "/"))
 }
 
 gradle.lifecycle.beforeProject {

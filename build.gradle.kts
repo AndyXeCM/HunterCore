@@ -1,5 +1,6 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.gradle.jvm.tasks.Jar
 
 plugins {
     java
@@ -102,6 +103,39 @@ subprojects {
                 credentials.username = System.getenv("REPO_USERNAME")
                 credentials.password = System.getenv("REPO_PASSWORD")
             }
+        }
+    }
+}
+
+val bundledPluginOutput = layout.buildDirectory.dir("huntercore/bundled-plugins")
+val prepareExternalBundledPlugins by tasks.registering(Exec::class) {
+    group = "huntercore"
+    description = "Downloads and builds external HunterCore bundled plugin jars."
+    val outputDir = bundledPluginOutput.get().asFile
+    inputs.file(layout.projectDirectory.file("scripts/prepare-bundled-plugins.sh"))
+    outputs.dir(outputDir)
+    commandLine("bash", layout.projectDirectory.file("scripts/prepare-bundled-plugins.sh").asFile.absolutePath, outputDir.absolutePath)
+}
+
+gradle.projectsEvaluated {
+    val tpaJar = project(":huntercore-plugins:hunter-tpa").tasks.named<Jar>("jar")
+    val authJar = project(":huntercore-plugins:hunter-auth").tasks.named<Jar>("jar")
+
+    project(":divinemc-server").tasks.named<ProcessResources>("processResources") {
+        dependsOn(prepareExternalBundledPlugins, tpaJar, authJar)
+        from(bundledPluginOutput.map { it.dir("plugins") }) {
+            into("META-INF/huntercore/bundled-plugins")
+        }
+        from(bundledPluginOutput.map { it.file("bundled-plugins.external.yml") }) {
+            into("META-INF/huntercore")
+        }
+        from(tpaJar.flatMap { it.archiveFile }) {
+            into("META-INF/huntercore/bundled-plugins")
+            rename { "HunterTPA.jar" }
+        }
+        from(authJar.flatMap { it.archiveFile }) {
+            into("META-INF/huntercore/bundled-plugins")
+            rename { "HunterAuth.jar" }
         }
     }
 }
