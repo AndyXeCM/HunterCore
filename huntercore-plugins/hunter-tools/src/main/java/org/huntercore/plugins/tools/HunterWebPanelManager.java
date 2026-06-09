@@ -50,6 +50,13 @@ final class HunterWebPanelManager {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int HASH_ITERATIONS = 120_000;
     private static final int HASH_BITS = 256;
+    private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs", "web-panel");
+    private static final Map<String, List<String>> MODULE_COMMANDS = Map.of(
+        "essentials", HunterToolsPreferences.essentialsCommands(),
+        "management", HunterToolsPreferences.managementCommands(),
+        "fake-players", HunterToolsPreferences.actorCommands(),
+        "npcs", HunterToolsPreferences.actorCommands()
+    );
 
     private final HunterToolsPlugin plugin;
     private final HunterToolsPreferences preferences;
@@ -199,6 +206,16 @@ final class HunterWebPanelManager {
                 this.command(exchange);
                 return;
             }
+            if (path.equals("/api/admin/module")) {
+                this.requireMethod(exchange, "POST");
+                this.adminModule(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/command")) {
+                this.requireMethod(exchange, "POST");
+                this.adminCommand(exchange);
+                return;
+            }
             this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"not_found\"}");
         } catch (final MethodMismatchException ex) {
             this.send(exchange, 405, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"method_not_allowed\"}");
@@ -328,6 +345,9 @@ final class HunterWebPanelManager {
             }
             json.append(']');
         }
+        if (session != null && session.admin()) {
+            json.append(",\"modules\":").append(this.modulesJson());
+        }
         json.append('}');
         return json.toString();
     }
@@ -430,6 +450,37 @@ final class HunterWebPanelManager {
         return Math.min(100.0D, snapshot.usedMemory() * 100.0D / snapshot.maxMemory());
     }
 
+    private String modulesJson() {
+        final StringBuilder json = new StringBuilder(1024);
+        json.append('[');
+        boolean firstModule = true;
+        for (final String module : MODULES) {
+            if (!firstModule) {
+                json.append(',');
+            }
+            firstModule = false;
+            json.append('{');
+            field(json, "name", module).append(',');
+            booleanField(json, "enabled", this.preferences.moduleEnabled(module)).append(',');
+            booleanField(json, "toggleable", !module.equals("web-panel")).append(',');
+            json.append("\"commands\":[");
+            boolean firstCommand = true;
+            for (final String command : MODULE_COMMANDS.getOrDefault(module, List.of())) {
+                if (!firstCommand) {
+                    json.append(',');
+                }
+                firstCommand = false;
+                json.append('{');
+                field(json, "name", command).append(',');
+                booleanField(json, "enabled", this.preferences.commandEnabled(module, command));
+                json.append('}');
+            }
+            json.append("]}");
+        }
+        json.append(']');
+        return json.toString();
+    }
+
     private String mapJson(final HttpExchange exchange) {
         final boolean publicMap = this.preferences.booleanValue("modules.web-panel.public-map", true);
         if (!publicMap && this.session(exchange) == null) {
@@ -507,14 +558,94 @@ final class HunterWebPanelManager {
             return;
         }
 
+        this.sendCommandResult(exchange, 200, this.dispatchConfiguredCommand(command));
+    }
+
+    private void adminModule(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String module = HunterToolsPreferences.normalize(body.getOrDefault("module", ""));
+        final Boolean enabled = parseBoolean(body.get("enabled"));
+        if (!MODULES.contains(module)) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_module\"}");
+            return;
+        }
+        if (module.equals("web-panel")) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"self_protection\"}");
+            return;
+        }
+        if (enabled == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_enabled\"}");
+            return;
+        }
+        final CommandResult result = this.dispatchConfiguredCommand("hunteradmin module " + module + " " + onOff(enabled));
+        this.guestStatusCache = null;
+        this.sendCommandResult(exchange, 200, result);
+    }
+
+    private void adminCommand(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String module = HunterToolsPreferences.normalize(body.getOrDefault("module", ""));
+        final String command = HunterToolsPreferences.normalize(body.getOrDefault("command", ""));
+        final Boolean enabled = parseBoolean(body.get("enabled"));
+        final List<String> commands = MODULE_COMMANDS.get(module);
+        if (commands == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_command_module\"}");
+            return;
+        }
+        if (!commands.contains(command)) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_command\"}");
+            return;
+        }
+        if (enabled == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_enabled\"}");
+            return;
+        }
+        final CommandResult result = this.dispatchConfiguredCommand("hunteradmin command " + module + " " + command + " " + onOff(enabled));
+        this.guestStatusCache = null;
+        this.sendCommandResult(exchange, 200, result);
+    }
+
+    private CommandResult dispatchConfiguredCommand(final String command) throws InterruptedException, ExecutionException, TimeoutException {
         final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
         final int maxLines = Math.max(1, this.preferences.intValue("modules.web-panel.command-output-lines", 80));
         final int maxChars = Math.max(256, this.preferences.intValue("modules.web-panel.command-output-chars", 12_000));
-        final CommandResult result = Bukkit.getScheduler().callSyncMethod(this.plugin, () -> this.dispatchWebCommand(command, maxLines, maxChars)).get(timeout, TimeUnit.SECONDS);
-        this.send(exchange, 200, "application/json; charset=utf-8",
+        return Bukkit.getScheduler().callSyncMethod(this.plugin, () -> this.dispatchWebCommand(command, maxLines, maxChars)).get(timeout, TimeUnit.SECONDS);
+    }
+
+    private void sendCommandResult(final HttpExchange exchange, final int status, final CommandResult result) {
+        this.send(exchange, status, "application/json; charset=utf-8",
             "{\"ok\":true,\"dispatched\":" + result.dispatched()
                 + ",\"message\":\"" + escapeJson(result.message()) + '"'
                 + ",\"output\":\"" + escapeJson(result.output()) + "\"}");
+    }
+
+    private WebSession adminOperator(final HttpExchange exchange) {
+        final WebSession session = this.session(exchange);
+        if (session == null) {
+            this.send(exchange, 401, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"login_required\"}");
+            return null;
+        }
+        if (!this.csrfAllowed(exchange, session)) {
+            this.send(exchange, 403, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"csrf_required\"}");
+            return null;
+        }
+        if (!session.admin()) {
+            this.send(exchange, 403, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"admin_required\"}");
+            return null;
+        }
+        if (!this.commandAllowed(session, "hunteradmin")) {
+            this.send(exchange, 403, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"command_denied\"}");
+            return null;
+        }
+        return session;
     }
 
     private CommandResult dispatchWebCommand(final String command, final int maxLines, final int maxChars) {
@@ -734,6 +865,24 @@ final class HunterWebPanelManager {
 
     private static String commandRoot(final String command) {
         return command.replaceFirst("^/+", "").trim().split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
+    }
+
+    private static Boolean parseBoolean(final String value) {
+        if (value == null) {
+            return null;
+        }
+        final String normalized = value.toLowerCase(Locale.ROOT);
+        if (normalized.equals("true") || normalized.equals("on") || normalized.equals("yes") || normalized.equals("1")) {
+            return true;
+        }
+        if (normalized.equals("false") || normalized.equals("off") || normalized.equals("no") || normalized.equals("0")) {
+            return false;
+        }
+        return null;
+    }
+
+    private static String onOff(final boolean enabled) {
+        return enabled ? "on" : "off";
     }
 
     private static String stringArrayJson(final List<String> values) {
@@ -1095,6 +1244,16 @@ final class HunterWebPanelManager {
                 <h2>Optimization</h2>
                 <div id="optimizationList" class="list"></div>
               </article>
+              <article id="opsPanel" hidden>
+                <div class="sectionTitle">
+                  <h2>Operations</h2>
+                  <strong class="healthBadge">admin</strong>
+                </div>
+                <h3>Modules</h3>
+                <div id="moduleControls" class="list"></div>
+                <h3>Commands</h3>
+                <div id="commandControls" class="list"></div>
+              </article>
               <article>
                 <h2>Command</h2>
                 <form id="commandForm" class="command">
@@ -1123,9 +1282,10 @@ final class HunterWebPanelManager {
         body { margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
         .shell { width:min(1280px, calc(100% - 32px)); margin:0 auto; padding:24px 0 32px; }
         .topbar { display:flex; justify-content:space-between; gap:16px; align-items:center; padding-bottom:18px; border-bottom:1px solid var(--line); }
-        h1, h2, p { margin:0; }
+        h1, h2, h3, p { margin:0; }
         h1 { font-size:28px; }
         h2 { font-size:16px; margin-bottom:12px; }
+        h3 { color:var(--muted); font-size:12px; font-weight:700; margin:12px 0 4px; text-transform:uppercase; }
         p, .muted { color:var(--muted); }
         input, button { height:36px; border-radius:6px; border:1px solid var(--line); background:#0d1117; color:var(--text); padding:0 10px; }
         button { background:var(--accent); border-color:var(--accent); font-weight:650; cursor:pointer; }
@@ -1147,6 +1307,9 @@ final class HunterWebPanelManager {
         .healthBadge.disabled { color:var(--muted); }
         .alert.warning strong { color:var(--warn); }
         .alert.critical strong { color:var(--bad); }
+        .toggle input { width:18px; height:18px; padding:0; accent-color:var(--accent); }
+        .toggle input:disabled { opacity:.45; cursor:not-allowed; }
+        .commandGroup { display:grid; gap:6px; }
         pre { min-height:72px; white-space:pre-wrap; color:var(--muted); }
         .mapPanel { margin-top:12px; padding:0; overflow:hidden; }
         .mapHeader { display:flex; justify-content:space-between; align-items:center; padding:14px; border-bottom:1px solid var(--line); }
@@ -1169,6 +1332,8 @@ final class HunterWebPanelManager {
           "'": '&#39;'
         })[char]);
         const item = (left, right = '') => `<div class="item"><span>${esc(left)}</span><strong>${esc(right)}</strong></div>`;
+        const toggleItem = (left, checked, attrs = '', disabled = false) =>
+          `<label class="item toggle"><span>${esc(left)}</span><input type="checkbox" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} ${attrs}></label>`;
         const severityClass = (value) => ['ok', 'warning', 'critical', 'disabled'].includes(value) ? value : 'ok';
         const alertItem = (alert) => `<div class="item alert ${severityClass(alert.severity)}"><span>${esc(alert.label)}</span><strong>${esc(alert.detail)}</strong></div>`;
 
@@ -1210,6 +1375,22 @@ final class HunterWebPanelManager {
           $('loginForm').classList.toggle('isLoggedIn', !!state.session);
           if (data.players) $('playerList').innerHTML = data.players.map(p => item(p.name, `${p.world} · ${p.ping}ms`)).join('') || '<p class="muted">No players online.</p>';
           if (data.plugins) $('pluginList').innerHTML = data.plugins.map(p => item(p.name, p.enabled ? p.version : 'disabled')).join('');
+          renderOperations(data.modules || []);
+        }
+
+        function renderOperations(modules) {
+          const admin = Boolean(state.session?.admin && modules.length);
+          $('opsPanel').hidden = !admin;
+          if (!admin) return;
+          $('moduleControls').innerHTML = modules
+            .map(module => toggleItem(module.name, module.enabled, `data-module="${esc(module.name)}"`, !module.toggleable))
+            .join('');
+          $('commandControls').innerHTML = modules
+            .filter(module => module.commands?.length)
+            .map(module => `<div class="commandGroup"><h3>${esc(module.name)}</h3>${module.commands
+              .map(command => toggleItem(command.name, command.enabled, `data-command-module="${esc(module.name)}" data-command="${esc(command.name)}"`))
+              .join('')}</div>`)
+            .join('');
         }
 
         async function refreshMap() {
@@ -1246,6 +1427,19 @@ final class HunterWebPanelManager {
           const payload = JSON.stringify({ command: $('commandInput').value });
           const result = await json('/api/command', { method: 'POST', body: payload });
           $('commandResult').textContent = result.ok ? `${result.message}${result.output ? `\\n\\n${result.output}` : ''}` : `Error: ${result.error}`;
+          await refresh();
+        });
+
+        $('opsPanel').addEventListener('change', async (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLInputElement)) return;
+          const endpoint = target.dataset.module ? '/api/admin/module' : '/api/admin/command';
+          const payload = target.dataset.module
+            ? { module: target.dataset.module, enabled: String(target.checked) }
+            : { module: target.dataset.commandModule, command: target.dataset.command, enabled: String(target.checked) };
+          const result = await json(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+          $('commandResult').textContent = result.ok ? `${result.message}${result.output ? `\\n\\n${result.output}` : ''}` : `Error: ${result.error}`;
+          if (!result.ok) target.checked = !target.checked;
           await refresh();
         });
 
