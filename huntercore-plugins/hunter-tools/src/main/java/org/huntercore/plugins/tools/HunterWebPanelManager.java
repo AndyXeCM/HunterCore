@@ -226,6 +226,16 @@ final class HunterWebPanelManager {
                 this.adminActorRemove(exchange);
                 return;
             }
+            if (path.equals("/api/admin/web-user/save")) {
+                this.requireMethod(exchange, "POST");
+                this.adminWebUserSave(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/web-user/remove")) {
+                this.requireMethod(exchange, "POST");
+                this.adminWebUserRemove(exchange);
+                return;
+            }
             this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"not_found\"}");
         } catch (final MethodMismatchException ex) {
             this.send(exchange, 405, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"method_not_allowed\"}");
@@ -358,6 +368,7 @@ final class HunterWebPanelManager {
         if (session != null && session.admin()) {
             json.append(",\"modules\":").append(this.modulesJson());
             json.append(",\"actorDetails\":").append(this.actorDetailsJson());
+            json.append(",\"webUsers\":").append(this.webUsersJson());
         }
         json.append('}');
         return json.toString();
@@ -487,6 +498,34 @@ final class HunterWebPanelManager {
                 json.append('}');
             }
             json.append("]}");
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private String webUsersJson() {
+        final StringBuilder json = new StringBuilder(1024);
+        json.append('[');
+        boolean first = true;
+        for (final String id : this.preferences.webUserIds()) {
+            final HunterToolsPreferences.WebUser user = this.preferences.webUser(id);
+            if (user == null) {
+                continue;
+            }
+            if (!first) {
+                json.append(',');
+            }
+            first = false;
+            json.append('{');
+            field(json, "id", user.id()).append(',');
+            field(json, "displayName", user.displayName()).append(',');
+            field(json, "role", normalizeRole(user.role())).append(',');
+            booleanField(json, "admin", normalizeRole(user.role()).equals("admin")).append(',');
+            booleanField(json, "passwordConfigured", user.passwordConfigured()).append(',');
+            booleanField(json, "commandExecution", user.commandExecution()).append(',');
+            booleanField(json, "allowedCommandsConfigured", user.allowedCommandsConfigured()).append(',');
+            json.append("\"allowedCommands\":").append(stringArrayJson(user.allowedCommands()));
+            json.append('}');
         }
         json.append(']');
         return json.toString();
@@ -716,6 +755,106 @@ final class HunterWebPanelManager {
         final CommandResult result = this.dispatchConfiguredCommand(label + " remove " + id);
         this.guestStatusCache = null;
         this.sendCommandResult(exchange, 200, result);
+    }
+
+    private void adminWebUserSave(final HttpExchange exchange) throws IOException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String username = commandToken(body.getOrDefault("username", ""), 32);
+        if (username.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_web_user\"}");
+            return;
+        }
+        final String role = body.getOrDefault("role", "player").toLowerCase(Locale.ROOT);
+        if (!role.equals("admin") && !role.equals("player")) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_role\"}");
+            return;
+        }
+        final HunterToolsPreferences.WebUser existing = this.preferences.webUser(username);
+        if (existing != null && existing.role().equals("admin") && role.equals("player") && this.lastAdmin(existing.id())) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"last_admin\"}");
+            return;
+        }
+        final String password = body.getOrDefault("password", "").trim();
+        if (existing == null && password.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"password_required\"}");
+            return;
+        }
+        final String passwordHash = password.isBlank() ? existing.passwordHash() : hashPassword(password);
+        final Boolean commandExecution = parseBoolean(body.getOrDefault("commandExecution", "true"));
+        if (commandExecution == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_command_execution\"}");
+            return;
+        }
+        final ParsedAllowedCommands allowedCommands = parseAllowedCommands(
+            body.getOrDefault("allowedCommandsMode", "inherit"),
+            body.getOrDefault("allowedCommands", "")
+        );
+        if (!allowedCommands.valid()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_allowed_commands\"}");
+            return;
+        }
+
+        this.preferences.setWebUser(username, role, passwordHash);
+        this.preferences.setWebUserCommandExecution(username, commandExecution);
+        this.preferences.setWebUserAllowedCommands(username, allowedCommands.commands());
+        this.savePreferences();
+        this.expireWebUserSessions(username);
+        this.guestStatusCache = null;
+        this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true}");
+    }
+
+    private void adminWebUserRemove(final HttpExchange exchange) throws IOException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String username = commandToken(body.getOrDefault("username", ""), 32);
+        if (username.isBlank() || this.preferences.webUser(username) == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_web_user\"}");
+            return;
+        }
+        if (this.lastAdmin(HunterToolsPreferences.webUserId(username))) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"last_admin\"}");
+            return;
+        }
+        this.preferences.removeWebUser(username);
+        this.savePreferences();
+        this.expireWebUserSessions(username);
+        this.guestStatusCache = null;
+        this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true}");
+    }
+
+    private void savePreferences() {
+        if (this.executor == null) {
+            this.preferences.saveNow();
+        } else {
+            this.preferences.save(this.executor);
+        }
+    }
+
+    private void expireWebUserSessions(final String username) {
+        final String id = HunterToolsPreferences.webUserId(username);
+        this.sessions.values().removeIf(session -> session.username().equals(id));
+    }
+
+    private boolean lastAdmin(final String id) {
+        int admins = 0;
+        boolean targetAdmin = false;
+        for (final String userId : this.preferences.webUserIds()) {
+            final HunterToolsPreferences.WebUser user = this.preferences.webUser(userId);
+            if (user != null && user.passwordConfigured() && normalizeRole(user.role()).equals("admin")) {
+                admins++;
+                if (user.id().equals(id)) {
+                    targetAdmin = true;
+                }
+            }
+        }
+        return targetAdmin && admins <= 1;
     }
 
     private CommandResult dispatchConfiguredCommand(final String command) throws InterruptedException, ExecutionException, TimeoutException {
@@ -1040,6 +1179,27 @@ final class HunterWebPanelManager {
         return null;
     }
 
+    private static ParsedAllowedCommands parseAllowedCommands(final String mode, final String rawCommands) {
+        final String normalizedMode = mode == null ? "inherit" : mode.trim().toLowerCase(Locale.ROOT);
+        if (normalizedMode.equals("inherit")) {
+            return new ParsedAllowedCommands(true, null);
+        }
+        if (normalizedMode.equals("none")) {
+            return new ParsedAllowedCommands(true, List.of());
+        }
+        if (!normalizedMode.equals("custom")) {
+            return new ParsedAllowedCommands(false, List.of());
+        }
+        final List<String> commands = new ArrayList<>();
+        for (final String raw : rawCommands.split("[,\\s]+")) {
+            final String command = commandRoot(raw);
+            if (!command.isBlank() && !commands.contains(command)) {
+                commands.add(command);
+            }
+        }
+        return new ParsedAllowedCommands(true, commands);
+    }
+
     private static String onOff(final boolean enabled) {
         return enabled ? "on" : "off";
     }
@@ -1124,6 +1284,9 @@ final class HunterWebPanelManager {
     }
 
     private record CommandResult(boolean dispatched, String message, String output) {
+    }
+
+    private record ParsedAllowedCommands(boolean valid, List<String> commands) {
     }
 
     private record WorldPanelStats(String name, int players, int loadedChunks, int entities, long time) {
@@ -1438,6 +1601,29 @@ final class HunterWebPanelManager {
                 <h3>Commands</h3>
                 <div id="commandControls" class="list"></div>
               </article>
+              <article id="usersPanel" hidden>
+                <div class="sectionTitle">
+                  <h2>Web Users</h2>
+                  <strong class="healthBadge">admin</strong>
+                </div>
+                <form id="webUserForm" class="command userForm">
+                  <input id="webUserName" placeholder="username">
+                  <select id="webUserRole">
+                    <option value="player">player</option>
+                    <option value="admin">admin</option>
+                  </select>
+                  <input id="webUserPassword" type="password" autocomplete="new-password" placeholder="new password">
+                  <label class="inlineToggle"><input id="webUserCommandExecution" type="checkbox" checked> commands</label>
+                  <select id="webUserAllowedMode">
+                    <option value="inherit">inherit</option>
+                    <option value="custom">custom</option>
+                    <option value="none">none</option>
+                  </select>
+                  <input id="webUserAllowedCommands" placeholder="list spawn or *">
+                  <button type="submit">Save</button>
+                </form>
+                <div id="webUserList" class="list muted">Login as admin to manage web users.</div>
+              </article>
               <article>
                 <h2>Command</h2>
                 <form id="commandForm" class="command">
@@ -1493,8 +1679,12 @@ final class HunterWebPanelManager {
         .alert.critical strong { color:var(--bad); }
         .toggle input { width:18px; height:18px; padding:0; accent-color:var(--accent); }
         .toggle input:disabled { opacity:.45; cursor:not-allowed; }
+        .inlineToggle { height:36px; display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
+        .inlineToggle input { width:18px; height:18px; accent-color:var(--accent); }
         .commandGroup { display:grid; gap:6px; }
         .actorForm .coord { width:74px; }
+        .userForm input[type="password"] { min-width:150px; }
+        .userActions { display:flex; gap:6px; align-items:center; }
         small { display:block; color:var(--muted); margin-top:2px; }
         .item button { height:30px; padding:0 8px; }
         pre { min-height:72px; white-space:pre-wrap; color:var(--muted); }
@@ -1509,7 +1699,7 @@ final class HunterWebPanelManager {
         """;
 
     private static final String APP_JS = """
-        const state = { session: null, csrf: '' };
+        const state = { session: null, csrf: '', webUsers: [] };
         const $ = (id) => document.getElementById(id);
         const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
           '&': '&amp;',
@@ -1527,6 +1717,12 @@ final class HunterWebPanelManager {
           const location = actor.world ? `${actor.world} ${Number(actor.x).toFixed(1)} ${Number(actor.y).toFixed(1)} ${Number(actor.z).toFixed(1)}` : 'not configured';
           return `<div class="item"><span>${esc(actor.displayName)} <small>${actor.live ? 'live' : 'configured'} · ${esc(actor.module)} · ${esc(actor.kind)} · ${esc(location)}</small></span><button type="button" data-actor-remove="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">Remove</button></div>`;
         };
+        const allowedLine = (user) => {
+          if (!user.allowedCommandsConfigured) return 'inherit';
+          return user.allowedCommands?.length ? user.allowedCommands.join(', ') : 'none';
+        };
+        const webUserLine = (user) =>
+          `<div class="item"><span>${esc(user.displayName)} <small>${esc(user.role)} · ${user.passwordConfigured ? 'password set' : 'no password'} · commands ${user.commandExecution ? 'on' : 'off'} · ${esc(allowedLine(user))}</small></span><span class="userActions"><button type="button" data-user-edit="${esc(user.id)}">Edit</button><button type="button" data-user-remove="${esc(user.id)}">Remove</button></span></div>`;
 
         async function json(url, options = {}) {
           const headers = { ...(options.headers || {}) };
@@ -1569,6 +1765,7 @@ final class HunterWebPanelManager {
           renderActorWorlds(data.worlds || []);
           renderActors(data.actorDetails || []);
           renderOperations(data.modules || []);
+          renderWebUsers(data.webUsers || []);
         }
 
         function renderActorWorlds(worlds) {
@@ -1599,6 +1796,28 @@ final class HunterWebPanelManager {
               .map(command => toggleItem(command.name, command.enabled, `data-command-module="${esc(module.name)}" data-command="${esc(command.name)}"`))
               .join('')}</div>`)
             .join('');
+        }
+
+        function renderWebUsers(users) {
+          const admin = Boolean(state.session?.admin);
+          $('usersPanel').hidden = !admin;
+          state.webUsers = users;
+          if (!admin) return;
+          $('webUserList').classList.remove('muted');
+          $('webUserList').innerHTML = users.length ? users.map(webUserLine).join('') : '<p class="muted">No web users.</p>';
+        }
+
+        function editWebUser(id) {
+          const user = state.webUsers.find(candidate => candidate.id === id);
+          if (!user) return;
+          $('webUserName').value = user.displayName;
+          $('webUserRole').value = user.role;
+          $('webUserPassword').value = '';
+          $('webUserCommandExecution').checked = Boolean(user.commandExecution);
+          $('webUserAllowedMode').value = user.allowedCommandsConfigured
+            ? (user.allowedCommands?.length ? 'custom' : 'none')
+            : 'inherit';
+          $('webUserAllowedCommands').value = user.allowedCommands?.join(', ') || '';
         }
 
         function updateActorKind() {
@@ -1671,6 +1890,38 @@ final class HunterWebPanelManager {
           const payload = { module: target.dataset.actorModule, id: target.dataset.actorId };
           const result = await json('/api/admin/actor/remove', { method: 'POST', body: JSON.stringify(payload) });
           $('commandResult').textContent = result.ok ? `${result.message}${result.output ? `\\n\\n${result.output}` : ''}` : `Error: ${result.error}`;
+          await refresh();
+        });
+
+        $('webUserForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = {
+            username: $('webUserName').value,
+            role: $('webUserRole').value,
+            password: $('webUserPassword').value,
+            commandExecution: String($('webUserCommandExecution').checked),
+            allowedCommandsMode: $('webUserAllowedMode').value,
+            allowedCommands: $('webUserAllowedCommands').value
+          };
+          const result = await json('/api/admin/web-user/save', { method: 'POST', body: JSON.stringify(payload) });
+          $('commandResult').textContent = result.ok ? 'Web user saved.' : `Error: ${result.error}`;
+          if (result.ok) $('webUserPassword').value = '';
+          await refresh();
+        });
+
+        $('webUserList').addEventListener('click', async (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLButtonElement)) return;
+          if (target.dataset.userEdit) {
+            editWebUser(target.dataset.userEdit);
+            return;
+          }
+          if (!target.dataset.userRemove) return;
+          const result = await json('/api/admin/web-user/remove', {
+            method: 'POST',
+            body: JSON.stringify({ username: target.dataset.userRemove })
+          });
+          $('commandResult').textContent = result.ok ? 'Web user removed.' : `Error: ${result.error}`;
           await refresh();
         });
 

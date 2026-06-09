@@ -108,6 +108,7 @@ jobs:
           - Web panel health alerts for TPS, MSPT, memory, world load, and disabled plugin checks
           - Web panel admin Actors controls for spawning and removing HunterTools fake players and NPCs
           - Web panel admin Operations controls for HunterTools module and command toggles
+          - Web panel admin Web Users controls for player/admin accounts, command execution, and allowed-command lists
           - BlueMap web map bundle; first use requires accepting BlueMap's resource download in plugins/BlueMap/core.conf
           - Common server foundation plugins: PlaceholderAPI, Vault, ProtocolLib, WorldEdit, and WorldGuard
           - Web panel optimization summary for CPU, worker, Netty, ForkJoin, and HunterTools web worker settings

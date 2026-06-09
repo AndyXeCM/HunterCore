@@ -171,7 +171,7 @@ modules:
         - spawn
 ```
 
-游客可以查看基础状态、健康告警和 BlueMap 地图链接；登录后的普通用户可以查看更完整的玩家/插件信息，并只能执行全局 `player-allowed-commands` 或该用户 `allowed-commands` 白名单中的指令；管理员默认可以执行控制台指令，也可以按用户限制为指定指令。管理员登录后还会看到 Actors 和 Operations 面板，可以生成/删除假人和 NPC，也可以开关 HunterTools 模块和模块内置命令；`web-panel` 模块不会在网页里允许关闭，避免面板自己断开。网页命令会尽量捕获命令输出并显示在面板里，输出长度由 `command-output-lines` 和 `command-output-chars` 控制。面板对登录后的 POST 请求默认启用 CSRF token 校验。首次启动不会写入明文默认密码，需要在控制台创建账号：
+游客可以查看基础状态、健康告警和 BlueMap 地图链接；登录后的普通用户可以查看更完整的玩家/插件信息，并只能执行全局 `player-allowed-commands` 或该用户 `allowed-commands` 白名单中的指令；管理员默认可以执行控制台指令，也可以按用户限制为指定指令。管理员登录后还会看到 Actors、Operations 和 Web Users 面板，可以生成/删除假人和 NPC，开关 HunterTools 模块和模块内置命令，也可以创建/更新/删除网页用户、调整 player/admin 角色、命令执行开关和允许命令列表；网页端会阻止删除或降级最后一个有密码的 admin。`web-panel` 模块不会在网页里允许关闭，避免面板自己断开。网页命令会尽量捕获命令输出并显示在面板里，输出长度由 `command-output-lines` 和 `command-output-chars` 控制。面板对登录后的 POST 请求默认启用 CSRF token 校验。首次启动不会写入明文默认密码，需要在控制台创建账号：
 
 ```text
 /hunteradmin web user admin admin <password>
