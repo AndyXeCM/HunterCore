@@ -1107,6 +1107,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         return this.actorManager == null ? 0 : this.actorManager.liveCount(module);
     }
 
+    List<HunterActorManager.ActorView> actorViews(final String module) {
+        return this.actorManager == null ? List.of() : this.actorManager.views(module);
+    }
+
     private static List<String> matching(final String prefix, final Collection<String> values) {
         final String lower = prefix.toLowerCase(Locale.ROOT);
         final List<String> matches = new ArrayList<>();

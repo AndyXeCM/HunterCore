@@ -216,6 +216,16 @@ final class HunterWebPanelManager {
                 this.adminCommand(exchange);
                 return;
             }
+            if (path.equals("/api/admin/actor/spawn")) {
+                this.requireMethod(exchange, "POST");
+                this.adminActorSpawn(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/actor/remove")) {
+                this.requireMethod(exchange, "POST");
+                this.adminActorRemove(exchange);
+                return;
+            }
             this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"not_found\"}");
         } catch (final MethodMismatchException ex) {
             this.send(exchange, 405, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"method_not_allowed\"}");
@@ -347,6 +357,7 @@ final class HunterWebPanelManager {
         }
         if (session != null && session.admin()) {
             json.append(",\"modules\":").append(this.modulesJson());
+            json.append(",\"actorDetails\":").append(this.actorDetailsJson());
         }
         json.append('}');
         return json.toString();
@@ -476,6 +487,36 @@ final class HunterWebPanelManager {
                 json.append('}');
             }
             json.append("]}");
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private String actorDetailsJson() {
+        final StringBuilder json = new StringBuilder(1024);
+        json.append('[');
+        boolean first = true;
+        for (final String module : List.of("fake-players", "npcs")) {
+            for (final HunterActorManager.ActorView actor : this.plugin.actorViews(module)) {
+                if (!first) {
+                    json.append(',');
+                }
+                first = false;
+                json.append('{');
+                field(json, "module", actor.module()).append(',');
+                field(json, "id", actor.id()).append(',');
+                field(json, "displayName", actor.displayName()).append(',');
+                field(json, "kind", actor.kind()).append(',');
+                field(json, "world", actor.world()).append(',');
+                numberField(json, "x", actor.x()).append(',');
+                numberField(json, "y", actor.y()).append(',');
+                numberField(json, "z", actor.z()).append(',');
+                numberField(json, "yaw", actor.yaw()).append(',');
+                numberField(json, "pitch", actor.pitch()).append(',');
+                booleanField(json, "live", actor.live()).append(',');
+                field(json, "entityUuid", actor.entityUuid());
+                json.append('}');
+            }
         }
         json.append(']');
         return json.toString();
@@ -613,6 +654,70 @@ final class HunterWebPanelManager {
         this.sendCommandResult(exchange, 200, result);
     }
 
+    private void adminActorSpawn(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String module = HunterToolsPreferences.normalize(body.getOrDefault("module", "npcs"));
+        final String label = actorCommandLabel(module);
+        if (label == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_actor_module\"}");
+            return;
+        }
+        final WebSession session = this.adminOperator(exchange, label);
+        if (session == null) {
+            return;
+        }
+        final String name = commandToken(body.getOrDefault("name", ""), 32);
+        if (name.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_actor_name\"}");
+            return;
+        }
+        String kind = HunterToolsPreferences.normalize(body.getOrDefault("kind", "villager"));
+        if (module.equals("fake-players")) {
+            kind = "mannequin";
+        } else if (!kind.equals("villager") && !kind.equals("mannequin")) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_actor_kind\"}");
+            return;
+        }
+
+        final StringBuilder command = new StringBuilder(label).append(" spawn ").append(name);
+        if (module.equals("npcs")) {
+            command.append(' ').append(kind);
+        }
+        final String location = actorLocationArguments(body);
+        if (location == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_actor_location\"}");
+            return;
+        }
+        if (!location.isBlank()) {
+            command.append(' ').append(location);
+        }
+        final CommandResult result = this.dispatchConfiguredCommand(command.toString());
+        this.guestStatusCache = null;
+        this.sendCommandResult(exchange, 200, result);
+    }
+
+    private void adminActorRemove(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String module = HunterToolsPreferences.normalize(body.getOrDefault("module", ""));
+        final String label = actorCommandLabel(module);
+        if (label == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_actor_module\"}");
+            return;
+        }
+        final WebSession session = this.adminOperator(exchange, label);
+        if (session == null) {
+            return;
+        }
+        final String id = commandToken(body.getOrDefault("id", ""), 32);
+        if (id.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_actor_id\"}");
+            return;
+        }
+        final CommandResult result = this.dispatchConfiguredCommand(label + " remove " + id);
+        this.guestStatusCache = null;
+        this.sendCommandResult(exchange, 200, result);
+    }
+
     private CommandResult dispatchConfiguredCommand(final String command) throws InterruptedException, ExecutionException, TimeoutException {
         final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
         final int maxLines = Math.max(1, this.preferences.intValue("modules.web-panel.command-output-lines", 80));
@@ -628,6 +733,10 @@ final class HunterWebPanelManager {
     }
 
     private WebSession adminOperator(final HttpExchange exchange) {
+        return this.adminOperator(exchange, "hunteradmin");
+    }
+
+    private WebSession adminOperator(final HttpExchange exchange, final String requiredCommand) {
         final WebSession session = this.session(exchange);
         if (session == null) {
             this.send(exchange, 401, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"login_required\"}");
@@ -641,11 +750,61 @@ final class HunterWebPanelManager {
             this.send(exchange, 403, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"admin_required\"}");
             return null;
         }
-        if (!this.commandAllowed(session, "hunteradmin")) {
+        if (!this.commandAllowed(session, requiredCommand)) {
             this.send(exchange, 403, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"command_denied\"}");
             return null;
         }
         return session;
+    }
+
+    private static String actorCommandLabel(final String module) {
+        return switch (module) {
+            case "fake-players" -> "fakeplayer";
+            case "npcs" -> "npc";
+            default -> null;
+        };
+    }
+
+    private static String actorLocationArguments(final Map<String, String> body) {
+        final String world = commandToken(body.getOrDefault("world", ""), 64);
+        final String x = body.getOrDefault("x", "").trim();
+        final String y = body.getOrDefault("y", "").trim();
+        final String z = body.getOrDefault("z", "").trim();
+        if (world.isBlank() && x.isBlank() && y.isBlank() && z.isBlank()) {
+            return "";
+        }
+        if (world.isBlank() || x.isBlank() || y.isBlank() || z.isBlank()) {
+            return null;
+        }
+        try {
+            final double parsedX = Double.parseDouble(x);
+            final double parsedY = Double.parseDouble(y);
+            final double parsedZ = Double.parseDouble(z);
+            final float yaw = parseOptionalFloat(body.getOrDefault("yaw", ""), 0.0F);
+            final float pitch = parseOptionalFloat(body.getOrDefault("pitch", ""), 0.0F);
+            return world + " "
+                + String.format(Locale.ROOT, "%.3f %.3f %.3f %.3f %.3f", parsedX, parsedY, parsedZ, yaw, pitch);
+        } catch (final NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static float parseOptionalFloat(final String value, final float fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return Float.parseFloat(value.trim());
+    }
+
+    private static String commandToken(final String value, final int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        final String trimmed = value.trim();
+        if (trimmed.isBlank() || trimmed.length() > maxLength || !trimmed.matches("[A-Za-z0-9_.-]+")) {
+            return "";
+        }
+        return trimmed;
     }
 
     private CommandResult dispatchWebCommand(final String command, final int maxLines, final int maxChars) {
@@ -1244,6 +1403,31 @@ final class HunterWebPanelManager {
                 <h2>Optimization</h2>
                 <div id="optimizationList" class="list"></div>
               </article>
+              <article id="actorPanel" hidden>
+                <div class="sectionTitle">
+                  <h2>Actors</h2>
+                  <strong class="healthBadge">admin</strong>
+                </div>
+                <form id="actorForm" class="command actorForm">
+                  <select id="actorModule">
+                    <option value="npcs">npc</option>
+                    <option value="fake-players">fake player</option>
+                  </select>
+                  <select id="actorKind">
+                    <option value="villager">villager</option>
+                    <option value="mannequin">mannequin</option>
+                  </select>
+                  <input id="actorName" placeholder="name">
+                  <select id="actorWorld">
+                    <option value="">spawn</option>
+                  </select>
+                  <input id="actorX" class="coord" placeholder="x">
+                  <input id="actorY" class="coord" placeholder="y">
+                  <input id="actorZ" class="coord" placeholder="z">
+                  <button type="submit">Spawn</button>
+                </form>
+                <div id="actorList" class="list muted">Login as admin to manage actors.</div>
+              </article>
               <article id="opsPanel" hidden>
                 <div class="sectionTitle">
                   <h2>Operations</h2>
@@ -1287,7 +1471,7 @@ final class HunterWebPanelManager {
         h2 { font-size:16px; margin-bottom:12px; }
         h3 { color:var(--muted); font-size:12px; font-weight:700; margin:12px 0 4px; text-transform:uppercase; }
         p, .muted { color:var(--muted); }
-        input, button { height:36px; border-radius:6px; border:1px solid var(--line); background:#0d1117; color:var(--text); padding:0 10px; }
+        input, select, button { height:36px; border-radius:6px; border:1px solid var(--line); background:#0d1117; color:var(--text); padding:0 10px; }
         button { background:var(--accent); border-color:var(--accent); font-weight:650; cursor:pointer; }
         .login, .command { display:flex; gap:8px; flex-wrap:wrap; }
         .metrics { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:18px 0; }
@@ -1310,6 +1494,9 @@ final class HunterWebPanelManager {
         .toggle input { width:18px; height:18px; padding:0; accent-color:var(--accent); }
         .toggle input:disabled { opacity:.45; cursor:not-allowed; }
         .commandGroup { display:grid; gap:6px; }
+        .actorForm .coord { width:74px; }
+        small { display:block; color:var(--muted); margin-top:2px; }
+        .item button { height:30px; padding:0 8px; }
         pre { min-height:72px; white-space:pre-wrap; color:var(--muted); }
         .mapPanel { margin-top:12px; padding:0; overflow:hidden; }
         .mapHeader { display:flex; justify-content:space-between; align-items:center; padding:14px; border-bottom:1px solid var(--line); }
@@ -1336,6 +1523,10 @@ final class HunterWebPanelManager {
           `<label class="item toggle"><span>${esc(left)}</span><input type="checkbox" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} ${attrs}></label>`;
         const severityClass = (value) => ['ok', 'warning', 'critical', 'disabled'].includes(value) ? value : 'ok';
         const alertItem = (alert) => `<div class="item alert ${severityClass(alert.severity)}"><span>${esc(alert.label)}</span><strong>${esc(alert.detail)}</strong></div>`;
+        const actorLine = (actor) => {
+          const location = actor.world ? `${actor.world} ${Number(actor.x).toFixed(1)} ${Number(actor.y).toFixed(1)} ${Number(actor.z).toFixed(1)}` : 'not configured';
+          return `<div class="item"><span>${esc(actor.displayName)} <small>${actor.live ? 'live' : 'configured'} · ${esc(actor.module)} · ${esc(actor.kind)} · ${esc(location)}</small></span><button type="button" data-actor-remove="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">Remove</button></div>`;
+        };
 
         async function json(url, options = {}) {
           const headers = { ...(options.headers || {}) };
@@ -1375,7 +1566,24 @@ final class HunterWebPanelManager {
           $('loginForm').classList.toggle('isLoggedIn', !!state.session);
           if (data.players) $('playerList').innerHTML = data.players.map(p => item(p.name, `${p.world} · ${p.ping}ms`)).join('') || '<p class="muted">No players online.</p>';
           if (data.plugins) $('pluginList').innerHTML = data.plugins.map(p => item(p.name, p.enabled ? p.version : 'disabled')).join('');
+          renderActorWorlds(data.worlds || []);
+          renderActors(data.actorDetails || []);
           renderOperations(data.modules || []);
+        }
+
+        function renderActorWorlds(worlds) {
+          const selected = $('actorWorld').value;
+          const names = worlds.map(world => world.name);
+          $('actorWorld').innerHTML = '<option value="">spawn</option>' + names.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join('');
+          if (names.includes(selected)) $('actorWorld').value = selected;
+        }
+
+        function renderActors(actors) {
+          const admin = Boolean(state.session?.admin);
+          $('actorPanel').hidden = !admin;
+          if (!admin) return;
+          $('actorList').classList.remove('muted');
+          $('actorList').innerHTML = actors.length ? actors.map(actorLine).join('') : '<p class="muted">No configured actors.</p>';
         }
 
         function renderOperations(modules) {
@@ -1391,6 +1599,12 @@ final class HunterWebPanelManager {
               .map(command => toggleItem(command.name, command.enabled, `data-command-module="${esc(module.name)}" data-command="${esc(command.name)}"`))
               .join('')}</div>`)
             .join('');
+        }
+
+        function updateActorKind() {
+          const fake = $('actorModule').value === 'fake-players';
+          $('actorKind').disabled = fake;
+          if (fake) $('actorKind').value = 'mannequin';
         }
 
         async function refreshMap() {
@@ -1430,6 +1644,36 @@ final class HunterWebPanelManager {
           await refresh();
         });
 
+        $('actorModule').addEventListener('change', updateActorKind);
+
+        $('actorForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = {
+            module: $('actorModule').value,
+            kind: $('actorKind').value,
+            name: $('actorName').value
+          };
+          if ($('actorWorld').value || $('actorX').value || $('actorY').value || $('actorZ').value) {
+            payload.world = $('actorWorld').value;
+            payload.x = $('actorX').value;
+            payload.y = $('actorY').value;
+            payload.z = $('actorZ').value;
+          }
+          const result = await json('/api/admin/actor/spawn', { method: 'POST', body: JSON.stringify(payload) });
+          $('commandResult').textContent = result.ok ? `${result.message}${result.output ? `\\n\\n${result.output}` : ''}` : `Error: ${result.error}`;
+          if (result.ok) $('actorName').value = '';
+          await refresh();
+        });
+
+        $('actorList').addEventListener('click', async (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLButtonElement) || !target.dataset.actorRemove) return;
+          const payload = { module: target.dataset.actorModule, id: target.dataset.actorId };
+          const result = await json('/api/admin/actor/remove', { method: 'POST', body: JSON.stringify(payload) });
+          $('commandResult').textContent = result.ok ? `${result.message}${result.output ? `\\n\\n${result.output}` : ''}` : `Error: ${result.error}`;
+          await refresh();
+        });
+
         $('opsPanel').addEventListener('change', async (event) => {
           const target = event.target;
           if (!(target instanceof HTMLInputElement)) return;
@@ -1445,6 +1689,7 @@ final class HunterWebPanelManager {
 
         refresh().catch(err => $('serverLine').textContent = err.message);
         refreshMap().catch(() => {});
+        updateActorKind();
         setInterval(refresh, 5000);
         """;
 }

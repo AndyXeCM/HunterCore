@@ -114,6 +114,29 @@ final class HunterActorManager {
         return count;
     }
 
+    List<ActorView> views(final String module) {
+        final List<ActorView> views = new ArrayList<>();
+        for (final String id : this.knownActorIds(module)) {
+            final HunterToolsPreferences.ActorDefinition definition = this.preferences.actorDefinition(module, id);
+            final ManagedActor actor = this.liveActors.get(key(module, id));
+            views.add(new ActorView(
+                module,
+                id,
+                definition == null ? id : definition.displayName(),
+                actor == null ? (definition == null ? "" : definition.kind()) : actor.kind(),
+                definition == null ? "" : definition.world(),
+                definition == null ? 0.0D : definition.x(),
+                definition == null ? 0.0D : definition.y(),
+                definition == null ? 0.0D : definition.z(),
+                definition == null ? 0.0F : definition.yaw(),
+                definition == null ? 0.0F : definition.pitch(),
+                actor != null,
+                actor == null ? "" : actor.entityUuid().toString()
+            ));
+        }
+        return views;
+    }
+
     private boolean actorCommand(final CommandSender sender, final String module, final String label, final String[] args) {
         if (!this.preferences.moduleEnabled(module)) {
             sender.sendMessage("HunterCore " + module + " module is disabled in preferences.yml.");
@@ -433,5 +456,21 @@ final class HunterActorManager {
     }
 
     private record ManagedActor(String module, String id, String kind, UUID entityUuid, Entity entity) {
+    }
+
+    record ActorView(
+        String module,
+        String id,
+        String displayName,
+        String kind,
+        String world,
+        double x,
+        double y,
+        double z,
+        float yaw,
+        float pitch,
+        boolean live,
+        String entityUuid
+    ) {
     }
 }

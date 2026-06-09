@@ -106,6 +106,7 @@ jobs:
           - Web panel CSRF protection plus per-user command execution and allowed-command overrides
           - Web panel command output capture with configurable line and character limits
           - Web panel health alerts for TPS, MSPT, memory, world load, and disabled plugin checks
+          - Web panel admin Actors controls for spawning and removing HunterTools fake players and NPCs
           - Web panel admin Operations controls for HunterTools module and command toggles
           - BlueMap web map bundle; first use requires accepting BlueMap's resource download in plugins/BlueMap/core.conf
           - Common server foundation plugins: PlaceholderAPI, Vault, ProtocolLib, WorldEdit, and WorldGuard
