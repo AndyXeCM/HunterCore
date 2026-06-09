@@ -143,7 +143,7 @@ public final class HunterPreferences {
             changed |= this.setDefault("modules.essentials.commands." + command, true);
         }
         changed |= this.setDefault("modules.management.enabled", true);
-        for (final String command : List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize")) {
+        for (final String command : List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "web")) {
             changed |= this.setDefault("modules.management.commands." + command, true);
         }
         changed |= this.setDefault("modules.fake-players.enabled", true);
@@ -162,6 +162,22 @@ public final class HunterPreferences {
         for (final String command : List.of("spawn", "remove", "list", "tp", "clear")) {
             changed |= this.setDefault("modules.npcs.commands." + command, true);
         }
+        changed |= this.setDefault("modules.web-panel.enabled", true);
+        changed |= this.setDefault("modules.web-panel.bind-address", "127.0.0.1");
+        changed |= this.setDefault("modules.web-panel.port", 8088);
+        changed |= this.setDefault("modules.web-panel.public-map", true);
+        changed |= this.setDefault("modules.web-panel.map-url", "http://%host%:8100/");
+        changed |= this.setDefault("modules.web-panel.session-minutes", 360);
+        changed |= this.setDefault("modules.web-panel.command-timeout-seconds", 10);
+        changed |= this.setDefault("modules.web-panel.admin-command-execution", true);
+        changed |= this.setDefault("modules.web-panel.player-command-execution", true);
+        changed |= this.setDefault("modules.web-panel.player-allowed-commands", List.of("help", "list", "me", "msg", "tell", "spawn", "tps", "htps"));
+        changed |= this.setDefault("modules.web-panel.users.admin.display-name", "admin");
+        changed |= this.setDefault("modules.web-panel.users.admin.role", "admin");
+        changed |= this.setDefault("modules.web-panel.users.admin.password", "");
+        changed |= this.setDefault("modules.web-panel.users.player.display-name", "player");
+        changed |= this.setDefault("modules.web-panel.users.player.role", "player");
+        changed |= this.setDefault("modules.web-panel.users.player.password", "");
 
         changed |= this.setDefault("optimizations.enabled", true);
         changed |= this.setDefault("optimizations.bundled-plugin-parallel-install.enabled", true);
@@ -171,6 +187,7 @@ public final class HunterPreferences {
         changed |= this.setDefault("optimizations.hunter-tools.player-cache", true);
         changed |= this.setDefault("optimizations.hunter-tools.actor-async-load", true);
         changed |= this.setDefault("optimizations.hunter-tools.actor-batch-save", true);
+        changed |= this.setDefault("optimizations.hunter-tools.web-panel-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
         changed |= this.setDefault("optimizations.cpu.enabled", true);
         changed |= this.setDefault("optimizations.cpu.mode", "balanced");
         changed |= this.setDefault("optimizations.cpu.prefer-existing-jvm-flags", true);

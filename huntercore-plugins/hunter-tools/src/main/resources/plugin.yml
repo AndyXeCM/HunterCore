@@ -12,7 +12,7 @@ commands:
     permission: huntertools.command.tps
   hunteradmin:
     description: Manage HunterCore runtime modules.
-    usage: /hunteradmin <reload|modules|module|command|plugins|memory|gc|threads>
+    usage: /hunteradmin <reload|modules|module|command|plugins|memory|gc|threads|optimize|web>
     aliases: [ha, htools]
     permission: huntertools.command.admin
   heal:

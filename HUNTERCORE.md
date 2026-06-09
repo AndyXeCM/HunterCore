@@ -37,6 +37,8 @@ Current first batch:
 ViaVersion 5.9.1
 ViaBackwards 5.9.1
 ViaRewind 4.1.1
+BlueMap 5.20
+Chunky 1.5.3
 Multiverse-Core 5.7.0
 LuckPerms 5.5.55
 CoreProtect 23.2
@@ -74,6 +76,11 @@ To add another external bundled plugin, extend that script with a download/build
 /hunteradmin gc
 /hunteradmin threads
 /hunteradmin optimize
+/hunteradmin web status
+/hunteradmin web restart
+/hunteradmin web users
+/hunteradmin web user <name> <admin|player> <password>
+/hunteradmin web remove <name>
 /fakeplayer spawn <name> [world x y z [yaw pitch]]
 /fakeplayer remove <name>
 /fakeplayer list
@@ -92,6 +99,21 @@ HunterTools provides TPS actionbar/sidebar display plus essentials-style command
 
 `/fakeplayer` creates lightweight Mannequin-based fake players. `/npc` creates managed Villager or Mannequin NPCs. Both are persisted in `plugins/HunterCore/preferences.yml` and rebuilt on startup/reload.
 
+## Web Panel And Map
+
+HunterTools includes a lightweight built-in web panel. It defaults to `http://127.0.0.1:8088/`; set `modules.web-panel.bind-address` to `0.0.0.0` and change `modules.web-panel.port` to expose it.
+
+Guests can view public status and the configured BlueMap URL. Logged-in player users can view detailed player/plugin data and run only `modules.web-panel.player-allowed-commands`; admin users can run console commands when `modules.web-panel.admin-command-execution` is enabled.
+
+Create web users from console or an op account:
+
+```text
+/hunteradmin web user admin admin <password>
+/hunteradmin web user player player <password>
+```
+
+BlueMap is bundled for the web map, and Chunky is bundled for chunk pre-generation/performance prep. BlueMap still requires the server owner to read and set `accept-download` in `plugins/BlueMap/core.conf` on first use because it downloads Mojang client resources for rendering.
+
 ## Optimizations
 
 The first optimization batch is intentionally conservative:
@@ -105,6 +127,7 @@ optimizations.hunter-tools.player-cache
 optimizations.hunter-tools.render-workers
 optimizations.hunter-tools.actor-async-load
 optimizations.hunter-tools.actor-batch-save
+optimizations.hunter-tools.web-panel-workers
 optimizations.cpu.enabled
 optimizations.cpu.paper-worker-threads
 optimizations.cpu.divine-worker-threads
@@ -112,7 +135,7 @@ optimizations.cpu.netty-io-threads
 optimizations.cpu.common-pool-parallelism
 ```
 
-Bundled plugin install work is parallelized across different jar files. HunterTools renders sidebar text, loads fake player/NPC definitions, saves preferences, and requests GC off the main thread, then returns to the Bukkit main thread for player/server mutations.
+Bundled plugin install work is parallelized across different jar files. HunterTools renders sidebar text, loads fake player/NPC definitions, serves the web panel, saves preferences, and requests GC off the main thread, then returns to the Bukkit main thread for player/server mutations.
 
 HunterCore also applies CPU-aware startup defaults for Paper/DivineMC worker threads, Netty IO threads, and ForkJoin common pool parallelism. Existing JVM flags are preserved by default.
 

@@ -28,6 +28,8 @@ plugins/HunterCore/preferences.yml
 ViaVersion 5.9.1
 ViaBackwards 5.9.1
 ViaRewind 4.1.1
+BlueMap 5.20
+Chunky 1.5.3
 Multiverse-Core 5.7.0
 LuckPerms 5.5.55
 CoreProtect 23.2
@@ -72,6 +74,11 @@ HunterTools 还会内置一组常用管理和生存服工具：
 /hunteradmin gc
 /hunteradmin threads
 /hunteradmin optimize
+/hunteradmin web status
+/hunteradmin web restart
+/hunteradmin web users
+/hunteradmin web user <name> <admin|player> <password>
+/hunteradmin web remove <name>
 /heal [player]
 /feed [player]
 /fly [player] [on|off]
@@ -108,11 +115,41 @@ essentials
 management
 fake-players
 npcs
+web-panel
 ```
 
 这些模块和命令都可以通过 `preferences.yml` 或 `/hunteradmin`、`/huntercore preferences` 开关。
 
 `/fakeplayer` 使用 Minecraft 的 Mannequin 实体创建轻量假人，适合大厅展示、压测可视目标和基础交互占位。`/npc` 支持 `villager` 和 `mannequin` 两种类型。两者都会写入 `plugins/HunterCore/preferences.yml`，重启后由 HunterTools 重建。
+
+## 网页面板和地图
+
+HunterTools 自带一个轻量网页面板，默认监听：
+
+```text
+http://127.0.0.1:8088/
+```
+
+如果你要对外开放，在 `plugins/HunterCore/preferences.yml` 中改：
+
+```yaml
+modules:
+  web-panel:
+    enabled: true
+    bind-address: 0.0.0.0
+    port: 8088
+    public-map: true
+    map-url: http://%host%:8100/
+```
+
+游客可以查看基础状态和 BlueMap 地图链接；登录后的普通用户可以查看更完整的玩家/插件信息，并只能执行 `player-allowed-commands` 白名单中的指令；管理员可以执行控制台指令。首次启动不会写入明文默认密码，需要在控制台创建账号：
+
+```text
+/hunteradmin web user admin admin <password>
+/hunteradmin web user steve player <password>
+```
+
+BlueMap 5.20 会作为内置插件安装，默认网页地图端口由 BlueMap 自己管理，HunterCore 面板会用 `map-url` 嵌入或跳转到地图。BlueMap 首次运行需要你在 `plugins/BlueMap/core.conf` 里阅读并确认 `accept-download`，它会下载 Mojang 客户端资源用于地图渲染。Chunky 1.5.3 也被内置，适合预生成区块、降低真实开服时的探索卡顿。
 
 ## 优化
 
@@ -127,6 +164,7 @@ optimizations.hunter-tools.player-cache
 optimizations.hunter-tools.render-workers
 optimizations.hunter-tools.actor-async-load
 optimizations.hunter-tools.actor-batch-save
+optimizations.hunter-tools.web-panel-workers
 optimizations.cpu.enabled
 optimizations.cpu.paper-worker-threads
 optimizations.cpu.divine-worker-threads
@@ -134,7 +172,7 @@ optimizations.cpu.netty-io-threads
 optimizations.cpu.common-pool-parallelism
 ```
 
-内置插件安装阶段会并行校验/写入不同 jar。HunterTools 的 sidebar 文本渲染、假人/NPC 配置加载、GC 请求和配置保存会移出主线程，最终 Bukkit 状态修改仍回到主线程执行，避免破坏 Bukkit/Paper 线程安全规则。
+内置插件安装阶段会并行校验/写入不同 jar。HunterTools 的 sidebar 文本渲染、假人/NPC 配置加载、网页面板请求处理、GC 请求和配置保存会移出主线程，最终 Bukkit 状态修改仍回到主线程执行，避免破坏 Bukkit/Paper 线程安全规则。
 
 HunterCore 还会在启动时按 CPU 核心数设置保守的多线程默认值，包括 Paper/DivineMC worker threads、Netty IO threads 和 ForkJoin common pool parallelism。你通过 JVM 参数显式设置过的值不会被覆盖。
 

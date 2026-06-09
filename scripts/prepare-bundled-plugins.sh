@@ -17,6 +17,14 @@ sha256_file() {
   fi
 }
 
+sha512_file() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 512 "$1" | awk '{print $1}'
+  else
+    sha512sum "$1" | awk '{print $1}'
+  fi
+}
+
 download_file() {
   local url="$1"
   local target="$2"
@@ -36,6 +44,27 @@ download_file() {
       echo "SHA-256 mismatch for $url: expected $expected_sha got $actual_sha" >&2
       exit 1
     fi
+  fi
+  mv "$tmp" "$target"
+}
+
+download_file_sha512() {
+  local url="$1"
+  local target="$2"
+  local expected_sha="$3"
+
+  if [[ -f "$target" && "$(sha512_file "$target")" == "$expected_sha" ]]; then
+    return
+  fi
+
+  local tmp="$target.tmp"
+  curl -fL --retry 3 --retry-delay 2 -o "$tmp" "$url"
+  local actual_sha
+  actual_sha="$(sha512_file "$tmp")"
+  if [[ "$actual_sha" != "$expected_sha" ]]; then
+    rm -f "$tmp"
+    echo "SHA-512 mismatch for $url: expected $expected_sha got $actual_sha" >&2
+    exit 1
   fi
   mv "$tmp" "$target"
 }
@@ -196,6 +225,20 @@ download_github_release_asset \
   "$PLUGINS_DIR/ViaRewind-4.1.1.jar" \
   "a16bb39d4de147abac4871bf34963378792082c9008a1375766545a2509e0b6b"
 manifest_entry "viarewind" "ViaRewind" "4.1.1" "ViaRewind-4.1.1.jar" "https://github.com/ViaVersion/ViaRewind/releases/tag/4.1.1"
+
+download_github_release_asset \
+  "BlueMap-Minecraft/BlueMap" \
+  "v5.20" \
+  "bluemap-5.20-paper.jar" \
+  "$PLUGINS_DIR/bluemap-5.20-paper.jar" \
+  "2f656ba47320daff60d270b0601e9dd3de23ccbff41dd27f065972f973c1bf83"
+manifest_entry "bluemap" "BlueMap" "5.20" "bluemap-5.20-paper.jar" "https://github.com/BlueMap-Minecraft/BlueMap/releases/tag/v5.20"
+
+download_file_sha512 \
+  "https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar" \
+  "$PLUGINS_DIR/Chunky-Bukkit-1.5.3.jar" \
+  "43ffecc6e6a734b752da41575bbb316526c124c3f878942437d5133c377bfbd9b78bda975520dc074d7158c15dade58a444ccd0fd8d8a25d165b6fc450140422"
+manifest_entry "chunky" "Chunky" "1.5.3" "Chunky-Bukkit-1.5.3.jar" "https://modrinth.com/plugin/chunky/version/1.5.3"
 
 download_github_release_asset \
   "Multiverse/Multiverse-Core" \

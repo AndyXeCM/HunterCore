@@ -84,6 +84,8 @@ jobs:
           - ViaVersion 5.9.1
           - ViaBackwards 5.9.1
           - ViaRewind 4.1.1
+          - BlueMap 5.20
+          - Chunky 1.5.3
           - Multiverse-Core 5.7.0
           - LuckPerms 5.5.55
           - CoreProtect 23.2
@@ -95,8 +97,10 @@ jobs:
           - Central preferences file at plugins/HunterCore/preferences.yml
           - HunterTools TPS/actionbar/sidebar/management and essentials-style commands
           - HunterTools fake players and NPCs with persistent preferences.yml definitions
+          - Built-in HunterCore web panel with guest map/status, player users, and admin command execution
+          - BlueMap web map bundle; first use requires accepting BlueMap's resource download in plugins/BlueMap/core.conf
           - Configurable module and command toggles
-          - Parallel bundled plugin install plus async HunterTools rendering/saving/actor loading
+          - Parallel bundled plugin install plus async HunterTools rendering/saving/actor loading/web serving
           - CPU-aware Paper/DivineMC worker, Netty IO, and ForkJoin defaults
           EOF
 

@@ -187,25 +187,29 @@ public final class HunterBundledPluginInstaller {
                 return new InstallResult(plugin, InstallState.FAILED, "missing bundled resource " + plugin.resource());
             }
 
+            String currentHash = null;
             if (Files.exists(target)) {
-                final String currentHash = sha256(target);
-                if (plugin.sha256() == null || plugin.sha256().equalsIgnoreCase(currentHash)) {
+                currentHash = sha256(target);
+                if (plugin.sha256() != null && plugin.sha256().equalsIgnoreCase(currentHash)) {
                     return new InstallResult(plugin, InstallState.UNCHANGED, "already installed");
                 }
                 if (!updateExisting) {
-                    return new InstallResult(plugin, InstallState.SKIPPED, "existing jar differs and update-existing=false");
+                    return new InstallResult(plugin, InstallState.SKIPPED, "existing jar present and update-existing=false");
                 }
             }
 
             final Path temp = Files.createTempFile(pluginDirectory, plugin.id() + "-", ".jar.tmp");
             try {
                 Files.copy(stream, temp, StandardCopyOption.REPLACE_EXISTING);
+                final String stagedHash = sha256(temp);
                 if (plugin.sha256() != null) {
-                    final String stagedHash = sha256(temp);
                     if (!plugin.sha256().equalsIgnoreCase(stagedHash)) {
                         Files.deleteIfExists(temp);
                         return new InstallResult(plugin, InstallState.FAILED, "sha256 mismatch: expected " + plugin.sha256() + ", got " + stagedHash);
                     }
+                }
+                if (currentHash != null && stagedHash.equalsIgnoreCase(currentHash)) {
+                    return new InstallResult(plugin, InstallState.UNCHANGED, "already installed");
                 }
                 Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
                 return new InstallResult(plugin, InstallState.INSTALLED, "installed to " + target.getFileName());

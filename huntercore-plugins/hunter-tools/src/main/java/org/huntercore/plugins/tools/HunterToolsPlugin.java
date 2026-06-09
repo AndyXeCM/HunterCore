@@ -49,11 +49,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class HunterToolsPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener {
-    private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs");
+    private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs", "web-panel");
     private static final String ESSENTIALS = "essentials";
     private static final String MANAGEMENT = "management";
     private static final String FAKE_PLAYERS = "fake-players";
     private static final String NPCS = "npcs";
+    private static final String WEB_PANEL = "web-panel";
     private static final String[] SIDEBAR_KEYS = {
         "§0", "§1", "§2", "§3", "§4", "§5", "§6", "§7", "§8", "§9", "§a", "§b", "§c", "§d", "§e", "§f"
     };
@@ -62,6 +63,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     private final Map<UUID, Location> backLocations = new HashMap<>();
     private HunterToolsPreferences preferences;
     private HunterActorManager actorManager;
+    private HunterWebPanelManager webPanelManager;
     private ExecutorService workerExecutor;
     private MetricsSnapshot snapshot = MetricsSnapshot.empty();
     private volatile List<String> cachedPlayerNames = List.of();
@@ -74,10 +76,12 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         this.preferences = HunterToolsPreferences.loadOrCreate(this);
         this.workerExecutor = this.createWorkerExecutor();
         this.actorManager = new HunterActorManager(this, this.preferences, this.workerExecutor);
+        this.webPanelManager = new HunterWebPanelManager(this, this.preferences);
         this.registerCommands();
         this.getServer().getPluginManager().registerEvents(this, this);
         this.startTasks();
         this.actorManager.reload();
+        this.webPanelManager.start();
         this.getLogger().info("HunterTools enabled with preferences at " + this.preferences.file().getPath());
     }
 
@@ -86,6 +90,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         this.cancelTasks();
         if (this.actorManager != null) {
             this.actorManager.shutdown();
+        }
+        if (this.webPanelManager != null) {
+            this.webPanelManager.stop();
         }
         this.clearSidebars();
         if (this.preferences != null) {
@@ -426,7 +433,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.GOLD + "HunterAdmin: " + ChatColor.YELLOW + "reload, modules, module, command, plugins, memory, gc, threads, optimize");
+            sender.sendMessage(ChatColor.GOLD + "HunterAdmin: " + ChatColor.YELLOW + "reload, modules, module, command, plugins, memory, gc, threads, optimize, web");
             return true;
         }
         final String sub = args[0].toLowerCase(Locale.ROOT);
@@ -440,8 +447,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             case "gc" -> this.adminGc(sender);
             case "threads" -> this.adminThreads(sender);
             case "optimize" -> this.adminOptimize(sender);
+            case "web" -> this.adminWeb(sender, args);
             default -> {
-                sender.sendMessage("Usage: /hunteradmin <reload|modules|module|command|plugins|memory|gc|threads|optimize>");
+                sender.sendMessage("Usage: /hunteradmin <reload|modules|module|command|plugins|memory|gc|threads|optimize|web>");
                 yield true;
             }
         };
@@ -456,6 +464,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         if (this.actorManager != null) {
             this.actorManager.setExecutor(this.workerExecutor);
             this.actorManager.reload();
+        }
+        if (this.webPanelManager != null) {
+            this.webPanelManager.restart();
         }
         this.startTasks();
         sender.sendMessage("HunterCore preferences reloaded from " + this.preferences.file().getPath() + ".");
@@ -490,6 +501,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         this.startTasks();
         if (this.actorManager != null && (module.equals(FAKE_PLAYERS) || module.equals(NPCS))) {
             this.actorManager.reload();
+        }
+        if (this.webPanelManager != null && module.equals(WEB_PANEL)) {
+            this.webPanelManager.restart();
         }
         sender.sendMessage("HunterCore module " + module + " set to " + enabled + ".");
         return true;
@@ -575,6 +589,75 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         sender.sendMessage(ChatColor.GRAY + "HunterTools workers: " + ChatColor.WHITE + this.preferences.intValue("optimizations.hunter-tools.render-workers", 4));
         sender.sendMessage(ChatColor.GRAY + "Async actor load: " + ChatColor.WHITE + this.preferences.booleanValue("optimizations.hunter-tools.actor-async-load", true));
         sender.sendMessage(ChatColor.GRAY + "Async/batched actor save: " + ChatColor.WHITE + this.preferences.booleanValue("optimizations.hunter-tools.actor-batch-save", true));
+        sender.sendMessage(ChatColor.GRAY + "Web panel workers: " + ChatColor.WHITE + this.preferences.intValue("optimizations.hunter-tools.web-panel-workers", 4));
+        return true;
+    }
+
+    private boolean adminWeb(final CommandSender sender, final String[] args) {
+        if (!this.managementCommandEnabled(sender, "web")) {
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("Usage: /hunteradmin web <status|restart|user|remove|users>");
+            return true;
+        }
+        final String sub = args[1].toLowerCase(Locale.ROOT);
+        return switch (sub) {
+            case "status" -> {
+                final boolean running = this.webPanelManager != null && this.webPanelManager.running();
+                sender.sendMessage(ChatColor.GOLD + "HunterCore web panel: " + (running ? ChatColor.GREEN + "running " : ChatColor.RED + "stopped ") + (this.webPanelManager == null ? "" : this.webPanelManager.addressLine()));
+                yield true;
+            }
+            case "restart" -> {
+                if (this.webPanelManager != null) {
+                    this.webPanelManager.restart();
+                }
+                sender.sendMessage("HunterCore web panel restarted.");
+                yield true;
+            }
+            case "users" -> {
+                sender.sendMessage(ChatColor.GOLD + "HunterCore web users:");
+                for (final String id : this.preferences.webUserIds()) {
+                    final HunterToolsPreferences.WebUser user = this.preferences.webUser(id);
+                    if (user != null) {
+                        sender.sendMessage("- " + user.displayName() + ": " + user.role() + (user.passwordConfigured() ? "" : " (password not set)"));
+                    }
+                }
+                yield true;
+            }
+            case "user" -> this.adminWebUser(sender, args);
+            case "remove" -> this.adminWebRemove(sender, args);
+            default -> {
+                sender.sendMessage("Usage: /hunteradmin web <status|restart|user|remove|users>");
+                yield true;
+            }
+        };
+    }
+
+    private boolean adminWebUser(final CommandSender sender, final String[] args) {
+        if (args.length != 5) {
+            sender.sendMessage("Usage: /hunteradmin web user <name> <admin|player> <password>");
+            return true;
+        }
+        final String role = HunterToolsPreferences.normalize(args[3]);
+        if (!role.equals("admin") && !role.equals("player")) {
+            sender.sendMessage("Role must be admin or player.");
+            return true;
+        }
+        this.preferences.setWebUser(args[2], role, HunterWebPanelManager.hashPassword(args[4]));
+        this.preferences.save(this.workerExecutor);
+        sender.sendMessage("HunterCore web user " + HunterToolsPreferences.webUserId(args[2]) + " saved as " + role + ".");
+        return true;
+    }
+
+    private boolean adminWebRemove(final CommandSender sender, final String[] args) {
+        if (args.length != 3) {
+            sender.sendMessage("Usage: /hunteradmin web remove <name>");
+            return true;
+        }
+        this.preferences.removeWebUser(args[2]);
+        this.preferences.save(this.workerExecutor);
+        sender.sendMessage("HunterCore web user " + HunterToolsPreferences.webUserId(args[2]) + " removed.");
         return true;
     }
 
@@ -911,7 +994,13 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     private List<String> adminCompletions(final String[] args) {
         if (args.length == 1) {
-            return matching(args[0], List.of("reload", "modules", "module", "command", "plugins", "memory", "gc", "threads", "optimize"));
+            return matching(args[0], List.of("reload", "modules", "module", "command", "plugins", "memory", "gc", "threads", "optimize", "web"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("web")) {
+            return matching(args[1], List.of("status", "restart", "user", "remove", "users"));
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("web") && args[1].equalsIgnoreCase("user")) {
+            return matching(args[3], List.of("admin", "player"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("module")) {
             return matching(args[1], MODULES);
@@ -942,6 +1031,14 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             return this.cachedPlayerNames;
         }
         return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+    }
+
+    MetricsSnapshot metricsSnapshot() {
+        return this.snapshot;
+    }
+
+    int actorLiveCount(final String module) {
+        return this.actorManager == null ? 0 : this.actorManager.liveCount(module);
     }
 
     private static List<String> matching(final String prefix, final Collection<String> values) {

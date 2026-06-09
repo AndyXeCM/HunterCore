@@ -84,6 +84,12 @@ final class HunterToolsPreferences {
         }
     }
 
+    List<String> stringList(final String path, final List<String> fallback) {
+        synchronized (this.lock) {
+            return this.config.contains(path) ? this.config.getStringList(path) : fallback;
+        }
+    }
+
     void setModuleEnabled(final String module, final boolean enabled) {
         synchronized (this.lock) {
             this.config.set("modules." + normalize(module) + ".enabled", enabled);
@@ -93,6 +99,45 @@ final class HunterToolsPreferences {
     void setCommandEnabled(final String module, final String command, final boolean enabled) {
         synchronized (this.lock) {
             this.config.set("modules." + normalize(module) + ".commands." + normalize(command), enabled);
+        }
+    }
+
+    Set<String> webUserIds() {
+        synchronized (this.lock) {
+            final ConfigurationSection section = this.config.getConfigurationSection("modules.web-panel.users");
+            return section == null ? Set.of() : new TreeSet<>(section.getKeys(false));
+        }
+    }
+
+    WebUser webUser(final String username) {
+        synchronized (this.lock) {
+            final String id = webUserId(username);
+            final String path = "modules.web-panel.users." + id;
+            if (!this.config.contains(path)) {
+                return null;
+            }
+            return new WebUser(
+                id,
+                this.config.getString(path + ".display-name", username),
+                normalize(this.config.getString(path + ".role", "player")),
+                this.config.getString(path + ".password", "")
+            );
+        }
+    }
+
+    void setWebUser(final String username, final String role, final String passwordHash) {
+        synchronized (this.lock) {
+            final String id = webUserId(username);
+            final String path = "modules.web-panel.users." + id;
+            this.config.set(path + ".display-name", username);
+            this.config.set(path + ".role", normalize(role));
+            this.config.set(path + ".password", passwordHash);
+        }
+    }
+
+    void removeWebUser(final String username) {
+        synchronized (this.lock) {
+            this.config.set("modules.web-panel.users." + webUserId(username), null);
         }
     }
 
@@ -265,6 +310,22 @@ final class HunterToolsPreferences {
         for (final String command : actorCommands()) {
             changed |= this.setDefault("modules.npcs.commands." + command, true);
         }
+        changed |= this.setDefault("modules.web-panel.enabled", true);
+        changed |= this.setDefault("modules.web-panel.bind-address", "127.0.0.1");
+        changed |= this.setDefault("modules.web-panel.port", 8088);
+        changed |= this.setDefault("modules.web-panel.public-map", true);
+        changed |= this.setDefault("modules.web-panel.map-url", "http://%host%:8100/");
+        changed |= this.setDefault("modules.web-panel.session-minutes", 360);
+        changed |= this.setDefault("modules.web-panel.command-timeout-seconds", 10);
+        changed |= this.setDefault("modules.web-panel.admin-command-execution", true);
+        changed |= this.setDefault("modules.web-panel.player-command-execution", true);
+        changed |= this.setDefault("modules.web-panel.player-allowed-commands", List.of("help", "list", "me", "msg", "tell", "spawn", "tps", "htps"));
+        changed |= this.setDefault("modules.web-panel.users.admin.display-name", "admin");
+        changed |= this.setDefault("modules.web-panel.users.admin.role", "admin");
+        changed |= this.setDefault("modules.web-panel.users.admin.password", "");
+        changed |= this.setDefault("modules.web-panel.users.player.display-name", "player");
+        changed |= this.setDefault("modules.web-panel.users.player.role", "player");
+        changed |= this.setDefault("modules.web-panel.users.player.password", "");
         changed |= this.setDefault("optimizations.enabled", true);
         changed |= this.setDefault("optimizations.hunter-tools.async-rendering", true);
         changed |= this.setDefault("optimizations.hunter-tools.async-save", true);
@@ -272,6 +333,7 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("optimizations.hunter-tools.render-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
         changed |= this.setDefault("optimizations.hunter-tools.actor-async-load", true);
         changed |= this.setDefault("optimizations.hunter-tools.actor-batch-save", true);
+        changed |= this.setDefault("optimizations.hunter-tools.web-panel-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
         changed |= this.setDefault("optimizations.cpu.enabled", true);
         changed |= this.setDefault("optimizations.cpu.mode", "balanced");
         changed |= this.setDefault("optimizations.cpu.prefer-existing-jvm-flags", true);
@@ -295,7 +357,7 @@ final class HunterToolsPreferences {
     }
 
     static List<String> managementCommands() {
-        return List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize");
+        return List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "web");
     }
 
     static List<String> actorCommands() {
@@ -309,6 +371,11 @@ final class HunterToolsPreferences {
     static String actorId(final String id) {
         final String normalized = normalize(id).replaceAll("[^a-z0-9-]", "");
         return normalized.isBlank() ? "actor" : normalized;
+    }
+
+    static String webUserId(final String username) {
+        final String normalized = username.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.-]", "");
+        return normalized.isBlank() ? "user" : normalized;
     }
 
     private static String actorPath(final String module) {
@@ -350,6 +417,12 @@ final class HunterToolsPreferences {
         Location location() {
             final World world = Bukkit.getWorld(this.world);
             return world == null ? null : new Location(world, this.x, this.y, this.z, this.yaw, this.pitch);
+        }
+    }
+
+    record WebUser(String id, String displayName, String role, String passwordHash) {
+        boolean passwordConfigured() {
+            return this.passwordHash != null && !this.passwordHash.isBlank();
         }
     }
 
