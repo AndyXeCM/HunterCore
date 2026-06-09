@@ -19,6 +19,8 @@ The final runnable jar is generated at:
 divinemc-server/build/libs/divinemc-paperclip-26.1.2.local-SNAPSHOT.jar
 ```
 
+The `Build HunterCore` GitHub Actions workflow runs on `huntercore/**` branches and uploads the generated jars as workflow artifacts.
+
 ## Bundled Plugins
 
 HunterCore installs bundled plugins before Paper scans the plugin directory. On first startup it writes:

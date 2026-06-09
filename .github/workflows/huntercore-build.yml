@@ -1,0 +1,53 @@
+name: Build HunterCore
+
+on:
+  push:
+    branches:
+      - "huntercore/**"
+  pull_request:
+    branches:
+      - "huntercore/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Configure Git and Gradle
+        run: |
+          git config --global user.email "no-reply@github.com"
+          git config --global user.name "Github Actions"
+          chmod +x gradlew
+          chmod +x scripts/prepare-bundled-plugins.sh
+
+      - name: Apply patches
+        run: ./gradlew applyAllPatches --stacktrace --no-daemon
+
+      - name: Build paperclip
+        run: ./gradlew createPaperclipJar --stacktrace --no-daemon
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v5
+        with:
+          name: HunterCore-${{ github.run_number }}
+          path: |
+            divinemc-api/build/libs/*.jar
+            divinemc-server/build/libs/*.jar
