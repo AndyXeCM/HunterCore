@@ -82,11 +82,20 @@ jobs:
 
           Bundled plugins:
           - ViaVersion 5.9.1
+          - ViaBackwards 5.9.1
+          - ViaRewind 4.1.1
           - Multiverse-Core 5.7.0
           - LuckPerms 5.5.55
           - CoreProtect 23.2
           - HunterTPA builtin
           - HunterAuth builtin
+          - HunterTools builtin
+
+          Highlights:
+          - Central preferences file at plugins/HunterCore/preferences.yml
+          - HunterTools TPS/actionbar/sidebar/management and essentials-style commands
+          - Configurable module and command toggles
+          - Parallel bundled plugin install plus async HunterTools rendering/saving
           EOF
 
       - name: Create or update GitHub release

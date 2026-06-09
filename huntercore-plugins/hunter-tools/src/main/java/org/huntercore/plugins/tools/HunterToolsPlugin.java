@@ -61,6 +61,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     private HunterToolsPreferences preferences;
     private ExecutorService workerExecutor;
     private MetricsSnapshot snapshot = MetricsSnapshot.empty();
+    private volatile List<String> cachedPlayerNames = List.of();
     private BukkitTask metricsTask;
     private BukkitTask actionbarTask;
     private BukkitTask sidebarTask;
@@ -137,7 +138,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         if (List.of("heal", "feed", "fly", "gm", "gms", "gmc", "gma", "gmsp", "spawn", "speed").contains(name)) {
             final int playerArg = name.equals("speed") ? 1 : args.length - 1;
             if (args.length - 1 == playerArg) {
-                return matching(args[args.length - 1], onlinePlayerNames());
+                return matching(args[args.length - 1], this.onlinePlayerNames());
             }
         }
         if (name.equals("speed") && args.length == 3) {
@@ -243,6 +244,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             Bukkit.getOnlinePlayers().size(),
             Bukkit.getMaxPlayers()
         );
+        if (this.preferences.booleanValue("optimizations.enabled", true) && this.preferences.booleanValue("optimizations.hunter-tools.player-cache", true)) {
+            this.cachedPlayerNames = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+        }
     }
 
     private void tickActionBar() {
@@ -870,7 +874,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         return List.of();
     }
 
-    private static List<String> onlinePlayerNames() {
+    private List<String> onlinePlayerNames() {
+        if (this.preferences.booleanValue("optimizations.enabled", true) && this.preferences.booleanValue("optimizations.hunter-tools.player-cache", true)) {
+            return this.cachedPlayerNames;
+        }
         return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
     }
 
