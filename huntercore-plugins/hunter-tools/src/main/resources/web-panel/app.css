@@ -16,7 +16,9 @@
   --glass-stroke-dark: rgba(17, 24, 39, 0.10);
   --glass-shadow: 0 22px 74px rgba(18, 28, 45, 0.18);
   --glass-shadow-close: 0 8px 24px rgba(18, 28, 45, 0.12);
-  --radius: 8px;
+  --radius: 22px;
+  --radius-control: 15px;
+  --chrome-space: 94px;
 }
 
 * {
@@ -31,6 +33,7 @@ html {
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(222, 239, 245, 0.16) 28%, rgba(187, 221, 215, 0.30)),
     linear-gradient(90deg, rgba(244, 248, 255, 0.36), rgba(244, 248, 255, 0.08) 42%, rgba(244, 248, 255, 0.22)),
@@ -111,6 +114,14 @@ a {
   position: relative;
 }
 
+.pageView {
+  min-height: 100svh;
+}
+
+.pageView[hidden] {
+  display: none !important;
+}
+
 .mapStage {
   position: relative;
   min-height: 100svh;
@@ -159,13 +170,16 @@ a {
 }
 
 .topChrome {
-  position: relative;
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 18px 0;
+  padding: 0;
 }
 
 .brandBlock {
@@ -179,6 +193,7 @@ a {
 .topNav,
 .sessionDock,
 .panel,
+.actionToast,
 .statusPill,
 .roleBadge,
 .stateChip,
@@ -215,7 +230,8 @@ select {
 
 .topNav,
 .sessionDock,
-.panel {
+.panel,
+.actionToast {
   --liquid-blur: 8px;
   --liquid-saturate: 1.68;
   --liquid-contrast: 1.14;
@@ -227,7 +243,8 @@ select {
 
 .topNav::before,
 .sessionDock::before,
-.panel::before {
+.panel::before,
+.actionToast::before {
   content: "";
   position: absolute;
   inset: -18px;
@@ -247,7 +264,8 @@ select {
 
 .topNav::after,
 .sessionDock::after,
-.panel::after {
+.panel::after,
+.actionToast::after {
   content: "";
   position: absolute;
   inset: 1px;
@@ -265,17 +283,39 @@ select {
 
 .sessionDock > *,
 .panel > *,
-.topNav > * {
+.topNav > *,
+.actionToast > * {
   position: relative;
   z-index: 1;
+}
+
+.actionToast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 5;
+  width: min(520px, calc(100% - 28px));
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 12px 18px;
+  color: var(--ink-soft);
+  font-weight: 720;
+  text-align: center;
+  border-radius: var(--radius);
+  transform: translateX(-50%);
+}
+
+.actionToast[hidden] {
+  display: none !important;
 }
 
 .productMark {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius);
+  width: 50px;
+  height: 50px;
+  border-radius: 18px;
   color: var(--accent-deep);
   font-weight: 800;
   overflow: hidden;
@@ -321,18 +361,18 @@ small {
 .topNav {
   display: flex;
   align-items: center;
-  gap: 4px;
-  min-height: 42px;
-  padding: 5px;
+  gap: 6px;
+  min-height: 50px;
+  padding: 7px;
 }
 
 .navButton {
   position: relative;
   z-index: 1;
   min-width: 74px;
-  min-height: 32px;
+  min-height: 36px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--ink-soft);
   padding: 0 12px;
@@ -369,8 +409,8 @@ small {
 .sessionDock {
   z-index: 3;
   width: min(430px, calc(100% - 32px));
-  margin: 58px 0 0 max(16px, calc((100vw - 1440px) / 2 + 16px));
-  padding: 18px;
+  margin: 112px 0 0 max(16px, calc((100vw - 1440px) / 2 + 16px));
+  padding: 20px;
 }
 
 .dockHeader,
@@ -466,7 +506,7 @@ input,
 select {
   width: 100%;
   min-height: 39px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   color: var(--ink);
   padding: 0 12px;
   outline: none;
@@ -494,7 +534,7 @@ select:focus {
 .smallButton,
 .quickRow button {
   min-height: 39px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   color: var(--ink-soft);
   padding: 0 15px;
   font-weight: 720;
@@ -541,7 +581,7 @@ select:focus {
 .miniMetrics div {
   min-height: 70px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: var(--radius);
+  border-radius: 18px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.14)),
     rgba(255, 255, 255, 0.18);
@@ -589,7 +629,7 @@ select:focus {
   --tilt-y: 0deg;
   --press: 0;
   min-height: 44px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.48);
   background:
@@ -629,11 +669,7 @@ small {
 }
 
 .workspace {
-  padding: 34px 0 0;
-}
-
-.workspace:last-child {
-  padding-bottom: 46px;
+  padding: var(--chrome-space) 0 46px;
 }
 
 .sectionHead {
@@ -655,7 +691,7 @@ small {
 }
 
 .panel {
-  padding: 16px;
+  padding: 18px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0.22)),
     radial-gradient(circle at var(--glass-x) var(--glass-y), rgba(255, 255, 255, 0.28), transparent 34%),
@@ -675,16 +711,16 @@ small {
 }
 
 .quickRow {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin: 12px 0;
 }
 
 .quickRow button,
 .smallButton {
-  min-height: 31px;
-  padding: 0 10px;
+  min-height: 36px;
+  padding: 0 12px;
 }
 
 pre {
@@ -693,7 +729,7 @@ pre {
   overflow: auto;
   margin: 0;
   border: 1px solid rgba(255, 255, 255, 0.46);
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.20);
@@ -755,8 +791,7 @@ pre {
 }
 
 .userActions,
-.actorActions,
-.pluginActions {
+.actorActions {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
@@ -766,8 +801,22 @@ pre {
 .userActions button,
 .actorActions button {
   min-height: 31px;
-  border-radius: 7px;
+  border-radius: var(--radius-control);
   padding: 0 10px;
+}
+
+.pluginWorkspace {
+  min-height: calc(100svh - var(--chrome-space) - 120px);
+}
+
+.pluginGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pluginGrid.mutedState {
+  display: block;
 }
 
 .pluginItem {
@@ -779,8 +828,9 @@ pre {
   --liquid-blur: 6px;
   position: relative;
   display: grid;
-  gap: 10px;
-  margin-top: 8px;
+  grid-template-rows: auto auto auto;
+  gap: 12px;
+  min-height: 178px;
   border: 1px solid rgba(255, 255, 255, 0.50);
   border-radius: var(--radius);
   background:
@@ -793,11 +843,7 @@ pre {
     inset 0 1px 0 rgba(255, 255, 255, 0.62),
     0 8px 24px rgba(18, 28, 45, 0.08);
   overflow: hidden;
-  padding: 12px;
-}
-
-.pluginItem:first-child {
-  margin-top: 0;
+  padding: 14px;
 }
 
 .pluginItem::before {
@@ -845,7 +891,14 @@ pre {
   font-weight: 720;
 }
 
-.pluginActions,
+.pluginActions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .pluginUpdateForm {
   position: relative;
   z-index: 1;
@@ -855,6 +908,14 @@ pre {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+.pluginActionPrimary {
+  border-color: rgba(10, 132, 255, 0.34);
+  color: var(--accent-deep);
+  background:
+    radial-gradient(circle at var(--glass-x) var(--glass-y), rgba(255, 255, 255, 0.74), transparent 36%),
+    rgba(10, 132, 255, 0.12);
 }
 
 .stateChip {
@@ -871,6 +932,10 @@ pre {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .pageView.isActive {
+    animation: pageReveal 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
   .sessionDock,
   .panel,
   .topNav {
@@ -885,6 +950,8 @@ pre {
   .topNav,
   .sessionDock,
   .panel,
+  .actionToast,
+  .actionToast,
   .navButton::before,
   .primaryButton,
   .secondaryButton,
@@ -929,6 +996,17 @@ pre {
   }
 }
 
+@keyframes pageReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes glassMorphIn {
   from {
     opacity: 0;
@@ -963,6 +1041,10 @@ pre {
 }
 
 @media (max-width: 980px) {
+  :root {
+    --chrome-space: 142px;
+  }
+
   .topChrome {
     display: grid;
     align-items: stretch;
@@ -979,7 +1061,8 @@ pre {
 
   .overviewGrid,
   .adminGrid,
-  .toolsLayout {
+  .toolsLayout,
+  .pluginGrid {
     grid-template-columns: 1fr;
   }
 
@@ -989,6 +1072,12 @@ pre {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --chrome-space: 188px;
+    --radius: 20px;
+    --radius-control: 14px;
+  }
+
   .mapStage {
     min-height: 780px;
   }
@@ -1004,15 +1093,31 @@ pre {
     width: min(100% - 20px, 1440px);
   }
 
+  .topChrome {
+    top: 10px;
+  }
+
+  .topNav {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .navButton {
+    flex: 1 1 72px;
+    min-width: 0;
+  }
+
   .sessionDock {
     width: min(100% - 20px, 430px);
+    margin-top: var(--chrome-space);
   }
 
   .miniMetrics,
   .formGrid,
   .toggleGrid,
   .inlineForm,
-  .pluginUpdateForm {
+  .pluginUpdateForm,
+  .quickRow {
     grid-template-columns: 1fr;
   }
 

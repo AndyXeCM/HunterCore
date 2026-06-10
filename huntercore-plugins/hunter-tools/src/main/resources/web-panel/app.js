@@ -18,7 +18,8 @@ const state = {
   mapUrl: '',
   refreshTimer: null,
   lang: detectLanguage(),
-  lastData: null
+  lastData: null,
+  page: 'map'
 };
 
 const $ = (id) => document.getElementById(id);
@@ -29,6 +30,7 @@ const translations = {
     'server.loading': '正在读取服务器状态...',
     'nav.map': '地图',
     'nav.overview': '总览',
+    'nav.plugins': '插件',
     'nav.tools': '工具',
     'nav.admin': '管理',
     'language.switch': '切换到 English',
@@ -46,9 +48,11 @@ const translations = {
     'worlds.title': '世界',
     'players.title': '玩家',
     'plugins.title': '插件',
+    'plugins.eyebrow': '插件工作台',
     'optimization.title': '优化',
     'players.loginRequired': '登录后查看玩家详情。',
     'plugins.loginRequired': '登录后查看插件详情。',
+    'plugins.count': '{count} 个',
     'worlds.none': '暂无已加载世界。',
     'players.none': '当前没有玩家在线。',
     'tools.eyebrow': 'Minecraft 操作',
@@ -156,6 +160,7 @@ const translations = {
     'server.loading': 'Loading server status...',
     'nav.map': 'Map',
     'nav.overview': 'Overview',
+    'nav.plugins': 'Plugins',
     'nav.tools': 'Tools',
     'nav.admin': 'Admin',
     'language.switch': 'Switch to Chinese',
@@ -173,9 +178,11 @@ const translations = {
     'worlds.title': 'Worlds',
     'players.title': 'Players',
     'plugins.title': 'Plugins',
+    'plugins.eyebrow': 'Plugin workspace',
     'optimization.title': 'Optimization',
     'players.loginRequired': 'Login to view player detail.',
     'plugins.loginRequired': 'Login to view plugin detail.',
+    'plugins.count': '{count}',
     'worlds.none': 'No worlds loaded.',
     'players.none': 'No players online.',
     'tools.eyebrow': 'Minecraft actions',
@@ -313,6 +320,7 @@ const liquidGlassSelector = [
   '.topNav',
   '.sessionDock',
   '.panel',
+  '.actionToast',
   '.pluginItem',
   '.toggleItem',
   '.primaryButton',
@@ -328,9 +336,23 @@ const liquidGlassSelector = [
   '.stateChip'
 ].join(',');
 
+let toastTimer = 0;
+
+function showToast(message) {
+  const toast = $('actionToast');
+  if (!toast || !message) return;
+  toast.textContent = message;
+  toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 4200);
+}
+
 function setOutput(message, output = '') {
   $('commandResult').dataset.placeholder = 'false';
   $('commandResult').textContent = output ? `${message}\n\n${output}` : message;
+  showToast(message);
 }
 
 function setCommandPlaceholder() {
@@ -407,6 +429,28 @@ function setLanguage(lang) {
   rerenderCachedStatus();
 }
 
+function pageFromLocation() {
+  const value = window.location.hash.replace(/^#\/?/, '');
+  return ['map', 'overview', 'plugins', 'tools', 'admin'].includes(value) ? value : 'map';
+}
+
+function showPage(page, push = true) {
+  const targetPage = page === 'admin' && !state.session?.admin ? 'overview' : page;
+  state.page = targetPage;
+  $$('.pageView').forEach((view) => {
+    const active = view.id === targetPage;
+    view.hidden = !active;
+    view.classList.toggle('isActive', active);
+  });
+  $$('.navButton[data-page-target]').forEach((button) => {
+    button.classList.toggle('isActive', button.dataset.pageTarget === targetPage);
+  });
+  if (push && window.location.hash !== `#${targetPage}`) {
+    history.pushState(null, '', `#${targetPage}`);
+  }
+  window.scrollTo(0, 0);
+}
+
 function actorLine(actor) {
   const location = actor.world
     ? `${actor.world} ${Number(actor.x).toFixed(1)} ${Number(actor.y).toFixed(1)} ${Number(actor.z).toFixed(1)}`
@@ -457,7 +501,7 @@ function pluginLine(plugin, admin) {
       <strong class="stateChip ${statusClass}">${esc(pluginStatusLabel(status))}</strong>
     </div>
     <div class="pluginActions">
-      <button type="button" class="smallButton" data-plugin-name="${esc(plugin.name)}" data-plugin-action="${enabled ? 'disable' : 'enable'}" ${controlDisabled}>${enabled ? esc(t('action.disable')) : esc(t('action.enable'))}</button>
+      <button type="button" class="smallButton pluginActionPrimary" data-plugin-name="${esc(plugin.name)}" data-plugin-action="${enabled ? 'disable' : 'enable'}" ${controlDisabled}>${enabled ? esc(t('action.disable')) : esc(t('action.enable'))}</button>
       <button type="button" class="smallButton" data-plugin-name="${esc(plugin.name)}" data-plugin-action="reload" ${reloadDisabled}>${esc(t('action.reload'))}</button>
     </div>
     <form class="pluginUpdateForm" data-plugin-update="${esc(plugin.name)}">
@@ -481,6 +525,10 @@ async function json(url, options = {}) {
 
 function setAdminVisibility(admin) {
   $$('.adminOnly').forEach((element) => {
+    if (element.classList.contains('pageView')) {
+      if (!admin) element.hidden = true;
+      return;
+    }
     element.hidden = !admin;
   });
 }
@@ -489,6 +537,7 @@ function updateSessionChrome() {
   const session = state.session;
   const admin = Boolean(session?.admin);
   setAdminVisibility(admin);
+  if (!admin && state.page === 'admin') showPage('overview');
   $('logoutButton').hidden = !session;
   $('loginForm').hidden = Boolean(session);
   $('sessionTitle').textContent = session
@@ -534,6 +583,10 @@ function renderOverview(data) {
   $('pluginList').innerHTML = data.plugins
     ? data.plugins.map((plugin) => pluginLine(plugin, Boolean(data.session?.admin))).join('')
     : `<p class="mutedState">${esc(t('plugins.loginRequired'))}</p>`;
+  $('pluginList').classList.toggle('mutedState', !data.plugins);
+  if ($('pluginCountBadge')) {
+    $('pluginCountBadge').textContent = data.plugins ? t('plugins.count', { count: data.plugins.length }) : '--';
+  }
   if (data.plugins) state.plugins = data.plugins;
 }
 
@@ -712,14 +765,13 @@ function bindServerIcon() {
 }
 
 function bindEvents() {
-  $$('.navButton[data-scroll-target]').forEach((button) => {
+  $$('.navButton[data-page-target]').forEach((button) => {
     button.addEventListener('click', () => {
-      $$('.navButton[data-scroll-target]').forEach((candidate) => candidate.classList.remove('isActive'));
-      button.classList.add('isActive');
-      const target = button.dataset.scrollTarget === 'map' ? document.body : $(button.dataset.scrollTarget);
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showPage(button.dataset.pageTarget);
     });
   });
+
+  window.addEventListener('popstate', () => showPage(pageFromLocation(), false));
 
   $('languageToggle').addEventListener('click', () => {
     setLanguage(state.lang === 'zh' ? 'en' : 'zh');
@@ -946,6 +998,7 @@ applyTranslations();
 bindLiquidGlass();
 bindServerIcon();
 bindEvents();
+showPage(pageFromLocation(), false);
 updateActorKind();
 refresh().catch((error) => {
   $('serverLine').textContent = error.message;

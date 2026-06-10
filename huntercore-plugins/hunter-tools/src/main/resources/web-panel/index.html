@@ -27,29 +27,31 @@
     </filter>
   </svg>
   <main class="app">
-    <section class="mapStage" aria-label="Server map">
+    <header class="topChrome">
+      <div class="brandBlock">
+        <span id="productMark" class="productMark" aria-hidden="true">
+          <img id="serverIcon" src="/assets/server-icon.png" alt="">
+          <span id="serverIconFallback">HC</span>
+        </span>
+        <div>
+          <h1 id="serverNameTitle">HunterCore</h1>
+          <p id="serverLine" data-i18n="server.loading">Loading server status...</p>
+        </div>
+      </div>
+      <nav class="topNav" aria-label="Panel sections">
+        <button type="button" class="navButton isActive" data-page-target="map" data-i18n="nav.map">Map</button>
+        <button type="button" class="navButton" data-page-target="overview" data-i18n="nav.overview">Overview</button>
+        <button type="button" class="navButton" data-page-target="plugins" data-i18n="nav.plugins">Plugins</button>
+        <button type="button" class="navButton" data-page-target="tools" data-i18n="nav.tools">Tools</button>
+        <button type="button" class="navButton adminOnly" data-page-target="admin" data-i18n="nav.admin" hidden>Admin</button>
+        <button id="languageToggle" type="button" class="navButton langButton" data-i18n-title="language.switch">EN</button>
+      </nav>
+    </header>
+    <div id="actionToast" class="actionToast" role="status" aria-live="polite" hidden></div>
+
+    <section id="map" class="pageView mapStage isActive" aria-label="Server map">
       <iframe id="mapFrame" title="BlueMap"></iframe>
       <div class="mapShade"></div>
-
-      <header class="topChrome">
-        <div class="brandBlock">
-          <span id="productMark" class="productMark" aria-hidden="true">
-            <img id="serverIcon" src="/assets/server-icon.png" alt="">
-            <span id="serverIconFallback">HC</span>
-          </span>
-          <div>
-            <h1 id="serverNameTitle">HunterCore</h1>
-            <p id="serverLine" data-i18n="server.loading">Loading server status...</p>
-          </div>
-        </div>
-        <nav class="topNav" aria-label="Panel sections">
-          <button type="button" class="navButton isActive" data-scroll-target="map" data-i18n="nav.map">Map</button>
-          <button type="button" class="navButton" data-scroll-target="overview" data-i18n="nav.overview">Overview</button>
-          <button type="button" class="navButton" data-scroll-target="tools" data-i18n="nav.tools">Tools</button>
-          <button type="button" class="navButton adminOnly" data-scroll-target="admin" data-i18n="nav.admin" hidden>Admin</button>
-          <button id="languageToggle" type="button" class="navButton langButton" data-i18n-title="language.switch">EN</button>
-        </nav>
-      </header>
 
       <aside class="sessionDock" aria-label="Session">
         <div class="dockHeader">
@@ -76,7 +78,7 @@
       </aside>
     </section>
 
-    <section id="overview" class="workspace">
+    <section id="overview" class="pageView workspace" hidden>
       <div class="sectionHead">
         <div>
           <span class="eyebrow" data-i18n="overview.eyebrow">Live server</span>
@@ -94,17 +96,26 @@
           <div id="playerList" class="dataList mutedState" data-i18n="players.loginRequired">Login to view player detail.</div>
         </section>
         <section class="panel">
-          <h3 data-i18n="plugins.title">Plugins</h3>
-          <div id="pluginList" class="dataList mutedState" data-i18n="plugins.loginRequired">Login to view plugin detail.</div>
-        </section>
-        <section class="panel">
           <h3 data-i18n="optimization.title">Optimization</h3>
           <div id="optimizationList" class="dataList"></div>
         </section>
       </div>
     </section>
 
-    <section id="tools" class="workspace">
+    <section id="plugins" class="pageView workspace" hidden>
+      <div class="sectionHead">
+        <div>
+          <span class="eyebrow" data-i18n="plugins.eyebrow">Plugin workspace</span>
+          <h2 data-i18n="plugins.title">Plugins</h2>
+        </div>
+        <span id="pluginCountBadge" class="roleBadge">--</span>
+      </div>
+      <section class="panel pluginWorkspace">
+        <div id="pluginList" class="pluginGrid mutedState" data-i18n="plugins.loginRequired">Login to view plugin detail.</div>
+      </section>
+    </section>
+
+    <section id="tools" class="pageView workspace" hidden>
       <div class="sectionHead">
         <div>
           <span class="eyebrow" data-i18n="tools.eyebrow">Minecraft actions</span>
@@ -156,7 +167,7 @@
       </div>
     </section>
 
-    <section id="admin" class="workspace adminOnly" hidden>
+    <section id="admin" class="pageView workspace adminOnly" hidden>
       <div class="sectionHead">
         <div>
           <span class="eyebrow" data-i18n="admin.eyebrow">Operator controls</span>
