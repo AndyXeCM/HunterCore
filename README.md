@@ -1,28 +1,220 @@
 # HunterCore
 
-HunterCore 是一个基于 [DivineMC](https://github.com/BX-Team/DivineMC) 的独立 Minecraft 服务器核心。它保留 DivineMC / Purpur / Paper 的插件生态兼容性，同时加入 HunterCore 自己的内置插件层、扩展 API 和服务器管理命令。
+HunterCore 是一个为 Minecraft 服主准备的高性能自定义服务器核心。它基于 DivineMC / Purpur / Paper 生态构建，保留熟悉的 Bukkit、Spigot、Paper 插件兼容体验，同时把网页管理、地图入口、权限快捷管理、假人调试、常用服主工具和一批基础插件直接整合进核心。
 
-这个仓库已经独立于 GitHub fork network。上游同步通过 `upstream` remote、手动检查工作流和分支合并完成，不依赖 GitHub fork 关系。
+简单说：你下载一个 jar，就能得到一个更适合开服、调试、运营和远程管理的服务器核心。
 
-## 项目定位
+- [下载最新版本](https://github.com/AndyXeCM/HunterCore/releases)
+- [查看源码](https://github.com/AndyXeCM/HunterCore)
 
-- 基于 DivineMC、Purpur 和 Paper 的高性能服务端核心。
-- 默认内置一批常用插件，首启前安装到 `plugins/`，减少开服时的重复配置。
-- 通过 `plugins/HunterCore/preferences.yml` 统一管理内置插件、运行时模块和命令开关。
-- 提供 HunterCore API，方便后续内置模块或外部插件扩展 `/huntercore` 命令。
-- 保持独立仓库发布节奏，同时保留从 DivineMC 上游同步的能力。
+## 为什么选择 HunterCore
 
-## 当前内置插件
+开服最烦的事情，往往不是把服务器跑起来，而是把一堆基础插件、权限、地图、网页、管理命令、假人测试工具、MOTD、性能参数一点点拼起来。HunterCore 想解决的就是这件事。
 
-HunterCore 会在 Paper 扫描插件目录之前准备内置插件。首次启动后会生成：
+- 开箱即用：内置 ViaVersion、BlueMap、LuckPerms、CoreProtect、WorldEdit、WorldGuard、Multiverse、Chunky 等常用基础能力。
+- 自带网页面板：打开浏览器就能看地图、服务器状态、玩家、世界、插件、命令输出、健康告警和管理入口。
+- 管理更直观：网页端支持插件启用、停用、重载和从 URL 更新插件，也支持模块开关、命令开关和网页用户权限管理。
+- 假人更像真玩家：`/hplayer` 提供真实 `ServerPlayer` 假人，可以进入在线列表，支持持续右键、左键、跳跃、潜行、疾跑等调试动作。
+- 不堆重复插件：MOTD、基础传送、常用生存服命令和管理命令由 HunterTools 自研提供，不默认塞 EssentialsX、MiniMOTD、GSit 这类重叠插件。
+- 远程管理友好：网页端口、绑定地址、服务器名称、地图地址都能在网页或游戏内调整。
+- 品牌更统一：客户端 F3 里的服务端名称显示为 `"HunterCraft" Server`。
+- 配置集中：主要内置模块和开关统一放在 `plugins/HunterCore/preferences.yml`，不用在一堆插件配置里反复翻。
+
+## 适合谁
+
+HunterCore 很适合下面这些场景：
+
+- 想快速搭一个生存服、建筑服、朋友服、测试服。
+- 想要 BlueMap 地图和网页后台，但不想自己从零拼。
+- 想在网页上看插件状态、执行允许的命令、做简单运维。
+- 想测试红石、农场、刷怪塔、交互指令，需要 Carpet 风格假人能力。
+- 想保留 Paper/Purpur 插件生态，又希望核心里有更多服主常用功能。
+
+## 快速开始
+
+从 [GitHub Releases](https://github.com/AndyXeCM/HunterCore/releases) 下载最新的：
+
+```text
+HunterCore-<version>-paperclip.jar
+```
+
+然后启动：
+
+```bash
+java -Xms2G -Xmx4G -jar HunterCore-<version>-paperclip.jar nogui
+```
+
+首次启动会生成 EULA 和配置文件。接受 Minecraft EULA 后再次启动即可。
+
+如果你要开启网页管理账号，进控制台输入：
+
+```text
+/hunteradmin web user admin admin <你的密码>
+```
+
+默认网页面板地址：
+
+```text
+http://127.0.0.1:8088/
+```
+
+需要对局域网或公网开放时，可以在游戏内或控制台调整：
+
+```text
+/hunteradmin web bind 0.0.0.0
+/hunteradmin web port 8088
+/hunteradmin web restart
+```
+
+## 网页面板
+
+HunterCore 的网页面板不是一个简单状态页，而是面向服主日常运维做的控制台。界面采用 Apple 风格的液态玻璃视觉，首页优先展示 BlueMap 或你配置的地图，登录后再按权限显示不同内容。
+
+访客可以看到：
+
+- 服务器基础状态。
+- TPS、MSPT、在线人数、内存信息。
+- 健康告警。
+- BlueMap 地图入口。
+
+普通玩家登录后可以看到：
+
+- 更完整的服务器信息。
+- 玩家和世界概览。
+- 允许范围内的命令执行入口。
+
+管理员登录后可以看到：
+
+- 插件列表和插件状态。
+- 插件启用、停用、重载。
+- 从 URL 下载 jar 并更新插件。
+- LuckPerms 用户、组和权限快捷操作。
+- 假人、NPC、真实假人生成和移除。
+- 假人点击执行命令配置。
+- HunterTools 模块和命令开关。
+- 网页用户、角色、允许命令和命令执行权限管理。
+- 网页端口、绑定地址、地图地址、服务器名称设置。
+
+网页端会读取根目录的 `server-icon.png` 作为服务器标志。面板支持中文和英文切换，会根据浏览器语言自动选择，也可以手动切换。
+
+提示：Minecraft 插件的热启停、热重载和热更新取决于插件自身是否安全支持。HunterCore 提供这个能力是为了让调试和维护更方便，但正式服更新关键插件前仍建议先测试。面板会保护承载网页面板的核心插件，避免把自己关掉。
+
+## 地图和 BlueMap
+
+HunterCore 内置 BlueMap。网页面板默认会把地图地址指向：
+
+```text
+http://%host%:8100/
+```
+
+如果你把 BlueMap 改到别的端口，或者想接入其他网页地图，可以在网页后台或配置里改 `map-url`。
+
+BlueMap 首次运行需要你在：
+
+```text
+plugins/BlueMap/core.conf
+```
+
+确认资源下载选项。BlueMap 会下载 Mojang 客户端资源用于地图渲染，这是 BlueMap 的正常流程。
+
+## 假人、NPC 和交互玩法
+
+HunterCore 现在有三类可控实体，适合不同场景：
+
+- `/fakeplayer`：轻量模型假人，适合大厅展示、占位、视觉交互和简单点击命令。
+- `/npc`：支持 villager 和 mannequin 类型，适合做功能 NPC、传送 NPC、菜单 NPC。
+- `/hplayer`：真实 `ServerPlayer` 假人，适合红石、农场、刷怪、区块加载和玩家行为调试。
+
+真实假人支持：
+
+```text
+/hplayer spawn <name>
+/hplayer remove <name>
+/hplayer tp <name>
+/hplayer tphere <name>
+/hplayer sneak <name> <on|off>
+/hplayer sprint <name> <on|off>
+/hplayer jump <name> [once|continuous|stop]
+/hplayer use <name> [once|continuous|stop]
+/hplayer attack <name> [once|continuous|stop]
+/hplayer stop <name>
+/hplayer drop <name>
+/hplayer dropstack <name>
+/hplayer swap <name>
+/hplayer gm <name> <survival|creative|adventure|spectator>
+/hplayer slot <name> <1-9>
+```
+
+点击命令也支持在游戏内或网页端配置：
+
+```text
+/hplayer click <name> say %player% clicked %actor%
+/fakeplayer click <name> spawn
+/npc click <name> lp user %player% permission set example.node true
+```
+
+可用占位符包括：
+
+```text
+%player%
+%player_uuid%
+%actor%
+%actor_name%
+%actor_uuid%
+%module%
+%world%
+%x%
+%y%
+%z%
+```
+
+## 自研服主工具
+
+HunterTools 内置了一组轻量实用功能，覆盖很多小服和测试服每天都会用到的操作：
+
+```text
+/htps
+/hunteradmin modules
+/hunteradmin module <module> <on|off>
+/hunteradmin command <module> <command> <on|off>
+/hunteradmin memory
+/hunteradmin gc
+/hunteradmin threads
+/hunteradmin optimize
+/hunteradmin motd <status|line1|line2|max>
+/hunteradmin web <status|restart|bind|port|map|public-map|user|remove|users|allow|execution>
+/heal [player]
+/feed [player]
+/fly [player] [on|off]
+/gm <mode> [player]
+/day [world]
+/night [world]
+/sun [world]
+/rain [world]
+/thunder [world]
+/broadcast <message>
+/clearchat
+/speed <1-10> [player] [walk|fly]
+/spawn [player]
+/setspawn
+/back
+/hat
+/craft
+/enderchest [player]
+/trash
+```
+
+这些功能可以通过 `preferences.yml` 或 `/hunteradmin` 开关。你可以只保留自己需要的部分，把不用的模块关掉。
+
+## 内置插件
+
+HunterCore 会在服务器扫描插件目录前准备内置插件。首次启动后会生成：
 
 ```text
 plugins/HunterCore/preferences.yml
 ```
 
-这个配置可以关闭整个内置插件安装器、关闭单个插件，或禁止自动替换已变化的内置 jar。关闭已经加载的插件仍需要重启服务器。
-
-当前内置插件：
+当前内置插件包括：
 
 ```text
 ViaVersion 5.9.1
@@ -43,216 +235,77 @@ HunterAuth builtin
 HunterTools builtin
 ```
 
-外部内置插件由脚本准备：
+外部内置插件可以在 `bundled-plugins.plugins.<plugin-id>` 里单独关闭。关闭已经加载的插件通常仍需要重启服务器，网页端热操作适合调试和插件自身支持热重载的场景。
 
-```bash
-scripts/prepare-bundled-plugins.sh
-```
+## 性能和优化
 
-内置自研插件放在 `huntercore-plugins/` 下。
+HunterCore 继承 DivineMC、Purpur、Paper 系列的优化基础，并额外加入一组偏保守、适合开服默认使用的设置：
 
-## 命令
+- 按 CPU 自动设置 Paper / DivineMC worker threads。
+- 自动设置 Netty IO threads 和 ForkJoin common pool parallelism。
+- 内置插件并行准备，减少首次启动等待。
+- HunterTools 异步渲染、异步保存、玩家缓存。
+- 假人和 NPC 配置异步加载、批量保存。
+- 网页面板使用独立 worker，游客状态接口带缓存。
+- 健康告警监测 TPS、MSPT、堆内存、区块、实体和禁用插件。
 
-```text
-/about
-/huntercore
-/huntercore system
-/huntercore plugins
-/huntercore preferences
-/huntercore preferences bundled <plugin-id> <on|off>
-/huntercore preferences module <module> <on|off>
-/huntercore preferences command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>
-/huntercore reload
-/hc
-```
+如果你已经用 JVM 参数手动指定线程相关设置，HunterCore 会尊重你的配置，不会强行覆盖。
 
-`/about` 会显示 HunterCore 信息。`/huntercore system` 会输出 JVM、系统、CPU、内存、运行时间、在线玩家数量和插件目录信息。
+## 常用配置
 
-HunterTools 还会内置一组常用管理和生存服工具：
+主配置文件：
 
 ```text
-/htps
-/hunteradmin modules
-/hunteradmin module <module> <on|off>
-/hunteradmin command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>
-/hunteradmin memory
-/hunteradmin gc
-/hunteradmin threads
-/hunteradmin optimize
-/hunteradmin motd <status|line1 <text>|line2 <text>|max <number|default>>
-/hunteradmin web status
-/hunteradmin web restart
-/hunteradmin web users
-/hunteradmin web user <name> <admin|player> <password>
-/hunteradmin web allow <name> <inherit|none|*|command...>
-/hunteradmin web execution <name> <on|off>
-/hunteradmin web remove <name>
-/heal [player]
-/feed [player]
-/fly [player] [on|off]
-/gm <mode> [player]
-/day [world]
-/night [world]
-/sun [world]
-/rain [world]
-/thunder [world]
-/broadcast <message>
-/clearchat
-/speed <1-10> [player] [walk|fly]
-/spawn [player]
-/setspawn
-/back
-/hat
-/craft
-/enderchest [player]
-/trash
-/fakeplayer spawn <name> [world x y z [yaw pitch]]
-/fakeplayer remove <name>
-/fakeplayer list
-/fakeplayer tp <name> [world x y z [yaw pitch]]
-/fakeplayer tphere <name>
-/fakeplayer look <name> [yaw pitch|north|south|east|west|up|down]
-/fakeplayer pose <name> <standing|sneaking|swimming|fall-flying|sleeping>
-/fakeplayer click <name> [command|clear]
-/fakeplayer info [name]
-/fakeplayer clear
-/hplayer spawn <name> [world x y z [yaw pitch]]
-/hplayer remove <name>
-/hplayer list
-/hplayer tp <name> [world x y z [yaw pitch]]
-/hplayer tphere <name>
-/hplayer look <name> [yaw pitch|north|south|east|west|up|down]
-/hplayer sneak <name> <on|off>
-/hplayer sprint <name> <on|off>
-/hplayer jump <name> [once|continuous|stop]
-/hplayer use <name> [once|continuous|stop]
-/hplayer attack <name> [once|continuous|stop]
-/hplayer stop <name>
-/hplayer click <name> [command|clear]
-/hplayer drop <name>
-/hplayer dropstack <name>
-/hplayer swap <name>
-/hplayer gm <name> <survival|creative|adventure|spectator>
-/hplayer slot <name> <1-9>
-/hplayer info [name]
-/hplayer clear
-/npc spawn <name> [villager|mannequin] [world x y z [yaw pitch]]
-/npc remove <name>
-/npc list
-/npc tp <name> [world x y z [yaw pitch]]
-/npc tphere <name>
-/npc look <name> [yaw pitch|north|south|east|west|up|down]
-/npc pose <name> <standing|sneaking|swimming|fall-flying|sleeping>
-/npc click <name> [command|clear]
-/npc info [name]
-/npc clear
+plugins/HunterCore/preferences.yml
 ```
 
-运行时模块：
-
-```text
-tps-display
-sidebar
-motd
-essentials
-management
-fake-players
-real-fake-players
-npcs
-web-panel
-```
-
-这些模块和命令都可以通过 `preferences.yml` 或 `/hunteradmin`、`/huntercore preferences` 开关。
-
-HunterTools 自研提供 MOTD、TPS/actionbar/sidebar 和一组轻量实用命令，包括 `/heal`、`/feed`、`/fly`、`/gm`、`/spawn`、`/back`、`/hat`、`/craft`、`/enderchest`、`/trash` 等；不会额外内置 EssentialsX 或 MiniMOTD。客户端按 F3 看到的服务端品牌会显示为 `"HunterCraft" Server`。
-
-`/fakeplayer` 使用 Minecraft 的 Mannequin 实体创建轻量假人，适合大厅展示、压测可视目标和基础交互占位。它现在支持传送到坐标、传送到玩家身边、朝向调整、固定姿态、点击执行指令和信息查看，姿态与点击指令会持久化到 `plugins/HunterCore/preferences.yml`。`/npc` 支持 `villager` 和 `mannequin` 两种类型，也支持同样的摆位和点击指令命令。
-
-这些轻量假人不会作为真实 `ServerPlayer` 加入服务器，因此不会占用在线玩家槽、加载区块、触发完整玩家连接流程，或执行 Carpet 风格的持续右键/左键/跳跃/潜行循环。
-
-`/hplayer` 是新的真实 `ServerPlayer` 假人模块，别名为 `/playerbot` 和 `/realfakeplayer`。它会进入在线玩家列表、触发玩家 join/quit 流程、参与区块加载，并支持 Carpet-like 的持续 `use`、`attack`、`jump` 循环，以及潜行、疾跑、点击执行指令、丢物品、切换主副手、切换游戏模式和选择快捷栏。真实假人不会持久化玩家数据，关闭 `real-fake-players` 模块或插件卸载时会按配置移除。
-
-## 网页面板和地图
-
-HunterTools 自带一个轻量网页面板，默认监听：
-
-```text
-http://127.0.0.1:8088/
-```
-
-如果你要对外开放，在 `plugins/HunterCore/preferences.yml` 中改：
+网页面板相关配置示例：
 
 ```yaml
 modules:
   web-panel:
     enabled: true
-    bind-address: 0.0.0.0
+    bind-address: 127.0.0.1
     port: 8088
+    server-name: HunterCore
     public-map: true
     map-url: http://%host%:8100/
-    status-cache-millis: 1000
     require-csrf: true
     command-output-lines: 80
     command-output-chars: 12000
-    health:
-      enabled: true
-      low-tps-warning: 18.0
-      low-tps-critical: 15.0
-      high-mspt-warning: 50.0
-      high-mspt-critical: 75.0
-      memory-warning-percent: 85.0
-      memory-critical-percent: 95.0
-      loaded-chunks-warning: 12000
-      entities-warning: 4000
-      disabled-plugins-warning: true
-    users:
-      steve:
-        role: player
-        command-execution: true
-        allowed-commands:
-        - list
-        - spawn
 ```
 
-游客可以查看基础状态、健康告警和 BlueMap 地图链接；登录后的普通用户可以查看更完整的玩家/插件信息，并只能执行全局 `player-allowed-commands` 或该用户 `allowed-commands` 白名单中的指令；管理员默认可以执行控制台指令，也可以按用户限制为指定指令。管理员登录后还会看到 Actors、Operations 和 Web Users 面板，可以生成/删除假人和 NPC，开关 HunterTools 模块和模块内置命令，也可以创建/更新/删除网页用户、调整 player/admin 角色、命令执行开关和允许命令列表；网页端会阻止删除或降级最后一个有密码的 admin。`web-panel` 模块不会在网页里允许关闭，避免面板自己断开。网页命令会尽量捕获命令输出并显示在面板里，输出长度由 `command-output-lines` 和 `command-output-chars` 控制。面板对登录后的 POST 请求默认启用 CSRF token 校验。首次启动不会写入明文默认密码，需要在控制台创建账号：
+常用游戏内管理命令：
 
 ```text
-/hunteradmin web user admin admin <password>
-/hunteradmin web user steve player <password>
-/hunteradmin web allow steve list spawn
-/hunteradmin web execution steve on
+/hunteradmin web status
+/hunteradmin web bind <address>
+/hunteradmin web port <1-65535>
+/hunteradmin web map <url>
+/hunteradmin web public-map <on|off>
+/hunteradmin web user <name> <admin|player> <password>
+/hunteradmin web allow <name> <inherit|none|*|command...>
+/hunteradmin web execution <name> <on|off>
 ```
 
-BlueMap 5.20 会作为内置插件安装，默认网页地图端口由 BlueMap 自己管理，HunterCore 面板会用 `map-url` 嵌入或跳转到地图。BlueMap 首次运行需要你在 `plugins/BlueMap/core.conf` 里阅读并确认 `accept-download`，它会下载 Mojang 客户端资源用于地图渲染。Chunky 1.5.3 也被内置，适合预生成区块、降低真实开服时的探索卡顿。
+## 下载、发布和校验
 
-PlaceholderAPI、Vault、ProtocolLib、WorldEdit 和 WorldGuard 也会作为基础服主工具内置：PAPI 提供变量生态，Vault 提供经济/权限桥接，ProtocolLib 提供协议包扩展底座，WorldEdit/WorldGuard 提供地图编辑和区域保护。MOTD 和轻量实用命令由 HunterTools 自研提供，不再额外内置 EssentialsX 或 MiniMOTD。外部内置插件都能通过 `bundled-plugins.plugins.<plugin-id>` 单独关闭。
+推荐始终从 [Releases](https://github.com/AndyXeCM/HunterCore/releases) 下载 `HunterCore-*-paperclip.jar`。
 
-## 优化
-
-HunterCore 默认开启一组保守的多线程/异步优化开关：
+每个发布版本都会附带：
 
 ```text
-optimizations.bundled-plugin-parallel-install.enabled
-optimizations.bundled-plugin-parallel-install.max-workers
-optimizations.hunter-tools.async-rendering
-optimizations.hunter-tools.async-save
-optimizations.hunter-tools.player-cache
-optimizations.hunter-tools.render-workers
-optimizations.hunter-tools.actor-async-load
-optimizations.hunter-tools.actor-batch-save
-optimizations.hunter-tools.web-panel-workers
-optimizations.cpu.enabled
-optimizations.cpu.paper-worker-threads
-optimizations.cpu.divine-worker-threads
-optimizations.cpu.netty-io-threads
-optimizations.cpu.common-pool-parallelism
+HunterCore-<version>-paperclip.jar
+SHA256SUMS.txt
 ```
 
-内置插件安装阶段会并行校验/写入不同 jar。HunterTools 的 sidebar 文本渲染、假人/NPC 配置加载、网页面板请求处理、GC 请求和配置保存会移出主线程，最终 Bukkit 状态修改仍回到 Bukkit 主线程执行，避免破坏 Bukkit/Paper 线程安全规则。网页面板的游客状态接口默认有 1 秒缓存，降低公开面板刷新对主线程的压力。面板健康告警会按可配置阈值提示低 TPS、高 MSPT、堆内存压力、单世界区块/实体负载和禁用插件数量。
+如果你要检查文件完整性：
 
-HunterCore 还会在启动时按 CPU 核心数设置保守的多线程默认值，包括 Paper/DivineMC worker threads、Netty IO threads 和 ForkJoin common pool parallelism。你通过 JVM 参数显式设置过的值不会被覆盖。网页面板也会显示 CPU、worker、Netty、ForkJoin 和 HunterTools web worker 设置，便于远程检查当前优化状态。
+```bash
+shasum -a 256 HunterCore-<version>-paperclip.jar
+```
 
-## 构建
+## 从源码构建
 
 需要 Java 25。
 
@@ -275,68 +328,17 @@ divinemc-server/build/libs/
 divinemc-server/build/libs/divinemc-paperclip-26.1.2.local-SNAPSHOT.jar
 ```
 
-GitHub Actions 会在发布时把它重命名为 `HunterCore-<version>-paperclip.jar` 作为 release asset。
+GitHub Actions 发布流程会把它重命名为 `HunterCore-<version>-paperclip.jar`。
 
-## 下载和运行
+## 开发者 API
 
-推荐从 [GitHub Releases](https://github.com/AndyXeCM/HunterCore/releases) 下载 `HunterCore-*-paperclip.jar`。
-
-```bash
-java -Xms2G -Xmx4G -jar HunterCore-<version>-paperclip.jar nogui
-```
-
-首次启动会生成 EULA 和配置文件。接受 Minecraft EULA 后再次启动即可。
-
-## 发布版本
-
-发布使用 `.github/workflows/release.yml`。
-
-通过 tag 发布：
-
-```bash
-git tag v26.1.2-huntercore.2
-git push origin v26.1.2-huntercore.2
-```
-
-也可以在 GitHub Actions 页面手动运行 `Release HunterCore`，输入版本号，例如：
-
-```text
-v26.1.2-huntercore.2
-```
-
-工作流会构建 paperclip jar，生成 SHA256 校验文件，并创建或更新 GitHub Release。
-
-## 同步 DivineMC 上游
-
-本地保留只读上游 remote：
-
-```bash
-git remote -v
-# upstream  git@github.com:BX-Team/DivineMC.git (fetch)
-# upstream  DISABLED (push)
-```
-
-推荐同步流程：
-
-```bash
-git fetch upstream
-git checkout main
-git checkout -b codex/sync-divinemc-YYYYMMDD
-git merge upstream/ver/26.1.2
-./gradlew applyAllPatches createPaperclipJar --no-daemon
-```
-
-如果 DivineMC 的当前维护分支变化，更新上面的 `upstream/ver/26.1.2` 即可。仓库也提供 `Check DivineMC Upstream` 手动工作流，用来查看上游差异并执行 dry-run merge。
-
-## HunterCore API
-
-API 入口：
+HunterCore 提供 API 入口：
 
 ```java
 org.huntercore.api.HunterCoreProvider.get()
 ```
 
-插件可以注册未来的 `/huntercore` 子命令扩展：
+插件可以注册 `/huntercore` 子命令扩展：
 
 ```java
 HunterCoreProvider.get().registerCommandExtension(extension);
@@ -348,8 +350,8 @@ HunterCoreProvider.get().registerCommandExtension(extension);
 org.huntercore.api.HunterCommandExtension
 ```
 
-## 许可证和致谢
+## 上游和许可证
 
-HunterCore 继承 DivineMC / Paper 系列项目的 GPL-3.0 许可证要求。详见 [LICENSE](LICENSE)。
+HunterCore 基于 [DivineMC](https://github.com/BX-Team/DivineMC) 构建，并继承 DivineMC / Purpur / Paper 系列项目的 GPL-3.0 许可证要求。详见 [LICENSE](LICENSE)。
 
-HunterCore 基于 DivineMC 构建，DivineMC 本身包含来自 Purpur、Paper、Pufferfish、Leaves、SparklyPaper 等项目的补丁和优化。感谢这些项目为 Minecraft 服务端生态做出的工作。
+DivineMC 本身包含来自 Purpur、Paper、Pufferfish、Leaves、SparklyPaper 等项目的补丁和优化。感谢这些项目为 Minecraft 服务端生态做出的长期贡献。
