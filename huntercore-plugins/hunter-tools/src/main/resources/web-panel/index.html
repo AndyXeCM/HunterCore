@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HunterCore Panel</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <main class="app">
+    <section class="mapStage" aria-label="Server map">
+      <iframe id="mapFrame" title="BlueMap"></iframe>
+      <div class="mapShade"></div>
+
+      <header class="topChrome">
+        <div class="brandBlock">
+          <span class="productMark">HC</span>
+          <div>
+            <h1>HunterCore</h1>
+            <p id="serverLine">Loading server status...</p>
+          </div>
+        </div>
+        <nav class="topNav" aria-label="Panel sections">
+          <button type="button" class="navButton isActive" data-scroll-target="map">Map</button>
+          <button type="button" class="navButton" data-scroll-target="overview">Overview</button>
+          <button type="button" class="navButton" data-scroll-target="tools">Tools</button>
+          <button type="button" class="navButton adminOnly" data-scroll-target="admin" hidden>Admin</button>
+        </nav>
+      </header>
+
+      <aside class="sessionDock" aria-label="Session">
+        <div class="dockHeader">
+          <div>
+            <span class="eyebrow">Web console</span>
+            <strong id="sessionTitle">Guest view</strong>
+          </div>
+          <span id="healthStatus" class="statusPill">--</span>
+        </div>
+        <form id="loginForm" class="loginForm">
+          <input id="username" name="username" autocomplete="username" placeholder="HunterAuth username">
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Password">
+          <button type="submit" class="primaryButton">Login</button>
+        </form>
+        <button id="logoutButton" type="button" class="secondaryButton" hidden>Logout</button>
+        <div class="miniMetrics">
+          <div><span>TPS</span><strong id="tps">--</strong></div>
+          <div><span>MSPT</span><strong id="mspt">--</strong></div>
+          <div><span>Online</span><strong id="players">--</strong></div>
+          <div><span>Memory</span><strong id="memory">--</strong></div>
+        </div>
+        <div id="healthList" class="compactList"></div>
+        <a id="mapLink" class="mapLink" href="#" target="_blank" rel="noreferrer">Open map in new tab</a>
+      </aside>
+    </section>
+
+    <section id="overview" class="workspace">
+      <div class="sectionHead">
+        <div>
+          <span class="eyebrow">Live server</span>
+          <h2>Overview</h2>
+        </div>
+        <span id="sessionBadge" class="roleBadge">Guest</span>
+      </div>
+      <div class="overviewGrid">
+        <section class="panel">
+          <h3>Worlds</h3>
+          <div id="worlds" class="dataList"></div>
+        </section>
+        <section class="panel">
+          <h3>Players</h3>
+          <div id="playerList" class="dataList mutedState">Login to view player detail.</div>
+        </section>
+        <section class="panel">
+          <h3>Plugins</h3>
+          <div id="pluginList" class="dataList mutedState">Login to view plugin detail.</div>
+        </section>
+        <section class="panel">
+          <h3>Optimization</h3>
+          <div id="optimizationList" class="dataList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tools" class="workspace">
+      <div class="sectionHead">
+        <div>
+          <span class="eyebrow">Minecraft actions</span>
+          <h2>Tools</h2>
+        </div>
+      </div>
+      <div class="toolsLayout">
+        <section class="panel commandPanel">
+          <h3>Command console</h3>
+          <form id="commandForm" class="inlineForm">
+            <input id="commandInput" placeholder="list">
+            <button type="submit" class="primaryButton">Run</button>
+          </form>
+          <div class="quickRow">
+            <button type="button" data-command="list">List</button>
+            <button type="button" data-command="tps">TPS</button>
+            <button type="button" data-command="spawn">Spawn</button>
+            <button type="button" class="adminOnly" data-command="save-all" hidden>Save all</button>
+            <button type="button" class="adminOnly" data-command="weather clear" hidden>Clear weather</button>
+            <button type="button" class="adminOnly" data-command="time set day" hidden>Day</button>
+          </div>
+          <pre id="commandResult">Login to run allowed commands.</pre>
+        </section>
+
+        <section id="actorPanel" class="panel adminOnly" hidden>
+          <h3>Actors</h3>
+          <form id="actorForm" class="stackForm">
+            <div class="formGrid">
+              <select id="actorModule">
+                <option value="npcs">NPC</option>
+                <option value="fake-players">Fake player</option>
+              </select>
+              <select id="actorKind">
+                <option value="villager">Villager</option>
+                <option value="mannequin">Mannequin</option>
+              </select>
+              <input id="actorName" placeholder="Name">
+              <select id="actorWorld">
+                <option value="">Spawn</option>
+              </select>
+              <input id="actorX" placeholder="X">
+              <input id="actorY" placeholder="Y">
+              <input id="actorZ" placeholder="Z">
+              <button type="submit" class="primaryButton">Spawn</button>
+            </div>
+          </form>
+          <div id="actorList" class="dataList mutedState">Admin session required.</div>
+        </section>
+      </div>
+    </section>
+
+    <section id="admin" class="workspace adminOnly" hidden>
+      <div class="sectionHead">
+        <div>
+          <span class="eyebrow">Operator controls</span>
+          <h2>Admin</h2>
+        </div>
+      </div>
+      <div class="adminGrid">
+        <section id="opsPanel" class="panel">
+          <h3>Modules</h3>
+          <div id="moduleControls" class="toggleGrid"></div>
+          <h3>Command gates</h3>
+          <div id="commandControls" class="commandGroups"></div>
+        </section>
+
+        <section id="luckPanel" class="panel">
+          <h3>LuckPerms</h3>
+          <form id="luckForm" class="stackForm">
+            <div class="formGrid">
+              <select id="luckAction">
+                <option value="user-permission-set">User permission set</option>
+                <option value="user-permission-unset">User permission unset</option>
+                <option value="user-parent-set">User parent set</option>
+                <option value="user-parent-add">User parent add</option>
+                <option value="user-parent-remove">User parent remove</option>
+                <option value="group-permission-set">Group permission set</option>
+                <option value="group-permission-unset">Group permission unset</option>
+                <option value="editor">Open editor</option>
+                <option value="sync">Sync storage</option>
+              </select>
+              <input id="luckTarget" placeholder="Player">
+              <input id="luckGroup" placeholder="Group">
+              <input id="luckPermission" placeholder="Permission node">
+              <select id="luckValue">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+              <button type="submit" class="primaryButton">Apply</button>
+            </div>
+          </form>
+        </section>
+
+        <section id="webSettingsPanel" class="panel">
+          <h3>Web panel</h3>
+          <form id="webSettingsForm" class="stackForm">
+            <div class="formGrid">
+              <input id="webBindAddress" placeholder="127.0.0.1">
+              <input id="webPort" inputmode="numeric" placeholder="8088">
+              <input id="webMapUrl" placeholder="http://%host%:8100/">
+              <label class="checkLine"><input id="webPublicMap" type="checkbox"> public map</label>
+              <button type="submit" class="primaryButton">Save web settings</button>
+            </div>
+          </form>
+          <p id="webAddressLine" class="subtleLine"></p>
+        </section>
+
+        <section id="usersPanel" class="panel">
+          <h3>Web roles</h3>
+          <form id="webUserForm" class="stackForm">
+            <div class="formGrid">
+              <input id="webUserName" placeholder="Username">
+              <select id="webUserRole">
+                <option value="player">Player</option>
+                <option value="admin">Admin</option>
+              </select>
+              <input id="webUserPassword" type="password" autocomplete="new-password" placeholder="Optional web password">
+              <label class="checkLine"><input id="webUserCommandExecution" type="checkbox" checked> commands</label>
+              <select id="webUserAllowedMode">
+                <option value="inherit">Inherit</option>
+                <option value="custom">Custom</option>
+                <option value="none">None</option>
+              </select>
+              <input id="webUserAllowedCommands" placeholder="list spawn or *">
+              <button type="submit" class="primaryButton">Save role</button>
+            </div>
+          </form>
+          <div id="webUserList" class="dataList mutedState">Admin session required.</div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

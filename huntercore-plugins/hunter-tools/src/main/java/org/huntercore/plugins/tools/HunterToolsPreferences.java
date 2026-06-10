@@ -108,6 +108,12 @@ final class HunterToolsPreferences {
         }
     }
 
+    void setValue(final String path, final Object value) {
+        synchronized (this.lock) {
+            this.config.set(path, value);
+        }
+    }
+
     Set<String> webUserIds() {
         synchronized (this.lock) {
             final ConfigurationSection section = this.config.getConfigurationSection("modules.web-panel.users");

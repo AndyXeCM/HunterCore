@@ -3,14 +3,23 @@ package org.huntercore.plugins.tools;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.spec.KeySpec;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -19,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +39,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -36,6 +48,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.conversations.Conversation;
 import org.bukkit.conversations.ConversationAbandonedEvent;
 import org.bukkit.entity.Player;
@@ -48,6 +62,10 @@ final class HunterWebPanelManager {
     private static final String SESSION_COOKIE = "HCSESSION";
     private static final String CSRF_HEADER = "X-HunterCore-CSRF";
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.NORMAL)
+        .connectTimeout(Duration.ofSeconds(15L))
+        .build();
     private static final int HASH_ITERATIONS = 120_000;
     private static final int HASH_BITS = 256;
     private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs", "web-panel");
@@ -144,6 +162,41 @@ final class HunterWebPanelManager {
         }
     }
 
+    private static boolean verifyHunterAuthPassword(final String username, final String password) {
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            return false;
+        }
+        final Path usersPath = Bukkit.getPluginsFolder().toPath().resolve("HunterAuth").resolve("users.yml");
+        if (!Files.isRegularFile(usersPath)) {
+            return false;
+        }
+        final YamlConfiguration users = YamlConfiguration.loadConfiguration(usersPath.toFile());
+        final ConfigurationSection section = users.getConfigurationSection("users");
+        if (section == null) {
+            return false;
+        }
+        for (final String id : section.getKeys(false)) {
+            final String path = "users." + id;
+            final String name = users.getString(path + ".name", "");
+            if (!id.equalsIgnoreCase(username) && !name.equalsIgnoreCase(username)) {
+                continue;
+            }
+            final String salt = users.getString(path + ".salt");
+            final String expectedHash = users.getString(path + ".hash");
+            if (salt == null || expectedHash == null) {
+                return false;
+            }
+            try {
+                final byte[] expected = Base64.getDecoder().decode(expectedHash);
+                final byte[] actual = pbkdf2(password.toCharArray(), Base64.getDecoder().decode(salt), HASH_ITERATIONS, HASH_BITS);
+                return MessageDigest.isEqual(expected, actual);
+            } catch (final IllegalArgumentException ex) {
+                return false;
+            }
+        }
+        return false;
+    }
+
     private ExecutorService createExecutor() {
         final int configured = this.preferences.intValue("optimizations.hunter-tools.web-panel-workers", 4);
         final int workers = Math.max(1, Math.min(configured, Math.min(8, Runtime.getRuntime().availableProcessors())));
@@ -161,15 +214,15 @@ final class HunterWebPanelManager {
             final URI uri = exchange.getRequestURI();
             final String path = normalizePath(uri.getPath());
             if (path.equals("/")) {
-                this.send(exchange, 200, "text/html; charset=utf-8", INDEX_HTML);
+                this.send(exchange, 200, "text/html; charset=utf-8", webAsset("index.html", INDEX_HTML));
                 return;
             }
             if (path.equals("/assets/app.css")) {
-                this.send(exchange, 200, "text/css; charset=utf-8", APP_CSS);
+                this.send(exchange, 200, "text/css; charset=utf-8", webAsset("app.css", APP_CSS));
                 return;
             }
             if (path.equals("/assets/app.js")) {
-                this.send(exchange, 200, "application/javascript; charset=utf-8", APP_JS);
+                this.send(exchange, 200, "application/javascript; charset=utf-8", webAsset("app.js", APP_JS));
                 return;
             }
             if (path.equals("/health")) {
@@ -234,6 +287,26 @@ final class HunterWebPanelManager {
             if (path.equals("/api/admin/web-user/remove")) {
                 this.requireMethod(exchange, "POST");
                 this.adminWebUserRemove(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/luckperms")) {
+                this.requireMethod(exchange, "POST");
+                this.adminLuckPerms(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/web-settings")) {
+                this.requireMethod(exchange, "POST");
+                this.adminWebSettings(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/plugin")) {
+                this.requireMethod(exchange, "POST");
+                this.adminPlugin(exchange);
+                return;
+            }
+            if (path.equals("/api/admin/plugin-update")) {
+                this.requireMethod(exchange, "POST");
+                this.adminPluginUpdate(exchange);
                 return;
             }
             this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"not_found\"}");
@@ -351,16 +424,22 @@ final class HunterWebPanelManager {
             json.append(']');
 
             json.append(",\"plugins\":[");
+            final Map<String, Path> pluginJars = this.pluginJarLookup();
             first = true;
-            for (final Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            for (final Plugin installedPlugin : Bukkit.getPluginManager().getPlugins()) {
                 if (!first) {
                     json.append(',');
                 }
                 first = false;
+                final Path sourceJar = pluginJars.get(installedPlugin.getName().toLowerCase(Locale.ROOT));
+                final boolean protectedPlugin = this.protectedPlugin(installedPlugin.getName());
                 json.append('{');
-                field(json, "name", plugin.getName()).append(',');
-                field(json, "version", plugin.getPluginMeta().getVersion()).append(',');
-                booleanField(json, "enabled", plugin.isEnabled());
+                field(json, "name", installedPlugin.getName()).append(',');
+                field(json, "version", installedPlugin.getPluginMeta().getVersion()).append(',');
+                field(json, "sourceJar", sourceJar == null ? "" : sourceJar.getFileName().toString()).append(',');
+                booleanField(json, "enabled", installedPlugin.isEnabled()).append(',');
+                booleanField(json, "controllable", !protectedPlugin).append(',');
+                booleanField(json, "updateable", !protectedPlugin);
                 json.append('}');
             }
             json.append(']');
@@ -369,6 +448,7 @@ final class HunterWebPanelManager {
             json.append(",\"modules\":").append(this.modulesJson());
             json.append(",\"actorDetails\":").append(this.actorDetailsJson());
             json.append(",\"webUsers\":").append(this.webUsersJson());
+            json.append(",\"webSettings\":").append(this.webSettingsJson());
         }
         json.append('}');
         return json.toString();
@@ -561,6 +641,18 @@ final class HunterWebPanelManager {
         return json.toString();
     }
 
+    private String webSettingsJson() {
+        final StringBuilder json = new StringBuilder(256);
+        json.append('{');
+        field(json, "bindAddress", this.preferences.stringValue("modules.web-panel.bind-address", "127.0.0.1")).append(',');
+        numberField(json, "port", Math.max(1, Math.min(65535, this.preferences.intValue("modules.web-panel.port", 8088)))).append(',');
+        booleanField(json, "publicMap", this.preferences.booleanValue("modules.web-panel.public-map", true)).append(',');
+        field(json, "mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).append(',');
+        field(json, "address", this.addressLine());
+        json.append('}');
+        return json.toString();
+    }
+
     private String mapJson(final HttpExchange exchange) {
         final boolean publicMap = this.preferences.booleanValue("modules.web-panel.public-map", true);
         if (!publicMap && this.session(exchange) == null) {
@@ -582,21 +674,29 @@ final class HunterWebPanelManager {
         final String username = body.getOrDefault("username", "");
         final String password = body.getOrDefault("password", "");
         final HunterToolsPreferences.WebUser user = this.preferences.webUser(username);
-        if (user == null || !user.passwordConfigured() || !verifyPassword(password, user.passwordHash())) {
+        final boolean webPassword = user != null && user.passwordConfigured() && verifyPassword(password, user.passwordHash());
+        final boolean hunterAuthPassword = verifyHunterAuthPassword(username, password);
+        if (!webPassword && !hunterAuthPassword) {
             this.send(exchange, 401, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_login\"}");
             return;
         }
-        final String role = normalizeRole(user.role());
+        final String role = user == null ? "player" : normalizeRole(user.role());
+        final String id = user == null ? HunterToolsPreferences.webUserId(username) : user.id();
+        final String displayName = user == null ? username : user.displayName();
+        final boolean commandExecution = user == null || user.commandExecution();
+        final boolean allowedCommandsConfigured = user != null && user.allowedCommandsConfigured();
+        final List<String> allowedCommands = user == null ? List.of() : List.copyOf(user.allowedCommands());
         final long minutes = Math.max(5L, this.preferences.intValue("modules.web-panel.session-minutes", 360));
         final WebSession session = new WebSession(
             this.newToken(),
             this.newToken(),
-            user.id(),
-            user.displayName(),
+            id,
+            displayName,
             role,
-            user.commandExecution(),
-            user.allowedCommandsConfigured(),
-            List.copyOf(user.allowedCommands()),
+            webPassword ? "web" : "hunterauth",
+            commandExecution,
+            allowedCommandsConfigured,
+            allowedCommands,
             Instant.now().plusSeconds(minutes * 60L).toEpochMilli()
         );
         this.sessions.put(session.token(), session);
@@ -829,6 +929,430 @@ final class HunterWebPanelManager {
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true}");
     }
 
+    private void adminLuckPerms(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final WebSession session = this.adminOperator(exchange, "lp");
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String action = HunterToolsPreferences.normalize(body.getOrDefault("action", ""));
+        final String target = commandToken(body.getOrDefault("target", ""), 64);
+        final String group = commandToken(body.getOrDefault("group", ""), 64);
+        final String permission = permissionToken(body.getOrDefault("permission", ""));
+        final String value = body.getOrDefault("value", "true").equalsIgnoreCase("false") ? "false" : "true";
+        final String command;
+        switch (action) {
+            case "user-permission-set" -> {
+                if (target.isBlank() || permission.isBlank()) {
+                    this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_luckperms_user_permission\"}");
+                    return;
+                }
+                command = "lp user " + target + " permission set " + permission + " " + value;
+            }
+            case "user-permission-unset" -> {
+                if (target.isBlank() || permission.isBlank()) {
+                    this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_luckperms_user_permission\"}");
+                    return;
+                }
+                command = "lp user " + target + " permission unset " + permission;
+            }
+            case "user-parent-set", "user-parent-add", "user-parent-remove" -> {
+                if (target.isBlank() || group.isBlank()) {
+                    this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_luckperms_user_parent\"}");
+                    return;
+                }
+                final String operation = action.substring("user-parent-".length());
+                command = "lp user " + target + " parent " + operation + " " + group;
+            }
+            case "group-permission-set" -> {
+                if (group.isBlank() || permission.isBlank()) {
+                    this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_luckperms_group_permission\"}");
+                    return;
+                }
+                command = "lp group " + group + " permission set " + permission + " " + value;
+            }
+            case "group-permission-unset" -> {
+                if (group.isBlank() || permission.isBlank()) {
+                    this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_luckperms_group_permission\"}");
+                    return;
+                }
+                command = "lp group " + group + " permission unset " + permission;
+            }
+            case "editor" -> command = "lp editor";
+            case "sync" -> command = "lp sync";
+            default -> {
+                this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_luckperms_action\"}");
+                return;
+            }
+        }
+        this.sendCommandResult(exchange, 200, this.dispatchConfiguredCommand(command));
+    }
+
+    private void adminWebSettings(final HttpExchange exchange) throws IOException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String bindAddress = body.getOrDefault("bindAddress", this.preferences.stringValue("modules.web-panel.bind-address", "127.0.0.1")).trim();
+        final String rawPort = body.getOrDefault("port", String.valueOf(this.preferences.intValue("modules.web-panel.port", 8088))).trim();
+        final String mapUrl = body.getOrDefault("mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).trim();
+        final Boolean publicMap = parseBoolean(body.getOrDefault("publicMap", String.valueOf(this.preferences.booleanValue("modules.web-panel.public-map", true))));
+        final int port;
+        try {
+            port = Integer.parseInt(rawPort);
+        } catch (final NumberFormatException ex) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_port\"}");
+            return;
+        }
+        if (bindAddress.isBlank() || bindAddress.length() > 128 || bindAddress.contains(" ") || port < 1 || port > 65535 || mapUrl.isBlank() || publicMap == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_web_settings\"}");
+            return;
+        }
+
+        final boolean restart = !bindAddress.equals(this.preferences.stringValue("modules.web-panel.bind-address", "127.0.0.1"))
+            || port != this.preferences.intValue("modules.web-panel.port", 8088);
+        this.preferences.setValue("modules.web-panel.bind-address", bindAddress);
+        this.preferences.setValue("modules.web-panel.port", port);
+        this.preferences.setValue("modules.web-panel.public-map", publicMap);
+        this.preferences.setValue("modules.web-panel.map-url", mapUrl);
+        this.savePreferences();
+        this.guestStatusCache = null;
+        this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"restart\":" + restart + ",\"settings\":" + this.webSettingsJson() + "}");
+        if (restart) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    Thread.sleep(250L);
+                } catch (final InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+                this.restart();
+            });
+        }
+    }
+
+    private void adminPlugin(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String pluginName = commandToken(body.getOrDefault("plugin", body.getOrDefault("name", "")), 64);
+        final String action = HunterToolsPreferences.normalize(body.getOrDefault("action", ""));
+        if (pluginName.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_plugin\"}");
+            return;
+        }
+        if (!action.equals("enable") && !action.equals("disable") && !action.equals("reload")) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_plugin_action\"}");
+            return;
+        }
+
+        final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
+        final PluginOperationResult result = Bukkit.getScheduler()
+            .callSyncMethod(this.plugin, () -> this.applyPluginAction(pluginName, action))
+            .get(timeout, TimeUnit.SECONDS);
+        this.guestStatusCache = null;
+        this.sendPluginOperationResult(exchange, result);
+    }
+
+    private void adminPluginUpdate(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String pluginName = commandToken(body.getOrDefault("plugin", body.getOrDefault("name", "")), 64);
+        final String rawUrl = body.getOrDefault("url", "").trim();
+        if (pluginName.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_plugin\"}");
+            return;
+        }
+        if (this.protectedPlugin(pluginName)) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"self_protection\"}");
+            return;
+        }
+
+        final URI uri;
+        try {
+            uri = URI.create(rawUrl);
+        } catch (final IllegalArgumentException ex) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_update_url\"}");
+            return;
+        }
+        final String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        if ((!scheme.equals("http") && !scheme.equals("https")) || uri.getHost() == null || rawUrl.length() > 2048) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_update_url\"}");
+            return;
+        }
+
+        final Path pluginsDir = Bukkit.getPluginsFolder().toPath();
+        Files.createDirectories(pluginsDir);
+        final Path download = Files.createTempFile(pluginsDir, "huntercore-plugin-update-", ".jar.part");
+        try {
+            final PluginJarMetadata metadata = this.downloadPluginJar(uri, download);
+            if (!metadata.name().equalsIgnoreCase(pluginName)) {
+                Files.deleteIfExists(download);
+                this.send(exchange, 400, "application/json; charset=utf-8",
+                    "{\"ok\":false,\"error\":\"plugin_name_mismatch\",\"message\":\"Downloaded jar is "
+                        + escapeJson(metadata.name()) + ", not " + escapeJson(pluginName) + ".\"}");
+                return;
+            }
+            final PluginOperationResult result = this.installDownloadedPlugin(metadata, download);
+            this.guestStatusCache = null;
+            this.sendPluginOperationResult(exchange, result);
+        } catch (final IOException ex) {
+            Files.deleteIfExists(download);
+            this.send(exchange, 400, "application/json; charset=utf-8",
+                "{\"ok\":false,\"error\":\"plugin_update_failed\",\"message\":\"" + escapeJson(ex.getMessage()) + "\"}");
+        } catch (final InterruptedException ex) {
+            Files.deleteIfExists(download);
+            Thread.currentThread().interrupt();
+            throw ex;
+        } catch (final ExecutionException | TimeoutException ex) {
+            Files.deleteIfExists(download);
+            throw ex;
+        }
+    }
+
+    private PluginOperationResult applyPluginAction(final String pluginName, final String action) {
+        final Plugin target = Bukkit.getPluginManager().getPlugin(pluginName);
+        if (target == null) {
+            return PluginOperationResult.fail("unknown_plugin", "Plugin " + pluginName + " is not loaded.");
+        }
+        if (this.protectedPlugin(target.getName())) {
+            return PluginOperationResult.fail("self_protection", target.getName() + " hosts the web panel and cannot be controlled from the web panel.");
+        }
+
+        try {
+            switch (action) {
+                case "enable" -> {
+                    if (!target.isEnabled()) {
+                        Bukkit.getPluginManager().enablePlugin(target);
+                    }
+                    return PluginOperationResult.ok("enabled", target.getName() + " is enabled.", pluginLine(target));
+                }
+                case "disable" -> {
+                    if (target.isEnabled()) {
+                        Bukkit.getPluginManager().disablePlugin(target);
+                    }
+                    return PluginOperationResult.ok("disabled", target.getName() + " is disabled.", pluginLine(target));
+                }
+                case "reload" -> {
+                    if (target.isEnabled()) {
+                        Bukkit.getPluginManager().disablePlugin(target);
+                    }
+                    Bukkit.getPluginManager().enablePlugin(target);
+                    return PluginOperationResult.ok("reloaded", target.getName() + " was reloaded with Bukkit enable/disable.", pluginLine(target));
+                }
+                default -> {
+                    return PluginOperationResult.fail("invalid_plugin_action", "Unsupported plugin action.");
+                }
+            }
+        } catch (final RuntimeException ex) {
+            return PluginOperationResult.fail("plugin_action_failed", target.getName() + " action failed: " + ex.getMessage());
+        }
+    }
+
+    private PluginJarMetadata downloadPluginJar(final URI uri, final Path target) throws IOException {
+        final int maxMegabytes = Math.max(1, Math.min(512, this.preferences.intValue("modules.web-panel.plugin-update-max-mb", 64)));
+        final long maxBytes = maxMegabytes * 1024L * 1024L;
+        final HttpRequest request = HttpRequest.newBuilder(uri)
+            .timeout(Duration.ofSeconds(45L))
+            .header("User-Agent", "HunterCore-WebPanel/1.0")
+            .GET()
+            .build();
+        final HttpResponse<InputStream> response;
+        try {
+            response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Download interrupted.", ex);
+        }
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("Download failed with HTTP " + response.statusCode() + ".");
+        }
+        final long contentLength = response.headers().firstValueAsLong("content-length").orElse(-1L);
+        if (contentLength > maxBytes) {
+            throw new IOException("Download is larger than " + maxMegabytes + " MB.");
+        }
+        try (InputStream input = response.body(); OutputStream output = Files.newOutputStream(target)) {
+            final byte[] buffer = new byte[8192];
+            long copied = 0L;
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                copied += read;
+                if (copied > maxBytes) {
+                    throw new IOException("Download is larger than " + maxMegabytes + " MB.");
+                }
+                output.write(buffer, 0, read);
+            }
+        }
+        return this.readPluginJarMetadata(target);
+    }
+
+    private PluginOperationResult installDownloadedPlugin(final PluginJarMetadata metadata, final Path download)
+        throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final Path pluginsDir = Bukkit.getPluginsFolder().toPath();
+        final Path existingJar = this.pluginJarLookup().get(metadata.name().toLowerCase(Locale.ROOT));
+        final Path targetJar = existingJar == null ? pluginsDir.resolve(safePluginJarName(metadata.name())) : existingJar;
+
+        final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
+        final PluginOperationResult disableResult = Bukkit.getScheduler()
+            .callSyncMethod(this.plugin, () -> this.disablePluginForUpdate(metadata.name()))
+            .get(timeout, TimeUnit.SECONDS);
+        if (!disableResult.ok()) {
+            Files.deleteIfExists(download);
+            return disableResult;
+        }
+
+        Path backup = null;
+        try {
+            if (Files.exists(targetJar)) {
+                backup = nextBackupPath(targetJar);
+                Files.move(targetJar, backup, StandardCopyOption.REPLACE_EXISTING);
+            }
+            Files.move(download, targetJar, StandardCopyOption.REPLACE_EXISTING);
+        } catch (final IOException ex) {
+            if (backup != null && Files.exists(backup) && !Files.exists(targetJar)) {
+                Files.move(backup, targetJar, StandardCopyOption.REPLACE_EXISTING);
+            }
+            throw new IOException("Could not replace plugin jar: " + ex.getMessage(), ex);
+        }
+
+        final Path backupPath = backup;
+        return Bukkit.getScheduler()
+            .callSyncMethod(this.plugin, () -> this.loadUpdatedPlugin(metadata, targetJar, backupPath))
+            .get(timeout, TimeUnit.SECONDS);
+    }
+
+    private PluginOperationResult disablePluginForUpdate(final String pluginName) {
+        final Plugin existing = Bukkit.getPluginManager().getPlugin(pluginName);
+        if (existing == null) {
+            return PluginOperationResult.ok("new_plugin", pluginName + " is not currently loaded. The downloaded jar will be installed.", "");
+        }
+        if (this.protectedPlugin(existing.getName())) {
+            return PluginOperationResult.fail("self_protection", existing.getName() + " hosts the web panel and cannot be updated from the web panel.");
+        }
+        try {
+            if (existing.isEnabled()) {
+                Bukkit.getPluginManager().disablePlugin(existing);
+            }
+            return PluginOperationResult.ok("disabled_for_update", existing.getName() + " was disabled before jar replacement.", pluginLine(existing));
+        } catch (final RuntimeException ex) {
+            return PluginOperationResult.fail("plugin_disable_failed", existing.getName() + " could not be disabled: " + ex.getMessage());
+        }
+    }
+
+    private PluginOperationResult loadUpdatedPlugin(final PluginJarMetadata metadata, final Path targetJar, final Path backupPath) {
+        try {
+            final Plugin loaded = Bukkit.getPluginManager().loadPlugin(targetJar.toFile());
+            Bukkit.getPluginManager().enablePlugin(loaded);
+            return PluginOperationResult.ok(
+                loaded.isEnabled() ? "hot_updated" : "installed_disabled",
+                metadata.name() + " " + metadata.version() + " was installed" + (loaded.isEnabled() ? " and enabled without stopping the server." : "."),
+                "jar=" + targetJar.getFileName() + (backupPath == null ? "" : "\nbackup=" + backupPath.getFileName()) + "\n" + pluginLine(loaded)
+            );
+        } catch (final Exception ex) {
+            final Plugin existing = Bukkit.getPluginManager().getPlugin(metadata.name());
+            String reenabled = "";
+            if (existing != null && !existing.isEnabled()) {
+                try {
+                    Bukkit.getPluginManager().enablePlugin(existing);
+                    reenabled = "\nExisting in-memory plugin was re-enabled.";
+                } catch (final RuntimeException ignored) {
+                    reenabled = "\nExisting in-memory plugin could not be re-enabled.";
+                }
+            }
+            return PluginOperationResult.ok(
+                "restart_required",
+                metadata.name() + " jar was installed, but Paper/Bukkit could not hot-load it. Restart or manually reload this plugin to activate the new jar.",
+                "jar=" + targetJar.getFileName()
+                    + (backupPath == null ? "" : "\nbackup=" + backupPath.getFileName())
+                    + "\nreason=" + ex.getMessage()
+                    + reenabled
+            );
+        }
+    }
+
+    private Map<String, Path> pluginJarLookup() {
+        final Map<String, Path> jars = new HashMap<>();
+        final Path pluginsDir = Bukkit.getPluginsFolder().toPath();
+        if (!Files.isDirectory(pluginsDir)) {
+            return jars;
+        }
+        try (var stream = Files.newDirectoryStream(pluginsDir, "*.jar")) {
+            for (final Path path : stream) {
+                try {
+                    final PluginJarMetadata metadata = this.readPluginJarMetadata(path);
+                    jars.putIfAbsent(metadata.name().toLowerCase(Locale.ROOT), path);
+                } catch (final IOException ignored) {
+                }
+            }
+        } catch (final IOException ignored) {
+        }
+        return jars;
+    }
+
+    private PluginJarMetadata readPluginJarMetadata(final Path jar) throws IOException {
+        try (JarFile jarFile = new JarFile(jar.toFile())) {
+            for (final String descriptorName : List.of("paper-plugin.yml", "plugin.yml")) {
+                final ZipEntry entry = jarFile.getEntry(descriptorName);
+                if (entry == null) {
+                    continue;
+                }
+                try (InputStream input = jarFile.getInputStream(entry);
+                     InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
+                    final YamlConfiguration descriptor = YamlConfiguration.loadConfiguration(reader);
+                    final String name = commandToken(descriptor.getString("name", ""), 64);
+                    if (name.isBlank()) {
+                        continue;
+                    }
+                    return new PluginJarMetadata(
+                        name,
+                        descriptor.getString("version", ""),
+                        descriptor.getString("main", ""),
+                        descriptorName
+                    );
+                }
+            }
+        }
+        throw new IOException("Missing plugin.yml or paper-plugin.yml.");
+    }
+
+    private boolean protectedPlugin(final String pluginName) {
+        return pluginName != null && pluginName.equalsIgnoreCase(this.plugin.getName());
+    }
+
+    private static String safePluginJarName(final String pluginName) {
+        final String safe = pluginName.replaceAll("[^A-Za-z0-9_.-]", "_");
+        return (safe.isBlank() ? "plugin" : safe) + ".jar";
+    }
+
+    private static Path nextBackupPath(final Path source) {
+        final String fileName = source.getFileName().toString();
+        Path candidate = source.resolveSibling(fileName + ".bak-" + System.currentTimeMillis());
+        int suffix = 1;
+        while (Files.exists(candidate)) {
+            candidate = source.resolveSibling(fileName + ".bak-" + System.currentTimeMillis() + "-" + suffix++);
+        }
+        return candidate;
+    }
+
+    private static String pluginLine(final Plugin plugin) {
+        return plugin.getName() + " " + plugin.getPluginMeta().getVersion() + " " + (plugin.isEnabled() ? "enabled" : "disabled");
+    }
+
+    private void sendPluginOperationResult(final HttpExchange exchange, final PluginOperationResult result) {
+        this.send(exchange, result.ok() ? 200 : 400, "application/json; charset=utf-8",
+            "{\"ok\":" + result.ok()
+                + ",\"status\":\"" + escapeJson(result.status()) + '"'
+                + ",\"message\":\"" + escapeJson(result.message()) + '"'
+                + ",\"output\":\"" + escapeJson(result.output()) + '"'
+                + (result.ok() ? "" : ",\"error\":\"" + escapeJson(result.status()) + '"')
+                + "}");
+    }
+
     private void savePreferences() {
         if (this.executor == null) {
             this.preferences.saveNow();
@@ -941,6 +1465,17 @@ final class HunterWebPanelManager {
         }
         final String trimmed = value.trim();
         if (trimmed.isBlank() || trimmed.length() > maxLength || !trimmed.matches("[A-Za-z0-9_.-]+")) {
+            return "";
+        }
+        return trimmed;
+    }
+
+    private static String permissionToken(final String value) {
+        if (value == null) {
+            return "";
+        }
+        final String trimmed = value.trim();
+        if (trimmed.isBlank() || trimmed.length() > 160 || !trimmed.matches("[A-Za-z0-9*._:-]+")) {
             return "";
         }
         return trimmed;
@@ -1144,6 +1679,7 @@ final class HunterWebPanelManager {
         return "{\"username\":\"" + escapeJson(session.displayName())
             + "\",\"role\":\"" + escapeJson(session.role())
             + "\",\"admin\":" + session.admin()
+            + ",\"authSource\":\"" + escapeJson(session.authSource()) + '"'
             + ",\"csrf\":\"" + escapeJson(session.csrfToken()) + '"'
             + ",\"commandExecution\":" + session.commandExecution()
             + ",\"allowedCommandsConfigured\":" + session.allowedCommandsConfigured()
@@ -1264,12 +1800,24 @@ final class HunterWebPanelManager {
         return normalized.equals("admin") ? "admin" : "player";
     }
 
+    private static String webAsset(final String name, final String fallback) {
+        try (InputStream input = HunterWebPanelManager.class.getResourceAsStream("/web-panel/" + name)) {
+            if (input == null) {
+                return fallback;
+            }
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (final IOException ex) {
+            return fallback;
+        }
+    }
+
     private record WebSession(
         String token,
         String csrfToken,
         String username,
         String displayName,
         String role,
+        String authSource,
         boolean commandExecution,
         boolean allowedCommandsConfigured,
         List<String> allowedCommands,
@@ -1284,6 +1832,19 @@ final class HunterWebPanelManager {
     }
 
     private record CommandResult(boolean dispatched, String message, String output) {
+    }
+
+    private record PluginOperationResult(boolean ok, String status, String message, String output) {
+        static PluginOperationResult ok(final String status, final String message, final String output) {
+            return new PluginOperationResult(true, status, message, output == null ? "" : output);
+        }
+
+        static PluginOperationResult fail(final String status, final String message) {
+            return new PluginOperationResult(false, status, message, "");
+        }
+    }
+
+    private record PluginJarMetadata(String name, String version, String main, String descriptor) {
     }
 
     private record ParsedAllowedCommands(boolean valid, List<String> commands) {

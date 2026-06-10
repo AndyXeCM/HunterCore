@@ -1,0 +1,824 @@
+:root {
+  color-scheme: light;
+  --bg: #e8edf2;
+  --ink: #111318;
+  --ink-soft: #2d333c;
+  --muted: #65707c;
+  --subtle: #7d8793;
+  --line: rgba(255, 255, 255, 0.58);
+  --line-dark: rgba(26, 31, 39, 0.12);
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-soft: rgba(255, 255, 255, 0.34);
+  --accent: #0a84ff;
+  --accent-deep: #0067d8;
+  --good: #1f9d55;
+  --warn: #b66a00;
+  --bad: #d92d43;
+  --shadow: 0 24px 70px rgba(31, 38, 52, 0.20);
+  --shadow-soft: 0 12px 36px rgba(31, 38, 52, 0.12);
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.10) 34%, rgba(228, 235, 241, 0.86) 100%),
+    linear-gradient(135deg, #e8edf2 0%, #f5f7f8 42%, #e3ece6 100%);
+  color: var(--ink);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, transparent, black 18%, black 76%, transparent);
+  opacity: 0.34;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 25px;
+  line-height: 1.08;
+}
+
+h2 {
+  font-size: 27px;
+  line-height: 1.12;
+}
+
+h3 {
+  margin-bottom: 14px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+a {
+  color: inherit;
+}
+
+.app {
+  min-height: 100svh;
+  position: relative;
+}
+
+.mapStage {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(135deg, #d7dfd0 0%, #b9d0bc 38%, #d8d1bd 72%, #e6e8e5 100%);
+}
+
+.mapStage iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #dde5d8;
+  transform: scale(1.012);
+}
+
+.mapShade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(242, 246, 249, 0.93) 0%, rgba(242, 246, 249, 0.64) 35%, rgba(242, 246, 249, 0.16) 68%, rgba(242, 246, 249, 0.04) 100%),
+    linear-gradient(0deg, rgba(233, 239, 245, 0.96) 0%, rgba(233, 239, 245, 0.52) 18%, rgba(233, 239, 245, 0.06) 56%);
+}
+
+.mapStage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.28) 28%, transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 44%);
+  mix-blend-mode: screen;
+  opacity: 0.78;
+}
+
+.topChrome,
+.workspace {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.topChrome {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+}
+
+.brandBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.productMark,
+.topNav,
+.sessionDock,
+.panel,
+.miniMetrics div,
+.toggleItem,
+.dataItem,
+.pluginItem,
+input,
+select,
+pre,
+.statusPill,
+.roleBadge,
+.smallButton,
+.secondaryButton,
+.quickRow button {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.36) 48%, rgba(255, 255, 255, 0.58)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+}
+
+.topNav,
+.sessionDock,
+.panel {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.topNav::before,
+.sessionDock::before,
+.panel::before,
+.pluginItem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.14) 24%, transparent 38%),
+    linear-gradient(300deg, transparent 42%, rgba(255, 255, 255, 0.38) 72%, rgba(255, 255, 255, 0.10));
+  mix-blend-mode: screen;
+  opacity: 0.66;
+}
+
+.productMark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius);
+  color: var(--accent-deep);
+  font-weight: 800;
+  box-shadow: var(--shadow-soft);
+}
+
+.brandBlock p,
+.subtleLine,
+.mutedState,
+small {
+  color: var(--muted);
+}
+
+.brandBlock p {
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.topNav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 42px;
+  padding: 5px;
+  border-radius: var(--radius);
+}
+
+.navButton,
+.secondaryButton,
+.quickRow button {
+  min-height: 32px;
+  border-radius: 7px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  padding: 0 12px;
+}
+
+.navButton {
+  position: relative;
+  z-index: 1;
+  min-width: 74px;
+}
+
+.navButton.isActive,
+.navButton:hover,
+.secondaryButton:hover,
+.quickRow button:hover {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.46)),
+    rgba(255, 255, 255, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 8px 22px rgba(37, 44, 56, 0.12);
+}
+
+.sessionDock {
+  z-index: 3;
+  width: min(430px, calc(100% - 32px));
+  margin: 58px 0 0 max(16px, calc((100vw - 1440px) / 2 + 16px));
+  padding: 18px;
+  border-radius: var(--radius);
+}
+
+.dockHeader,
+.sectionHead,
+.dataItem,
+.toggleItem,
+.mapLink,
+.pluginTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dockHeader {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 14px;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+#sessionTitle {
+  display: block;
+  margin-top: 2px;
+  font-size: 18px;
+}
+
+.statusPill,
+.roleBadge,
+.stateChip {
+  min-width: 54px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.statusPill.ok,
+.roleBadge.ok,
+.stateChip.ok {
+  color: var(--good);
+  border-color: rgba(31, 157, 85, 0.28);
+  background: rgba(31, 157, 85, 0.10);
+}
+
+.statusPill.warning {
+  color: var(--warn);
+  border-color: rgba(182, 106, 0, 0.30);
+  background: rgba(182, 106, 0, 0.10);
+}
+
+.statusPill.critical,
+.stateChip.critical {
+  color: var(--bad);
+  border-color: rgba(217, 45, 67, 0.28);
+  background: rgba(217, 45, 67, 0.10);
+}
+
+.statusPill.disabled {
+  color: var(--subtle);
+}
+
+.loginForm,
+.inlineForm,
+.stackForm {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+}
+
+.loginForm {
+  grid-template-columns: 1fr;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 39px;
+  border-radius: var(--radius);
+  color: var(--ink);
+  padding: 0 12px;
+  outline: none;
+}
+
+input::placeholder {
+  color: rgba(101, 112, 124, 0.74);
+}
+
+input:focus,
+select:focus {
+  border-color: rgba(10, 132, 255, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 0 0 3px rgba(10, 132, 255, 0.13),
+    0 12px 26px rgba(10, 132, 255, 0.10);
+}
+
+.primaryButton {
+  min-height: 39px;
+  border: 1px solid rgba(255, 255, 255, 0.50);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(64, 166, 255, 0.96), rgba(0, 103, 216, 0.98)),
+    var(--accent);
+  color: #fff;
+  padding: 0 15px;
+  font-weight: 760;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 14px 30px rgba(10, 132, 255, 0.26);
+}
+
+.primaryButton:hover {
+  background:
+    linear-gradient(145deg, rgba(83, 176, 255, 0.98), rgba(0, 92, 194, 0.98)),
+    var(--accent-deep);
+}
+
+.secondaryButton {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-top: 10px;
+  color: var(--ink-soft);
+}
+
+.miniMetrics {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.miniMetrics div {
+  min-height: 70px;
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.miniMetrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.miniMetrics strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 23px;
+  line-height: 1;
+}
+
+.compactList,
+.dataList {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.compactList {
+  margin-top: 10px;
+}
+
+.dataItem,
+.toggleItem {
+  min-height: 44px;
+  border-radius: var(--radius);
+  padding: 10px;
+  box-shadow: none;
+}
+
+.dataItem span,
+.toggleItem span,
+.pluginTop span {
+  min-width: 0;
+}
+
+.dataItem strong {
+  flex-shrink: 0;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: right;
+}
+
+small {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.mapLink {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  min-height: 40px;
+  border-top: 1px solid var(--line-dark);
+  color: var(--accent-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.workspace {
+  padding: 34px 0 0;
+}
+
+.workspace:last-child {
+  padding-bottom: 46px;
+}
+
+.sectionHead {
+  margin-bottom: 16px;
+}
+
+.overviewGrid,
+.adminGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+
+.toolsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.85fr);
+  gap: 14px;
+}
+
+.panel {
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+#opsPanel {
+  grid-row: span 3;
+}
+
+.commandPanel {
+  min-height: 260px;
+}
+
+.inlineForm {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.quickRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.quickRow button {
+  border-color: var(--line);
+}
+
+pre {
+  min-height: 126px;
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  border-radius: var(--radius);
+  color: #303743;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.formGrid .primaryButton {
+  width: 100%;
+}
+
+.checkLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 39px;
+  color: var(--muted);
+}
+
+.checkLine input,
+.toggleItem input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.toggleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.commandGroups {
+  display: grid;
+  gap: 14px;
+}
+
+.commandGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.commandGroup h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.userActions,
+.actorActions,
+.pluginActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.userActions button,
+.actorActions button,
+.smallButton {
+  min-height: 31px;
+  border-radius: 7px;
+  color: var(--ink-soft);
+  padding: 0 10px;
+}
+
+.pluginItem {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  border-radius: var(--radius);
+  padding: 12px;
+  overflow: hidden;
+}
+
+.pluginItem.isDisabled {
+  border-color: rgba(217, 45, 67, 0.22);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(255, 243, 245, 0.46)),
+    rgba(255, 255, 255, 0.32);
+}
+
+.pluginTop {
+  position: relative;
+  z-index: 1;
+  align-items: flex-start;
+}
+
+.pluginTop > span {
+  color: var(--ink);
+  font-weight: 720;
+}
+
+.pluginActions,
+.pluginUpdateForm {
+  position: relative;
+  z-index: 1;
+}
+
+.pluginUpdateForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.stateChip {
+  flex-shrink: 0;
+}
+
+.dangerText {
+  color: var(--bad);
+}
+
+.hidden,
+[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sessionDock,
+  .panel,
+  .topNav {
+    animation: glassIn 420ms ease both;
+  }
+
+  .navButton,
+  .primaryButton,
+  .smallButton,
+  .quickRow button,
+  .pluginItem,
+  input,
+  select {
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+  }
+
+  .primaryButton:hover,
+  .smallButton:hover,
+  .quickRow button:hover {
+    transform: translateY(-1px);
+  }
+
+  .pluginItem:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@keyframes glassIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .productMark,
+  .topNav,
+  .sessionDock,
+  .panel,
+  .miniMetrics div,
+  .toggleItem,
+  .dataItem,
+  .pluginItem,
+  input,
+  select,
+  pre,
+  .statusPill,
+  .roleBadge,
+  .smallButton,
+  .secondaryButton,
+  .quickRow button {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+
+@media (max-width: 980px) {
+  .topChrome {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .topNav {
+    align-items: stretch;
+    overflow-x: auto;
+  }
+
+  .sessionDock {
+    margin: 26px auto 0;
+  }
+
+  .overviewGrid,
+  .adminGrid,
+  .toolsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  #opsPanel {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .mapStage {
+    min-height: 780px;
+  }
+
+  .mapShade {
+    background:
+      linear-gradient(180deg, rgba(242, 246, 249, 0.90), rgba(242, 246, 249, 0.66) 54%, rgba(233, 239, 245, 0.96)),
+      linear-gradient(90deg, rgba(242, 246, 249, 0.82), rgba(242, 246, 249, 0.38));
+  }
+
+  .topChrome,
+  .workspace {
+    width: min(100% - 20px, 1440px);
+  }
+
+  .sessionDock {
+    width: min(100% - 20px, 430px);
+  }
+
+  .miniMetrics,
+  .formGrid,
+  .toggleGrid,
+  .inlineForm,
+  .pluginUpdateForm {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHead,
+  .dockHeader,
+  .pluginTop,
+  .dataItem {
+    align-items: flex-start;
+  }
+
+  h1 {
+    font-size: 23px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+}

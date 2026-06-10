@@ -599,7 +599,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage("Usage: /hunteradmin web <status|restart|user|remove|users|allow|execution>");
+            sender.sendMessage("Usage: /hunteradmin web <status|restart|bind|port|map|public-map|user|remove|users|allow|execution>");
             return true;
         }
         final String sub = args[1].toLowerCase(Locale.ROOT);
@@ -607,6 +607,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             case "status" -> {
                 final boolean running = this.webPanelManager != null && this.webPanelManager.running();
                 sender.sendMessage(ChatColor.GOLD + "HunterCore web panel: " + (running ? ChatColor.GREEN + "running " : ChatColor.RED + "stopped ") + (this.webPanelManager == null ? "" : this.webPanelManager.addressLine()));
+                sender.sendMessage(ChatColor.GRAY + "Bind: " + ChatColor.WHITE + this.preferences.stringValue("modules.web-panel.bind-address", "127.0.0.1")
+                    + ChatColor.GRAY + " Port: " + ChatColor.WHITE + this.preferences.intValue("modules.web-panel.port", 8088));
+                sender.sendMessage(ChatColor.GRAY + "Public map: " + ChatColor.WHITE + this.preferences.booleanValue("modules.web-panel.public-map", true)
+                    + ChatColor.GRAY + " URL: " + ChatColor.WHITE + this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/"));
                 yield true;
             }
             case "restart" -> {
@@ -616,6 +620,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
                 sender.sendMessage("HunterCore web panel restarted.");
                 yield true;
             }
+            case "bind", "address" -> this.adminWebBind(sender, args);
+            case "port" -> this.adminWebPort(sender, args);
+            case "map" -> this.adminWebMap(sender, args);
+            case "public-map" -> this.adminWebPublicMap(sender, args);
             case "users" -> {
                 sender.sendMessage(ChatColor.GOLD + "HunterCore web users:");
                 for (final String id : this.preferences.webUserIds()) {
@@ -634,7 +642,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             case "allow" -> this.adminWebAllow(sender, args);
             case "execution" -> this.adminWebExecution(sender, args);
             default -> {
-                sender.sendMessage("Usage: /hunteradmin web <status|restart|user|remove|users|allow|execution>");
+                sender.sendMessage("Usage: /hunteradmin web <status|restart|bind|port|map|public-map|user|remove|users|allow|execution>");
                 yield true;
             }
         };
@@ -718,6 +726,82 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         this.preferences.setWebUserCommandExecution(args[2], enabled);
         this.preferences.save(this.workerExecutor);
         sender.sendMessage("HunterCore web user " + HunterToolsPreferences.webUserId(args[2]) + " command execution set to " + enabled + ".");
+        return true;
+    }
+
+    private boolean adminWebBind(final CommandSender sender, final String[] args) {
+        if (args.length != 3) {
+            sender.sendMessage("Usage: /hunteradmin web bind <address>");
+            return true;
+        }
+        final String bindAddress = args[2].trim();
+        if (bindAddress.isBlank() || bindAddress.length() > 128 || bindAddress.contains(" ")) {
+            sender.sendMessage("Invalid bind address.");
+            return true;
+        }
+        this.preferences.setValue("modules.web-panel.bind-address", bindAddress);
+        this.preferences.save(this.workerExecutor);
+        if (this.webPanelManager != null) {
+            this.webPanelManager.restart();
+        }
+        sender.sendMessage("HunterCore web bind address set to " + bindAddress + " and panel restarted.");
+        return true;
+    }
+
+    private boolean adminWebPort(final CommandSender sender, final String[] args) {
+        if (args.length != 3) {
+            sender.sendMessage("Usage: /hunteradmin web port <1-65535>");
+            return true;
+        }
+        final int port;
+        try {
+            port = Integer.parseInt(args[2]);
+        } catch (final NumberFormatException ex) {
+            sender.sendMessage("Port must be a number.");
+            return true;
+        }
+        if (port < 1 || port > 65535) {
+            sender.sendMessage("Port must be between 1 and 65535.");
+            return true;
+        }
+        this.preferences.setValue("modules.web-panel.port", port);
+        this.preferences.save(this.workerExecutor);
+        if (this.webPanelManager != null) {
+            this.webPanelManager.restart();
+        }
+        sender.sendMessage("HunterCore web port set to " + port + " and panel restarted.");
+        return true;
+    }
+
+    private boolean adminWebMap(final CommandSender sender, final String[] args) {
+        if (args.length != 3) {
+            sender.sendMessage("Usage: /hunteradmin web map <url>");
+            return true;
+        }
+        final String mapUrl = args[2].trim();
+        if (mapUrl.isBlank() || mapUrl.length() > 512) {
+            sender.sendMessage("Invalid map URL.");
+            return true;
+        }
+        this.preferences.setValue("modules.web-panel.map-url", mapUrl);
+        this.preferences.save(this.workerExecutor);
+        sender.sendMessage("HunterCore web map URL set to " + mapUrl + ".");
+        return true;
+    }
+
+    private boolean adminWebPublicMap(final CommandSender sender, final String[] args) {
+        if (args.length != 3) {
+            sender.sendMessage("Usage: /hunteradmin web public-map <on|off>");
+            return true;
+        }
+        final Boolean enabled = parseToggle(args[2]);
+        if (enabled == null) {
+            sender.sendMessage("Use on/off.");
+            return true;
+        }
+        this.preferences.setValue("modules.web-panel.public-map", enabled);
+        this.preferences.save(this.workerExecutor);
+        sender.sendMessage("HunterCore public map access set to " + enabled + ".");
         return true;
     }
 
@@ -1057,7 +1141,19 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             return matching(args[0], List.of("reload", "modules", "module", "command", "plugins", "memory", "gc", "threads", "optimize", "web"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("web")) {
-            return matching(args[1], List.of("status", "restart", "user", "remove", "users", "allow", "execution"));
+            return matching(args[1], List.of("status", "restart", "bind", "address", "port", "map", "public-map", "user", "remove", "users", "allow", "execution"));
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("web") && (args[1].equalsIgnoreCase("bind") || args[1].equalsIgnoreCase("address"))) {
+            return matching(args[2], List.of("127.0.0.1", "0.0.0.0"));
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("web") && args[1].equalsIgnoreCase("port")) {
+            return matching(args[2], List.of("8088", "8090", "8100"));
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("web") && args[1].equalsIgnoreCase("map")) {
+            return matching(args[2], List.of("http://%host%:8100/"));
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("web") && args[1].equalsIgnoreCase("public-map")) {
+            return matching(args[2], List.of("on", "off"));
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("web") && args[1].equalsIgnoreCase("user")) {
             return matching(args[3], List.of("admin", "player"));
