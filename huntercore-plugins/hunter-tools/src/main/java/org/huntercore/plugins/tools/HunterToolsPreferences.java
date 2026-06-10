@@ -324,6 +324,10 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.motd.line-1", "&b\"HunterCraft\" Server &8| &fHunterCore");
         changed |= this.setDefault("modules.motd.line-2", "&7%online%/%max% players &8- &aTPS %tps% &8- &e%version%");
         changed |= this.setDefault("modules.motd.max-players", -1);
+        changed |= this.setDefault("modules.command-overrides.enabled", true);
+        changed |= this.setDefault("modules.command-overrides.messages.about", defaultCommandOverrideLines("about"));
+        changed |= this.setDefault("modules.command-overrides.messages.plugins", defaultCommandOverrideLines("plugins"));
+        changed |= this.setDefault("modules.command-overrides.messages.op-denied", defaultCommandOverrideLines("op-denied"));
         changed |= this.setDefault("modules.essentials.enabled", true);
         for (final String command : essentialsCommands()) {
             changed |= this.setDefault("modules.essentials.commands." + command, true);
@@ -440,6 +444,23 @@ final class HunterToolsPreferences {
 
     static List<String> defaultWebPlayerCommands() {
         return List.of("help", "list", "me", "msg", "tell", "spawn", "tps", "htps");
+    }
+
+    static List<String> defaultCommandOverrideLines(final String target) {
+        return switch (normalize(target)) {
+            case "plugins" -> List.of(
+                "&6插件列表 &8| &f此服务器由 &bHunterCore &f托管",
+                "&7基础插件和管理能力已集成，具体插件列表由管理员维护。"
+            );
+            case "op-denied" -> List.of(
+                "&c你没有权限使用 /op。",
+                "&7如需管理员权限，请联系服务器管理组。"
+            );
+            default -> List.of(
+                "&b\"HunterCraft\" Server &8| &fPowered by &6HunterCore",
+                "&7高性能自定义核心 · 网页面板 · 假人调试 · 地图管理"
+            );
+        };
     }
 
     static String normalize(final String id) {

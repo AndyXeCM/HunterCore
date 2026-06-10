@@ -36,6 +36,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -56,8 +57,9 @@ import org.jetbrains.annotations.Nullable;
 
 public final class HunterToolsPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener {
     private static final String CLIENT_BRAND = "\"HunterCraft\" Server";
-    private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "essentials", "management", "fake-players", "real-fake-players", "npcs", "web-panel");
+    private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "command-overrides", "essentials", "management", "fake-players", "real-fake-players", "npcs", "web-panel");
     private static final String MOTD = "motd";
+    private static final String COMMAND_OVERRIDES = "command-overrides";
     private static final String ESSENTIALS = "essentials";
     private static final String MANAGEMENT = "management";
     private static final String FAKE_PLAYERS = "fake-players";
@@ -237,6 +239,32 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         final int maxPlayers = this.preferences.intValue("modules.motd.max-players", -1);
         if (maxPlayers > 0) {
             event.setMaxPlayers(maxPlayers);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCommandPreprocess(final PlayerCommandPreprocessEvent event) {
+        if (!this.preferences.moduleEnabled(COMMAND_OVERRIDES)) {
+            return;
+        }
+        final String root = commandRoot(event.getMessage());
+        switch (root) {
+            case "about" -> {
+                event.setCancelled(true);
+                this.sendCommandOverride(event.getPlayer(), "about");
+            }
+            case "plugins", "pl" -> {
+                event.setCancelled(true);
+                this.sendCommandOverride(event.getPlayer(), "plugins");
+            }
+            case "op" -> {
+                if (!this.canUseOp(event.getPlayer())) {
+                    event.setCancelled(true);
+                    this.sendCommandOverride(event.getPlayer(), "op-denied");
+                }
+            }
+            default -> {
+            }
         }
     }
 
@@ -1440,6 +1468,33 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         return this.actorManager != null && this.actorManager.setClickCommand(module, id, command);
     }
 
+    private void sendCommandOverride(final Player player, final String target) {
+        final List<String> lines = this.preferences.stringList(
+            "modules.command-overrides.messages." + target,
+            HunterToolsPreferences.defaultCommandOverrideLines(target)
+        );
+        for (final String line : lines) {
+            player.sendMessage(color(this.renderCommandOverrideLine(line, player)));
+        }
+    }
+
+    private String renderCommandOverrideLine(final String line, final Player player) {
+        final String pluginCount = String.valueOf(Bukkit.getPluginManager().getPlugins().length);
+        return (line == null ? "" : line)
+            .replace("%player%", player.getName())
+            .replace("%player_uuid%", player.getUniqueId().toString())
+            .replace("%online%", String.valueOf(Bukkit.getOnlinePlayers().size()))
+            .replace("%max%", String.valueOf(Bukkit.getMaxPlayers()))
+            .replace("%server%", this.preferences.stringValue("modules.web-panel.server-name", "HunterCore"))
+            .replace("%version%", Bukkit.getVersion())
+            .replace("%plugins%", pluginCount)
+            .replace("%plugin_count%", pluginCount);
+    }
+
+    private boolean canUseOp(final Player player) {
+        return player.isOp() || player.hasPermission("minecraft.command.op") || player.hasPermission("bukkit.command.op");
+    }
+
     private static List<String> matching(final String prefix, final Collection<String> values) {
         final String lower = prefix.toLowerCase(Locale.ROOT);
         final List<String> matches = new ArrayList<>();
@@ -1463,6 +1518,12 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     private static String normalizeWebCommand(final String command) {
         return command.replaceFirst("^/+", "").trim().split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
+    }
+
+    private static String commandRoot(final String message) {
+        final String root = normalizeWebCommand(message);
+        final int namespace = root.indexOf(':');
+        return namespace >= 0 && namespace + 1 < root.length() ? root.substring(namespace + 1) : root;
     }
 
     private static boolean isAir(final ItemStack item) {

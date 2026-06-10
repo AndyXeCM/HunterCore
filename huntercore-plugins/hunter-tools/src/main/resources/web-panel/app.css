@@ -66,7 +66,8 @@ body::before {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -76,7 +77,8 @@ button {
 
 button:disabled,
 input:disabled,
-select:disabled {
+select:disabled,
+textarea:disabled {
   cursor: not-allowed;
   opacity: 0.52;
 }
@@ -202,7 +204,8 @@ a {
 .smallButton,
 .quickRow button,
 input,
-select {
+select,
+textarea {
   --glass-x: 50%;
   --glass-y: 0%;
   --tilt-x: 0deg;
@@ -746,6 +749,37 @@ pre {
 }
 
 .formGrid .primaryButton {
+  width: 100%;
+}
+
+textarea {
+  width: 100%;
+  min-height: 92px;
+  padding: 11px 12px;
+  color: var(--ink-soft);
+  line-height: 1.42;
+  resize: vertical;
+}
+
+.commandMessagesForm {
+  display: grid;
+  gap: 10px;
+}
+
+.textEditorLabel {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.textEditorLabel textarea {
+  font-size: 13px;
+  font-weight: 520;
+}
+
+.commandMessagesForm .primaryButton {
   width: 100%;
 }
 

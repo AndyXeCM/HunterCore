@@ -225,6 +225,25 @@
           <p id="webAddressLine" class="subtleLine"></p>
         </section>
 
+        <section id="commandMessagesPanel" class="panel">
+          <h3 data-i18n="commandMessages.title">Command text</h3>
+          <form id="commandMessagesForm" class="stackForm commandMessagesForm">
+            <label class="textEditorLabel">
+              <span data-i18n="commandMessages.about">/about</span>
+              <textarea id="commandMessageAbout" rows="4" spellcheck="false" data-i18n-placeholder="commandMessages.aboutPlaceholder"></textarea>
+            </label>
+            <label class="textEditorLabel">
+              <span data-i18n="commandMessages.plugins">/plugins</span>
+              <textarea id="commandMessagePlugins" rows="4" spellcheck="false" data-i18n-placeholder="commandMessages.pluginsPlaceholder"></textarea>
+            </label>
+            <label class="textEditorLabel">
+              <span data-i18n="commandMessages.opDenied">/op</span>
+              <textarea id="commandMessageOpDenied" rows="4" spellcheck="false" data-i18n-placeholder="commandMessages.opDeniedPlaceholder"></textarea>
+            </label>
+            <button type="submit" class="primaryButton" data-i18n="commandMessages.save">Save command text</button>
+          </form>
+        </section>
+
         <section id="usersPanel" class="panel">
           <h3 data-i18n="webUsers.title">Web roles</h3>
           <form id="webUserForm" class="stackForm">

@@ -68,7 +68,7 @@ final class HunterWebPanelManager {
         .build();
     private static final int HASH_ITERATIONS = 120_000;
     private static final int HASH_BITS = 256;
-    private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "essentials", "management", "fake-players", "real-fake-players", "npcs", "web-panel");
+    private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "command-overrides", "essentials", "management", "fake-players", "real-fake-players", "npcs", "web-panel");
     private static final Map<String, List<String>> MODULE_COMMANDS = Map.of(
         "essentials", HunterToolsPreferences.essentialsCommands(),
         "management", HunterToolsPreferences.managementCommands(),
@@ -313,6 +313,11 @@ final class HunterWebPanelManager {
                 this.adminWebSettings(exchange);
                 return;
             }
+            if (path.equals("/api/admin/command-messages")) {
+                this.requireMethod(exchange, "POST");
+                this.adminCommandMessages(exchange);
+                return;
+            }
             if (path.equals("/api/admin/plugin")) {
                 this.requireMethod(exchange, "POST");
                 this.adminPlugin(exchange);
@@ -447,6 +452,7 @@ final class HunterWebPanelManager {
             json.append(",\"actorDetails\":").append(this.actorDetailsJson());
             json.append(",\"webUsers\":").append(this.webUsersJson());
             json.append(",\"webSettings\":").append(this.webSettingsJson());
+            json.append(",\"commandMessages\":").append(this.commandMessagesJson());
         }
         json.append('}');
         return json.toString();
@@ -729,6 +735,25 @@ final class HunterWebPanelManager {
         field(json, "mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).append(',');
         field(json, "serverName", this.webServerName()).append(',');
         field(json, "address", this.addressLine());
+        json.append('}');
+        return json.toString();
+    }
+
+    private String commandMessagesJson() {
+        final StringBuilder json = new StringBuilder(512);
+        json.append('{');
+        json.append("\"about\":").append(stringArrayJson(this.preferences.stringList(
+            "modules.command-overrides.messages.about",
+            HunterToolsPreferences.defaultCommandOverrideLines("about")
+        ))).append(',');
+        json.append("\"plugins\":").append(stringArrayJson(this.preferences.stringList(
+            "modules.command-overrides.messages.plugins",
+            HunterToolsPreferences.defaultCommandOverrideLines("plugins")
+        ))).append(',');
+        json.append("\"opDenied\":").append(stringArrayJson(this.preferences.stringList(
+            "modules.command-overrides.messages.op-denied",
+            HunterToolsPreferences.defaultCommandOverrideLines("op-denied")
+        )));
         json.append('}');
         return json.toString();
     }
@@ -1151,6 +1176,27 @@ final class HunterWebPanelManager {
                 this.restart();
             });
         }
+    }
+
+    private void adminCommandMessages(final HttpExchange exchange) throws IOException {
+        final WebSession session = this.adminOperator(exchange);
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 32 * 1024));
+        final List<String> about = commandMessageLines(body.getOrDefault("about", ""));
+        final List<String> plugins = commandMessageLines(body.getOrDefault("plugins", ""));
+        final List<String> opDenied = commandMessageLines(body.getOrDefault("opDenied", ""));
+        if (about == null || plugins == null || opDenied == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_command_messages\"}");
+            return;
+        }
+        this.preferences.setValue("modules.command-overrides.messages.about", about);
+        this.preferences.setValue("modules.command-overrides.messages.plugins", plugins);
+        this.preferences.setValue("modules.command-overrides.messages.op-denied", opDenied);
+        this.savePreferences();
+        this.guestStatusCache = null;
+        this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"messages\":" + this.commandMessagesJson() + "}");
     }
 
     private void adminPlugin(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
@@ -1933,6 +1979,26 @@ final class HunterWebPanelManager {
             }
         }
         return new ParsedAllowedCommands(true, commands);
+    }
+
+    private static List<String> commandMessageLines(final String raw) {
+        final String value = raw == null ? "" : raw.replace("\r\n", "\n").replace('\r', '\n');
+        if (value.length() > 4096) {
+            return null;
+        }
+        final List<String> lines = new ArrayList<>(List.of(value.split("\n", -1)));
+        while (!lines.isEmpty() && lines.getLast().isBlank()) {
+            lines.removeLast();
+        }
+        if (lines.size() > 24) {
+            return null;
+        }
+        for (final String line : lines) {
+            if (line.length() > 256) {
+                return null;
+            }
+        }
+        return lines;
     }
 
     private static String onOff(final boolean enabled) {

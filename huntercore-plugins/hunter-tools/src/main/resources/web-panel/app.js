@@ -106,6 +106,15 @@ const translations = {
     'webSettings.save': '保存网页设置',
     'webSettings.saved': '网页设置已保存。',
     'webSettings.restarting': '网页设置已保存，面板会切换到新地址。',
+    'commandMessages.title': '命令文案',
+    'commandMessages.about': '/about',
+    'commandMessages.plugins': '/plugins',
+    'commandMessages.opDenied': '/op 无权限',
+    'commandMessages.aboutPlaceholder': '&b"HunterCraft" Server &8| &fPowered by &6HunterCore',
+    'commandMessages.pluginsPlaceholder': '&6插件列表 &8| &f由管理员维护',
+    'commandMessages.opDeniedPlaceholder': '&c你没有权限使用 /op。',
+    'commandMessages.save': '保存命令文案',
+    'commandMessages.saved': '命令文案已保存。',
     'webUsers.title': '网页身份',
     'webUsers.username': '用户名',
     'webUsers.password': '可选网页密码',
@@ -245,6 +254,15 @@ const translations = {
     'webSettings.save': 'Save web settings',
     'webSettings.saved': 'Web settings saved.',
     'webSettings.restarting': 'Web settings saved. Panel is restarting on the new address.',
+    'commandMessages.title': 'Command text',
+    'commandMessages.about': '/about',
+    'commandMessages.plugins': '/plugins',
+    'commandMessages.opDenied': '/op denied',
+    'commandMessages.aboutPlaceholder': '&b"HunterCraft" Server &8| &fPowered by &6HunterCore',
+    'commandMessages.pluginsPlaceholder': '&6Plugin list &8| &fManaged by staff',
+    'commandMessages.opDeniedPlaceholder': '&cYou do not have permission to use /op.',
+    'commandMessages.save': 'Save command text',
+    'commandMessages.saved': 'Command text saved.',
     'webUsers.title': 'Web roles',
     'webUsers.username': 'Username',
     'webUsers.password': 'Optional web password',
@@ -347,6 +365,7 @@ const liquidGlassSelector = [
   '.quickRow button',
   'input',
   'select',
+  'textarea',
   '.navButton',
   '.productMark',
   '.statusPill',
@@ -434,6 +453,7 @@ function rerenderCachedStatus() {
   renderOperations(data.modules);
   renderWebUsers(data.webUsers);
   renderWebSettings(data.webSettings);
+  renderCommandMessages(data.commandMessages);
 }
 
 function setLanguage(lang) {
@@ -666,6 +686,14 @@ function renderWebSettings(settings) {
   $('webAddressLine').textContent = settings.address || '';
 }
 
+function renderCommandMessages(messages) {
+  if (!state.session?.admin || !messages) return;
+  if (document.activeElement && $('commandMessagesForm').contains(document.activeElement)) return;
+  $('commandMessageAbout').value = (messages.about || []).join('\n');
+  $('commandMessagePlugins').value = (messages.plugins || []).join('\n');
+  $('commandMessageOpDenied').value = (messages.opDenied || []).join('\n');
+}
+
 async function refresh() {
   const data = await json('/api/status');
   state.lastData = data;
@@ -685,6 +713,7 @@ async function refresh() {
   renderOperations(data.modules);
   renderWebUsers(data.webUsers);
   renderWebSettings(data.webSettings);
+  renderCommandMessages(data.commandMessages);
 }
 
 async function refreshMap() {
@@ -951,6 +980,23 @@ function bindEvents() {
       if (result.settings) renderWebSettings(result.settings);
       await refresh();
       await refreshMap();
+    } catch (error) {
+      setOutput(t('command.error', { message: error.message }));
+    }
+  });
+
+  $('commandMessagesForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = {
+      about: $('commandMessageAbout').value,
+      plugins: $('commandMessagePlugins').value,
+      opDenied: $('commandMessageOpDenied').value
+    };
+    try {
+      const result = await json('/api/admin/command-messages', { method: 'POST', body: JSON.stringify(payload) });
+      setOutput(t('commandMessages.saved'));
+      if (result.messages) renderCommandMessages(result.messages);
+      await refresh();
     } catch (error) {
       setOutput(t('command.error', { message: error.message }));
     }
