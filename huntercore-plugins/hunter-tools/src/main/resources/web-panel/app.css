@@ -278,6 +278,32 @@ select {
   border-radius: var(--radius);
   color: var(--accent-deep);
   font-weight: 800;
+  overflow: hidden;
+}
+
+.productMark img {
+  grid-area: 1 / 1;
+  display: none;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.productMark span {
+  grid-area: 1 / 1;
+}
+
+.productMark.hasIcon {
+  padding: 0;
+}
+
+.productMark.hasIcon img {
+  display: block;
+}
+
+.productMark.hasIcon span {
+  display: none;
 }
 
 .brandBlock p,
@@ -310,6 +336,11 @@ small {
   background: transparent;
   color: var(--ink-soft);
   padding: 0 12px;
+}
+
+.langButton {
+  min-width: 50px;
+  font-weight: 800;
 }
 
 .navButton::before {
@@ -398,7 +429,8 @@ small {
     rgba(31, 157, 85, 0.12);
 }
 
-.statusPill.warning {
+.statusPill.warning,
+.stateChip.warning {
   color: var(--warn);
   border-color: rgba(182, 106, 0, 0.30);
   background:
@@ -792,6 +824,14 @@ pre {
     radial-gradient(circle at var(--glass-x) var(--glass-y), rgba(255, 255, 255, 0.66), transparent 40%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(255, 238, 241, 0.24)),
     rgba(217, 45, 67, 0.08);
+}
+
+.pluginItem.isInstalled {
+  border-color: rgba(182, 106, 0, 0.26);
+  background:
+    radial-gradient(circle at var(--glass-x) var(--glass-y), rgba(255, 255, 255, 0.62), transparent 40%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.44), rgba(255, 246, 231, 0.24)),
+    rgba(182, 106, 0, 0.08);
 }
 
 .pluginTop {

@@ -342,6 +342,7 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.web-panel.enabled", true);
         changed |= this.setDefault("modules.web-panel.bind-address", "127.0.0.1");
         changed |= this.setDefault("modules.web-panel.port", 8088);
+        changed |= this.setDefault("modules.web-panel.server-name", "HunterCore");
         changed |= this.setDefault("modules.web-panel.public-map", true);
         changed |= this.setDefault("modules.web-panel.map-url", "http://%host%:8100/");
         changed |= this.setDefault("modules.web-panel.status-cache-millis", 1000);

@@ -229,6 +229,10 @@ final class HunterWebPanelManager {
                 this.sendBytes(exchange, 200, "image/jpeg", webAssetBytes("panel-bg.jpg"));
                 return;
             }
+            if (path.equals("/assets/server-icon.png")) {
+                this.sendServerIcon(exchange);
+                return;
+            }
             if (path.equals("/health")) {
                 this.send(exchange, 200, "text/plain; charset=utf-8", "ok\n");
                 return;
@@ -362,7 +366,9 @@ final class HunterWebPanelManager {
         json.append("{\"ok\":true");
         json.append(",\"session\":").append(session == null ? "null" : sessionJson(session));
         json.append(",\"server\":{");
-        field(json, "name", Bukkit.getName()).append(',');
+        field(json, "name", this.webServerName()).append(',');
+        field(json, "software", Bukkit.getName()).append(',');
+        field(json, "iconUrl", "/assets/server-icon.png").append(',');
         field(json, "version", Bukkit.getVersion()).append(',');
         numberField(json, "online", snapshot.onlinePlayers()).append(',');
         numberField(json, "maxPlayers", snapshot.maxPlayers()).append(',');
@@ -427,26 +433,7 @@ final class HunterWebPanelManager {
             }
             json.append(']');
 
-            json.append(",\"plugins\":[");
-            final Map<String, Path> pluginJars = this.pluginJarLookup();
-            first = true;
-            for (final Plugin installedPlugin : Bukkit.getPluginManager().getPlugins()) {
-                if (!first) {
-                    json.append(',');
-                }
-                first = false;
-                final Path sourceJar = pluginJars.get(installedPlugin.getName().toLowerCase(Locale.ROOT));
-                final boolean protectedPlugin = this.protectedPlugin(installedPlugin.getName());
-                json.append('{');
-                field(json, "name", installedPlugin.getName()).append(',');
-                field(json, "version", installedPlugin.getPluginMeta().getVersion()).append(',');
-                field(json, "sourceJar", sourceJar == null ? "" : sourceJar.getFileName().toString()).append(',');
-                booleanField(json, "enabled", installedPlugin.isEnabled()).append(',');
-                booleanField(json, "controllable", !protectedPlugin).append(',');
-                booleanField(json, "updateable", !protectedPlugin);
-                json.append('}');
-            }
-            json.append(']');
+            json.append(",\"plugins\":").append(this.pluginsJson());
         }
         if (session != null && session.admin()) {
             json.append(",\"modules\":").append(this.modulesJson());
@@ -615,6 +602,62 @@ final class HunterWebPanelManager {
         return json.toString();
     }
 
+    private String pluginsJson() {
+        final Map<String, PluginJarScan> scannedJars = this.pluginJarScanLookup();
+        final Map<String, Plugin> loadedPlugins = new HashMap<>();
+        for (final Plugin installedPlugin : Bukkit.getPluginManager().getPlugins()) {
+            loadedPlugins.put(installedPlugin.getName().toLowerCase(Locale.ROOT), installedPlugin);
+        }
+
+        final StringBuilder json = new StringBuilder(2048);
+        json.append('[');
+        boolean first = true;
+        for (final Plugin installedPlugin : Bukkit.getPluginManager().getPlugins()) {
+            if (!first) {
+                json.append(',');
+            }
+            first = false;
+            final PluginJarScan scan = scannedJars.get(installedPlugin.getName().toLowerCase(Locale.ROOT));
+            this.appendPluginJson(json, installedPlugin, scan);
+        }
+
+        final List<PluginJarScan> unloaded = new ArrayList<>();
+        for (final PluginJarScan scan : scannedJars.values()) {
+            if (!loadedPlugins.containsKey(scan.metadata().name().toLowerCase(Locale.ROOT))) {
+                unloaded.add(scan);
+            }
+        }
+        unloaded.sort((left, right) -> left.metadata().name().compareToIgnoreCase(right.metadata().name()));
+        for (final PluginJarScan scan : unloaded) {
+            if (!first) {
+                json.append(',');
+            }
+            first = false;
+            this.appendPluginJson(json, null, scan);
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private void appendPluginJson(final StringBuilder json, final Plugin installedPlugin, final PluginJarScan scan) {
+        final String name = installedPlugin == null ? scan.metadata().name() : installedPlugin.getName();
+        final String version = installedPlugin == null ? scan.metadata().version() : installedPlugin.getPluginMeta().getVersion();
+        final boolean loaded = installedPlugin != null;
+        final boolean enabled = installedPlugin != null && installedPlugin.isEnabled();
+        final boolean protectedPlugin = this.protectedPlugin(name);
+        json.append('{');
+        field(json, "name", name).append(',');
+        field(json, "version", version).append(',');
+        field(json, "sourceJar", scan == null ? "" : scan.path().getFileName().toString()).append(',');
+        field(json, "descriptor", scan == null ? "" : scan.metadata().descriptor()).append(',');
+        field(json, "status", loaded ? (enabled ? "enabled" : "disabled") : "installed").append(',');
+        booleanField(json, "loaded", loaded).append(',');
+        booleanField(json, "enabled", enabled).append(',');
+        booleanField(json, "controllable", !protectedPlugin).append(',');
+        booleanField(json, "updateable", !protectedPlugin);
+        json.append('}');
+    }
+
     private String actorDetailsJson() {
         final StringBuilder json = new StringBuilder(1024);
         json.append('[');
@@ -652,6 +695,7 @@ final class HunterWebPanelManager {
         numberField(json, "port", Math.max(1, Math.min(65535, this.preferences.intValue("modules.web-panel.port", 8088)))).append(',');
         booleanField(json, "publicMap", this.preferences.booleanValue("modules.web-panel.public-map", true)).append(',');
         field(json, "mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).append(',');
+        field(json, "serverName", this.webServerName()).append(',');
         field(json, "address", this.addressLine());
         json.append('}');
         return json.toString();
@@ -666,6 +710,11 @@ final class HunterWebPanelManager {
         final String host = requestHost(exchange);
         final String mapUrl = rawUrl.replace("%host%", host);
         return "{\"ok\":true,\"public\":" + publicMap + ",\"url\":\"" + escapeJson(mapUrl) + "\"}";
+    }
+
+    private String webServerName() {
+        final String configured = this.preferences.stringValue("modules.web-panel.server-name", "HunterCore").trim();
+        return configured.isBlank() ? "HunterCore" : configured;
     }
 
     private String sessionJson(final HttpExchange exchange) {
@@ -1001,6 +1050,7 @@ final class HunterWebPanelManager {
         final String bindAddress = body.getOrDefault("bindAddress", this.preferences.stringValue("modules.web-panel.bind-address", "127.0.0.1")).trim();
         final String rawPort = body.getOrDefault("port", String.valueOf(this.preferences.intValue("modules.web-panel.port", 8088))).trim();
         final String mapUrl = body.getOrDefault("mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).trim();
+        final String serverName = body.getOrDefault("serverName", this.webServerName()).trim();
         final Boolean publicMap = parseBoolean(body.getOrDefault("publicMap", String.valueOf(this.preferences.booleanValue("modules.web-panel.public-map", true))));
         final int port;
         try {
@@ -1009,7 +1059,8 @@ final class HunterWebPanelManager {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_port\"}");
             return;
         }
-        if (bindAddress.isBlank() || bindAddress.length() > 128 || bindAddress.contains(" ") || port < 1 || port > 65535 || mapUrl.isBlank() || publicMap == null) {
+        if (bindAddress.isBlank() || bindAddress.length() > 128 || bindAddress.contains(" ") || port < 1 || port > 65535
+            || mapUrl.isBlank() || serverName.isBlank() || serverName.length() > 64 || publicMap == null) {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_web_settings\"}");
             return;
         }
@@ -1020,6 +1071,7 @@ final class HunterWebPanelManager {
         this.preferences.setValue("modules.web-panel.port", port);
         this.preferences.setValue("modules.web-panel.public-map", publicMap);
         this.preferences.setValue("modules.web-panel.map-url", mapUrl);
+        this.preferences.setValue("modules.web-panel.server-name", serverName);
         this.savePreferences();
         this.guestStatusCache = null;
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"restart\":" + restart + ",\"settings\":" + this.webSettingsJson() + "}");
@@ -1122,7 +1174,10 @@ final class HunterWebPanelManager {
     private PluginOperationResult applyPluginAction(final String pluginName, final String action) {
         final Plugin target = Bukkit.getPluginManager().getPlugin(pluginName);
         if (target == null) {
-            return PluginOperationResult.fail("unknown_plugin", "Plugin " + pluginName + " is not loaded.");
+            if (action.equals("enable")) {
+                return this.loadInstalledPlugin(pluginName);
+            }
+            return PluginOperationResult.fail("plugin_not_loaded", "Plugin " + pluginName + " is installed but not loaded, or it is unknown.");
         }
         if (this.protectedPlugin(target.getName())) {
             return PluginOperationResult.fail("self_protection", target.getName() + " hosts the web panel and cannot be controlled from the web panel.");
@@ -1155,6 +1210,27 @@ final class HunterWebPanelManager {
             }
         } catch (final RuntimeException ex) {
             return PluginOperationResult.fail("plugin_action_failed", target.getName() + " action failed: " + ex.getMessage());
+        }
+    }
+
+    private PluginOperationResult loadInstalledPlugin(final String pluginName) {
+        final PluginJarScan scan = this.pluginJarScanLookup().get(pluginName.toLowerCase(Locale.ROOT));
+        if (scan == null) {
+            return PluginOperationResult.fail("unknown_plugin", "No installed jar was found for " + pluginName + ".");
+        }
+        if (this.protectedPlugin(scan.metadata().name())) {
+            return PluginOperationResult.fail("self_protection", scan.metadata().name() + " hosts the web panel and cannot be controlled from the web panel.");
+        }
+        try {
+            final Plugin loaded = Bukkit.getPluginManager().loadPlugin(scan.path().toFile());
+            Bukkit.getPluginManager().enablePlugin(loaded);
+            return PluginOperationResult.ok(
+                loaded.isEnabled() ? "loaded" : "installed_disabled",
+                loaded.getName() + " was loaded from " + scan.path().getFileName() + ".",
+                pluginLine(loaded)
+            );
+        } catch (final Exception ex) {
+            return PluginOperationResult.fail("plugin_load_failed", scan.metadata().name() + " could not be loaded: " + ex.getMessage());
         }
     }
 
@@ -1281,6 +1357,14 @@ final class HunterWebPanelManager {
 
     private Map<String, Path> pluginJarLookup() {
         final Map<String, Path> jars = new HashMap<>();
+        for (final Map.Entry<String, PluginJarScan> entry : this.pluginJarScanLookup().entrySet()) {
+            jars.put(entry.getKey(), entry.getValue().path());
+        }
+        return jars;
+    }
+
+    private Map<String, PluginJarScan> pluginJarScanLookup() {
+        final Map<String, PluginJarScan> jars = new HashMap<>();
         final Path pluginsDir = Bukkit.getPluginsFolder().toPath();
         if (!Files.isDirectory(pluginsDir)) {
             return jars;
@@ -1289,7 +1373,7 @@ final class HunterWebPanelManager {
             for (final Path path : stream) {
                 try {
                     final PluginJarMetadata metadata = this.readPluginJarMetadata(path);
-                    jars.putIfAbsent(metadata.name().toLowerCase(Locale.ROOT), path);
+                    jars.putIfAbsent(metadata.name().toLowerCase(Locale.ROOT), new PluginJarScan(metadata, path));
                 } catch (final IOException ignored) {
                 }
             }
@@ -1592,6 +1676,19 @@ final class HunterWebPanelManager {
         }
     }
 
+    private void sendServerIcon(final HttpExchange exchange) {
+        final Path icon = Bukkit.getWorldContainer().toPath().resolve("server-icon.png");
+        if (!Files.isRegularFile(icon)) {
+            this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"not_found\"}");
+            return;
+        }
+        try {
+            this.sendBytes(exchange, 200, "image/png", Files.readAllBytes(icon));
+        } catch (final IOException ex) {
+            this.send(exchange, 500, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"icon_unavailable\"}");
+        }
+    }
+
     private String newToken() {
         final byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
@@ -1874,6 +1971,9 @@ final class HunterWebPanelManager {
     }
 
     private record PluginJarMetadata(String name, String version, String main, String descriptor) {
+    }
+
+    private record PluginJarScan(PluginJarMetadata metadata, Path path) {
     }
 
     private record ParsedAllowedCommands(boolean valid, List<String> commands) {

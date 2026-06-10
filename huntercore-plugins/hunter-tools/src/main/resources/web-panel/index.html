@@ -33,68 +33,72 @@
 
       <header class="topChrome">
         <div class="brandBlock">
-          <span class="productMark">HC</span>
+          <span id="productMark" class="productMark" aria-hidden="true">
+            <img id="serverIcon" src="/assets/server-icon.png" alt="">
+            <span id="serverIconFallback">HC</span>
+          </span>
           <div>
-            <h1>HunterCore</h1>
-            <p id="serverLine">Loading server status...</p>
+            <h1 id="serverNameTitle">HunterCore</h1>
+            <p id="serverLine" data-i18n="server.loading">Loading server status...</p>
           </div>
         </div>
         <nav class="topNav" aria-label="Panel sections">
-          <button type="button" class="navButton isActive" data-scroll-target="map">Map</button>
-          <button type="button" class="navButton" data-scroll-target="overview">Overview</button>
-          <button type="button" class="navButton" data-scroll-target="tools">Tools</button>
-          <button type="button" class="navButton adminOnly" data-scroll-target="admin" hidden>Admin</button>
+          <button type="button" class="navButton isActive" data-scroll-target="map" data-i18n="nav.map">Map</button>
+          <button type="button" class="navButton" data-scroll-target="overview" data-i18n="nav.overview">Overview</button>
+          <button type="button" class="navButton" data-scroll-target="tools" data-i18n="nav.tools">Tools</button>
+          <button type="button" class="navButton adminOnly" data-scroll-target="admin" data-i18n="nav.admin" hidden>Admin</button>
+          <button id="languageToggle" type="button" class="navButton langButton" data-i18n-title="language.switch">EN</button>
         </nav>
       </header>
 
       <aside class="sessionDock" aria-label="Session">
         <div class="dockHeader">
           <div>
-            <span class="eyebrow">Web console</span>
+            <span class="eyebrow" data-i18n="session.eyebrow">Web console</span>
             <strong id="sessionTitle">Guest view</strong>
           </div>
           <span id="healthStatus" class="statusPill">--</span>
         </div>
         <form id="loginForm" class="loginForm">
-          <input id="username" name="username" autocomplete="username" placeholder="HunterAuth username">
-          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Password">
-          <button type="submit" class="primaryButton">Login</button>
+          <input id="username" name="username" autocomplete="username" placeholder="HunterAuth username" data-i18n-placeholder="login.username">
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Password" data-i18n-placeholder="login.password">
+          <button type="submit" class="primaryButton" data-i18n="login.action">Login</button>
         </form>
-        <button id="logoutButton" type="button" class="secondaryButton" hidden>Logout</button>
+        <button id="logoutButton" type="button" class="secondaryButton" data-i18n="logout.action" hidden>Logout</button>
         <div class="miniMetrics">
           <div><span>TPS</span><strong id="tps">--</strong></div>
           <div><span>MSPT</span><strong id="mspt">--</strong></div>
-          <div><span>Online</span><strong id="players">--</strong></div>
-          <div><span>Memory</span><strong id="memory">--</strong></div>
+          <div><span data-i18n="metric.online">Online</span><strong id="players">--</strong></div>
+          <div><span data-i18n="metric.memory">Memory</span><strong id="memory">--</strong></div>
         </div>
         <div id="healthList" class="compactList"></div>
-        <a id="mapLink" class="mapLink" href="#" target="_blank" rel="noreferrer">Open map in new tab</a>
+        <a id="mapLink" class="mapLink" href="#" target="_blank" rel="noreferrer" data-i18n="map.open">Open map in new tab</a>
       </aside>
     </section>
 
     <section id="overview" class="workspace">
       <div class="sectionHead">
         <div>
-          <span class="eyebrow">Live server</span>
-          <h2>Overview</h2>
+          <span class="eyebrow" data-i18n="overview.eyebrow">Live server</span>
+          <h2 data-i18n="overview.title">Overview</h2>
         </div>
         <span id="sessionBadge" class="roleBadge">Guest</span>
       </div>
       <div class="overviewGrid">
         <section class="panel">
-          <h3>Worlds</h3>
+          <h3 data-i18n="worlds.title">Worlds</h3>
           <div id="worlds" class="dataList"></div>
         </section>
         <section class="panel">
-          <h3>Players</h3>
-          <div id="playerList" class="dataList mutedState">Login to view player detail.</div>
+          <h3 data-i18n="players.title">Players</h3>
+          <div id="playerList" class="dataList mutedState" data-i18n="players.loginRequired">Login to view player detail.</div>
         </section>
         <section class="panel">
-          <h3>Plugins</h3>
-          <div id="pluginList" class="dataList mutedState">Login to view plugin detail.</div>
+          <h3 data-i18n="plugins.title">Plugins</h3>
+          <div id="pluginList" class="dataList mutedState" data-i18n="plugins.loginRequired">Login to view plugin detail.</div>
         </section>
         <section class="panel">
-          <h3>Optimization</h3>
+          <h3 data-i18n="optimization.title">Optimization</h3>
           <div id="optimizationList" class="dataList"></div>
         </section>
       </div>
@@ -103,30 +107,30 @@
     <section id="tools" class="workspace">
       <div class="sectionHead">
         <div>
-          <span class="eyebrow">Minecraft actions</span>
-          <h2>Tools</h2>
+          <span class="eyebrow" data-i18n="tools.eyebrow">Minecraft actions</span>
+          <h2 data-i18n="tools.title">Tools</h2>
         </div>
       </div>
       <div class="toolsLayout">
         <section class="panel commandPanel">
-          <h3>Command console</h3>
+          <h3 data-i18n="console.title">Command console</h3>
           <form id="commandForm" class="inlineForm">
-            <input id="commandInput" placeholder="list">
-            <button type="submit" class="primaryButton">Run</button>
+            <input id="commandInput" placeholder="list" data-i18n-placeholder="console.placeholder">
+            <button type="submit" class="primaryButton" data-i18n="console.run">Run</button>
           </form>
           <div class="quickRow">
             <button type="button" data-command="list">List</button>
             <button type="button" data-command="tps">TPS</button>
             <button type="button" data-command="spawn">Spawn</button>
-            <button type="button" class="adminOnly" data-command="save-all" hidden>Save all</button>
-            <button type="button" class="adminOnly" data-command="weather clear" hidden>Clear weather</button>
-            <button type="button" class="adminOnly" data-command="time set day" hidden>Day</button>
+            <button type="button" class="adminOnly" data-command="save-all" data-i18n="quick.saveAll" hidden>Save all</button>
+            <button type="button" class="adminOnly" data-command="weather clear" data-i18n="quick.clearWeather" hidden>Clear weather</button>
+            <button type="button" class="adminOnly" data-command="time set day" data-i18n="quick.day" hidden>Day</button>
           </div>
           <pre id="commandResult">Login to run allowed commands.</pre>
         </section>
 
         <section id="actorPanel" class="panel adminOnly" hidden>
-          <h3>Actors</h3>
+          <h3 data-i18n="actors.title">Actors</h3>
           <form id="actorForm" class="stackForm">
             <div class="formGrid">
               <select id="actorModule">
@@ -137,17 +141,17 @@
                 <option value="villager">Villager</option>
                 <option value="mannequin">Mannequin</option>
               </select>
-              <input id="actorName" placeholder="Name">
+              <input id="actorName" placeholder="Name" data-i18n-placeholder="actors.name">
               <select id="actorWorld">
                 <option value="">Spawn</option>
               </select>
               <input id="actorX" placeholder="X">
               <input id="actorY" placeholder="Y">
               <input id="actorZ" placeholder="Z">
-              <button type="submit" class="primaryButton">Spawn</button>
+              <button type="submit" class="primaryButton" data-i18n="actors.spawn">Spawn</button>
             </div>
           </form>
-          <div id="actorList" class="dataList mutedState">Admin session required.</div>
+          <div id="actorList" class="dataList mutedState" data-i18n="admin.required">Admin session required.</div>
         </section>
       </div>
     </section>
@@ -155,15 +159,15 @@
     <section id="admin" class="workspace adminOnly" hidden>
       <div class="sectionHead">
         <div>
-          <span class="eyebrow">Operator controls</span>
-          <h2>Admin</h2>
+          <span class="eyebrow" data-i18n="admin.eyebrow">Operator controls</span>
+          <h2 data-i18n="admin.title">Admin</h2>
         </div>
       </div>
       <div class="adminGrid">
         <section id="opsPanel" class="panel">
-          <h3>Modules</h3>
+          <h3 data-i18n="modules.title">Modules</h3>
           <div id="moduleControls" class="toggleGrid"></div>
-          <h3>Command gates</h3>
+          <h3 data-i18n="commands.title">Command gates</h3>
           <div id="commandControls" class="commandGroups"></div>
         </section>
 
@@ -189,46 +193,47 @@
                 <option value="true">true</option>
                 <option value="false">false</option>
               </select>
-              <button type="submit" class="primaryButton">Apply</button>
+              <button type="submit" class="primaryButton" data-i18n="action.apply">Apply</button>
             </div>
           </form>
         </section>
 
         <section id="webSettingsPanel" class="panel">
-          <h3>Web panel</h3>
+          <h3 data-i18n="webSettings.title">Web panel</h3>
           <form id="webSettingsForm" class="stackForm">
             <div class="formGrid">
-              <input id="webBindAddress" placeholder="127.0.0.1">
-              <input id="webPort" inputmode="numeric" placeholder="8088">
-              <input id="webMapUrl" placeholder="http://%host%:8100/">
-              <label class="checkLine"><input id="webPublicMap" type="checkbox"> public map</label>
-              <button type="submit" class="primaryButton">Save web settings</button>
+              <input id="webServerName" placeholder="HunterCore" data-i18n-placeholder="webSettings.serverName">
+              <input id="webBindAddress" placeholder="127.0.0.1" data-i18n-placeholder="webSettings.bind">
+              <input id="webPort" inputmode="numeric" placeholder="8088" data-i18n-placeholder="webSettings.port">
+              <input id="webMapUrl" placeholder="http://%host%:8100/" data-i18n-placeholder="webSettings.mapUrl">
+              <label class="checkLine"><input id="webPublicMap" type="checkbox"> <span data-i18n="webSettings.publicMap">public map</span></label>
+              <button type="submit" class="primaryButton" data-i18n="webSettings.save">Save web settings</button>
             </div>
           </form>
           <p id="webAddressLine" class="subtleLine"></p>
         </section>
 
         <section id="usersPanel" class="panel">
-          <h3>Web roles</h3>
+          <h3 data-i18n="webUsers.title">Web roles</h3>
           <form id="webUserForm" class="stackForm">
             <div class="formGrid">
-              <input id="webUserName" placeholder="Username">
+              <input id="webUserName" placeholder="Username" data-i18n-placeholder="webUsers.username">
               <select id="webUserRole">
                 <option value="player">Player</option>
                 <option value="admin">Admin</option>
               </select>
-              <input id="webUserPassword" type="password" autocomplete="new-password" placeholder="Optional web password">
-              <label class="checkLine"><input id="webUserCommandExecution" type="checkbox" checked> commands</label>
+              <input id="webUserPassword" type="password" autocomplete="new-password" placeholder="Optional web password" data-i18n-placeholder="webUsers.password">
+              <label class="checkLine"><input id="webUserCommandExecution" type="checkbox" checked> <span data-i18n="webUsers.commands">commands</span></label>
               <select id="webUserAllowedMode">
                 <option value="inherit">Inherit</option>
                 <option value="custom">Custom</option>
                 <option value="none">None</option>
               </select>
-              <input id="webUserAllowedCommands" placeholder="list spawn or *">
-              <button type="submit" class="primaryButton">Save role</button>
+              <input id="webUserAllowedCommands" placeholder="list spawn or *" data-i18n-placeholder="webUsers.allowedCommands">
+              <button type="submit" class="primaryButton" data-i18n="webUsers.save">Save role</button>
             </div>
           </form>
-          <div id="webUserList" class="dataList mutedState">Admin session required.</div>
+          <div id="webUserList" class="dataList mutedState" data-i18n="admin.required">Admin session required.</div>
         </section>
       </div>
     </section>
