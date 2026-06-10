@@ -198,7 +198,8 @@ final class HunterToolsPreferences {
                 this.config.getDouble(path + ".z"),
                 (float) this.config.getDouble(path + ".yaw"),
                 (float) this.config.getDouble(path + ".pitch"),
-                normalize(this.config.getString(path + ".pose", "standing"))
+                normalize(this.config.getString(path + ".pose", "standing")),
+                this.config.getString(path + ".click-command", "")
             );
         }
     }
@@ -216,6 +217,8 @@ final class HunterToolsPreferences {
             this.config.set(path + ".yaw", actor.yaw());
             this.config.set(path + ".pitch", actor.pitch());
             this.config.set(path + ".pose", normalize(actor.pose()));
+            final String clickCommand = actor.clickCommand() == null ? "" : actor.clickCommand().trim();
+            this.config.set(path + ".click-command", clickCommand.isBlank() ? null : clickCommand);
         }
     }
 
@@ -317,6 +320,10 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.sidebar.enabled", true);
         changed |= this.setDefault("modules.sidebar.interval-ticks", 40);
         changed |= this.setDefault("modules.sidebar.dirty-updates-only", true);
+        changed |= this.setDefault("modules.motd.enabled", true);
+        changed |= this.setDefault("modules.motd.line-1", "&b\"HunterCraft\" Server &8| &fHunterCore");
+        changed |= this.setDefault("modules.motd.line-2", "&7%online%/%max% players &8- &aTPS %tps% &8- &e%version%");
+        changed |= this.setDefault("modules.motd.max-players", -1);
         changed |= this.setDefault("modules.essentials.enabled", true);
         for (final String command : essentialsCommands()) {
             changed |= this.setDefault("modules.essentials.commands." + command, true);
@@ -331,6 +338,13 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.fake-players.remove-on-disable", true);
         for (final String command : actorCommands()) {
             changed |= this.setDefault("modules.fake-players.commands." + command, true);
+        }
+        changed |= this.setDefault("modules.real-fake-players.enabled", true);
+        changed |= this.setDefault("modules.real-fake-players.max-active", 16);
+        changed |= this.setDefault("modules.real-fake-players.remove-on-disable", true);
+        changed |= this.setDefault("modules.real-fake-players.action-interval-ticks", 1);
+        for (final String command : realFakePlayerCommands()) {
+            changed |= this.setDefault("modules.real-fake-players.commands." + command, true);
         }
         changed |= this.setDefault("modules.npcs.enabled", true);
         changed |= this.setDefault("modules.npcs.max-active", 64);
@@ -403,15 +417,25 @@ final class HunterToolsPreferences {
     }
 
     static List<String> essentialsCommands() {
-        return List.of("heal", "feed", "fly", "gm", "day", "night", "sun", "rain", "thunder", "broadcast", "clearchat", "speed", "spawn", "setspawn", "back");
+        return List.of(
+            "heal", "feed", "fly", "gm", "day", "night", "sun", "rain", "thunder", "broadcast", "clearchat",
+            "speed", "spawn", "setspawn", "back", "hat", "craft", "enderchest", "trash"
+        );
     }
 
     static List<String> managementCommands() {
-        return List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "web");
+        return List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "motd", "web");
     }
 
     static List<String> actorCommands() {
-        return List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "info", "clear");
+        return List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "click", "info", "clear");
+    }
+
+    static List<String> realFakePlayerCommands() {
+        return List.of(
+            "spawn", "remove", "kill", "list", "tp", "tphere", "look", "sneak", "sprint", "jump", "use", "attack",
+            "stop", "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "info", "clear"
+        );
     }
 
     static List<String> defaultWebPlayerCommands() {
@@ -451,13 +475,25 @@ final class HunterToolsPreferences {
         double z,
         float yaw,
         float pitch,
-        String pose
+        String pose,
+        String clickCommand
     ) {
         static ActorDefinition of(final String module, final String name, final String kind, final Location location) {
-            return of(module, name, kind, location, "standing");
+            return of(module, name, kind, location, "standing", "");
         }
 
         static ActorDefinition of(final String module, final String name, final String kind, final Location location, final String pose) {
+            return of(module, name, kind, location, pose, "");
+        }
+
+        static ActorDefinition of(
+            final String module,
+            final String name,
+            final String kind,
+            final Location location,
+            final String pose,
+            final String clickCommand
+        ) {
             final String id = actorId(name);
             return new ActorDefinition(
                 id,
@@ -470,7 +506,8 @@ final class HunterToolsPreferences {
                 location.getZ(),
                 location.getYaw(),
                 location.getPitch(),
-                normalize(pose)
+                normalize(pose),
+                clickCommand == null ? "" : clickCommand.trim()
             );
         }
 

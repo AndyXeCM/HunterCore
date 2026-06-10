@@ -7,6 +7,7 @@ PLUGINS_DIR="$OUT_DIR/plugins"
 WORK_DIR="$ROOT_DIR/build/huntercore/bundled-work"
 MANIFEST="$OUT_DIR/bundled-plugins.external.yml"
 
+rm -rf "$PLUGINS_DIR"
 mkdir -p "$PLUGINS_DIR" "$WORK_DIR"
 
 sha256_file() {

@@ -61,7 +61,7 @@ scripts/prepare-bundled-plugins.sh
 /huntercore preferences
 /huntercore preferences bundled <plugin-id> <on|off>
 /huntercore preferences module <module> <on|off>
-/huntercore preferences command <essentials|management> <command> <on|off>
+/huntercore preferences command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>
 /huntercore reload
 /hc
 ```
@@ -74,11 +74,12 @@ HunterTools 还会内置一组常用管理和生存服工具：
 /htps
 /hunteradmin modules
 /hunteradmin module <module> <on|off>
-/hunteradmin command <essentials|management> <command> <on|off>
+/hunteradmin command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>
 /hunteradmin memory
 /hunteradmin gc
 /hunteradmin threads
 /hunteradmin optimize
+/hunteradmin motd <status|line1 <text>|line2 <text>|max <number|default>>
 /hunteradmin web status
 /hunteradmin web restart
 /hunteradmin web users
@@ -101,6 +102,10 @@ HunterTools 还会内置一组常用管理和生存服工具：
 /spawn [player]
 /setspawn
 /back
+/hat
+/craft
+/enderchest [player]
+/trash
 /fakeplayer spawn <name> [world x y z [yaw pitch]]
 /fakeplayer remove <name>
 /fakeplayer list
@@ -108,8 +113,29 @@ HunterTools 还会内置一组常用管理和生存服工具：
 /fakeplayer tphere <name>
 /fakeplayer look <name> [yaw pitch|north|south|east|west|up|down]
 /fakeplayer pose <name> <standing|sneaking|swimming|fall-flying|sleeping>
+/fakeplayer click <name> [command|clear]
 /fakeplayer info [name]
 /fakeplayer clear
+/hplayer spawn <name> [world x y z [yaw pitch]]
+/hplayer remove <name>
+/hplayer list
+/hplayer tp <name> [world x y z [yaw pitch]]
+/hplayer tphere <name>
+/hplayer look <name> [yaw pitch|north|south|east|west|up|down]
+/hplayer sneak <name> <on|off>
+/hplayer sprint <name> <on|off>
+/hplayer jump <name> [once|continuous|stop]
+/hplayer use <name> [once|continuous|stop]
+/hplayer attack <name> [once|continuous|stop]
+/hplayer stop <name>
+/hplayer click <name> [command|clear]
+/hplayer drop <name>
+/hplayer dropstack <name>
+/hplayer swap <name>
+/hplayer gm <name> <survival|creative|adventure|spectator>
+/hplayer slot <name> <1-9>
+/hplayer info [name]
+/hplayer clear
 /npc spawn <name> [villager|mannequin] [world x y z [yaw pitch]]
 /npc remove <name>
 /npc list
@@ -117,6 +143,7 @@ HunterTools 还会内置一组常用管理和生存服工具：
 /npc tphere <name>
 /npc look <name> [yaw pitch|north|south|east|west|up|down]
 /npc pose <name> <standing|sneaking|swimming|fall-flying|sleeping>
+/npc click <name> [command|clear]
 /npc info [name]
 /npc clear
 ```
@@ -126,18 +153,24 @@ HunterTools 还会内置一组常用管理和生存服工具：
 ```text
 tps-display
 sidebar
+motd
 essentials
 management
 fake-players
+real-fake-players
 npcs
 web-panel
 ```
 
 这些模块和命令都可以通过 `preferences.yml` 或 `/hunteradmin`、`/huntercore preferences` 开关。
 
-`/fakeplayer` 使用 Minecraft 的 Mannequin 实体创建轻量假人，适合大厅展示、压测可视目标和基础交互占位。它现在支持传送到坐标、传送到玩家身边、朝向调整、固定姿态和信息查看，姿态会持久化到 `plugins/HunterCore/preferences.yml`。`/npc` 支持 `villager` 和 `mannequin` 两种类型，也支持同样的摆位和信息命令。
+HunterTools 自研提供 MOTD、TPS/actionbar/sidebar 和一组轻量实用命令，包括 `/heal`、`/feed`、`/fly`、`/gm`、`/spawn`、`/back`、`/hat`、`/craft`、`/enderchest`、`/trash` 等；不会额外内置 EssentialsX 或 MiniMOTD。客户端按 F3 看到的服务端品牌会显示为 `"HunterCraft" Server`。
 
-这些轻量假人不会作为真实 `ServerPlayer` 加入服务器，因此不会占用在线玩家槽、加载区块、触发完整玩家连接流程，或执行 Carpet 风格的持续右键/左键/跳跃/潜行循环。后续如果需要更接近 Carpet 的生电假人，建议作为单独的真实假人模块实现。
+`/fakeplayer` 使用 Minecraft 的 Mannequin 实体创建轻量假人，适合大厅展示、压测可视目标和基础交互占位。它现在支持传送到坐标、传送到玩家身边、朝向调整、固定姿态、点击执行指令和信息查看，姿态与点击指令会持久化到 `plugins/HunterCore/preferences.yml`。`/npc` 支持 `villager` 和 `mannequin` 两种类型，也支持同样的摆位和点击指令命令。
+
+这些轻量假人不会作为真实 `ServerPlayer` 加入服务器，因此不会占用在线玩家槽、加载区块、触发完整玩家连接流程，或执行 Carpet 风格的持续右键/左键/跳跃/潜行循环。
+
+`/hplayer` 是新的真实 `ServerPlayer` 假人模块，别名为 `/playerbot` 和 `/realfakeplayer`。它会进入在线玩家列表、触发玩家 join/quit 流程、参与区块加载，并支持 Carpet-like 的持续 `use`、`attack`、`jump` 循环，以及潜行、疾跑、点击执行指令、丢物品、切换主副手、切换游戏模式和选择快捷栏。真实假人不会持久化玩家数据，关闭 `real-fake-players` 模块或插件卸载时会按配置移除。
 
 ## 网页面板和地图
 
@@ -192,7 +225,7 @@ modules:
 
 BlueMap 5.20 会作为内置插件安装，默认网页地图端口由 BlueMap 自己管理，HunterCore 面板会用 `map-url` 嵌入或跳转到地图。BlueMap 首次运行需要你在 `plugins/BlueMap/core.conf` 里阅读并确认 `accept-download`，它会下载 Mojang 客户端资源用于地图渲染。Chunky 1.5.3 也被内置，适合预生成区块、降低真实开服时的探索卡顿。
 
-PlaceholderAPI、Vault、ProtocolLib、WorldEdit 和 WorldGuard 也会作为基础服主工具内置：PAPI 提供变量生态，Vault 提供经济/权限桥接，ProtocolLib 提供协议包扩展底座，WorldEdit/WorldGuard 提供地图编辑和区域保护。它们都能通过 `bundled-plugins.plugins.<plugin-id>` 单独关闭。
+PlaceholderAPI、Vault、ProtocolLib、WorldEdit 和 WorldGuard 也会作为基础服主工具内置：PAPI 提供变量生态，Vault 提供经济/权限桥接，ProtocolLib 提供协议包扩展底座，WorldEdit/WorldGuard 提供地图编辑和区域保护。MOTD 和轻量实用命令由 HunterTools 自研提供，不再额外内置 EssentialsX 或 MiniMOTD。外部内置插件都能通过 `bundled-plugins.plugins.<plugin-id>` 单独关闭。
 
 ## 优化
 

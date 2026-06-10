@@ -96,7 +96,7 @@ final class HunterActorManager {
         if (args.length == 1) {
             return matching(args[0], HunterToolsPreferences.actorCommands());
         }
-        if (args.length == 2 && List.of("remove", "tp", "tphere", "look", "pose", "info").contains(HunterToolsPreferences.normalize(args[0]))) {
+        if (args.length == 2 && List.of("remove", "tp", "tphere", "look", "pose", "click", "info").contains(HunterToolsPreferences.normalize(args[0]))) {
             return matching(args[1], this.knownActorIds(module));
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("look")) {
@@ -138,6 +138,7 @@ final class HunterActorManager {
                 definition == null ? 0.0F : definition.yaw(),
                 definition == null ? 0.0F : definition.pitch(),
                 actor == null ? (definition == null ? "" : definition.pose()) : poseName(actor.entity().getPose()),
+                definition == null ? "" : definition.clickCommand(),
                 actor != null,
                 actor == null ? "" : actor.entityUuid().toString()
             ));
@@ -151,7 +152,7 @@ final class HunterActorManager {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("Usage: /" + label + " <spawn|remove|list|tp|tphere|look|pose|info|clear>");
+            sender.sendMessage("Usage: /" + label + " <spawn|remove|list|tp|tphere|look|pose|click|info|clear>");
             return true;
         }
         final String sub = HunterToolsPreferences.normalize(args[0]);
@@ -167,10 +168,11 @@ final class HunterActorManager {
             case "tphere" -> this.teleportHere(sender, module, label, args);
             case "look" -> this.look(sender, module, label, args);
             case "pose" -> this.pose(sender, module, label, args);
+            case "click" -> this.clickCommand(sender, module, label, args);
             case "info" -> this.info(sender, module, label, args);
             case "clear" -> this.clear(sender, module);
             default -> {
-                sender.sendMessage("Usage: /" + label + " <spawn|remove|list|tp|tphere|look|pose|info|clear>");
+                sender.sendMessage("Usage: /" + label + " <spawn|remove|list|tp|tphere|look|pose|click|info|clear>");
                 yield true;
             }
         };
@@ -262,7 +264,8 @@ final class HunterActorManager {
         final String displayName = current == null ? id : current.displayName();
         final String kind = current == null ? actor.kind() : current.kind();
         final String pose = current == null ? actorPose(actor) : current.pose();
-        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose));
+        final String clickCommand = current == null ? "" : current.clickCommand();
+        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose, clickCommand));
         this.save();
         sender.sendMessage("Teleported HunterCore " + module + " actor " + id + " to " + locationLine(location) + ".");
         return true;
@@ -291,7 +294,8 @@ final class HunterActorManager {
         final String displayName = current == null ? id : current.displayName();
         final String kind = current == null ? actor.kind() : current.kind();
         final String pose = current == null ? actorPose(actor) : current.pose();
-        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose));
+        final String clickCommand = current == null ? "" : current.clickCommand();
+        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose, clickCommand));
         this.save();
         sender.sendMessage("Moved HunterCore " + module + " actor " + id + " to you.");
         return true;
@@ -326,7 +330,8 @@ final class HunterActorManager {
         final String displayName = current == null ? id : current.displayName();
         final String kind = current == null ? actor.kind() : current.kind();
         final String pose = current == null ? actorPose(actor) : current.pose();
-        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose));
+        final String clickCommand = current == null ? "" : current.clickCommand();
+        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose, clickCommand));
         this.save();
         sender.sendMessage("Rotated HunterCore " + module + " actor " + id + " to yaw " + format(rotation[0]) + ", pitch " + format(clampPitch(rotation[1])) + ".");
         return true;
@@ -364,9 +369,37 @@ final class HunterActorManager {
         }
         final String displayName = current == null ? id : current.displayName();
         final String kind = current == null ? actor.kind() : current.kind();
-        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, poseName(pose)));
+        final String clickCommand = current == null ? "" : current.clickCommand();
+        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, poseName(pose), clickCommand));
         this.save();
         sender.sendMessage("Set HunterCore " + module + " actor " + id + " pose to " + poseName(pose) + ".");
+        return true;
+    }
+
+    private boolean clickCommand(final CommandSender sender, final String module, final String label, final String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("Usage: /" + label + " click <name> [command|clear]");
+            return true;
+        }
+        final String id = HunterToolsPreferences.actorId(args[1]);
+        final ManagedActor actor = this.liveActors.get(key(module, id));
+        final HunterToolsPreferences.ActorDefinition current = this.preferences.actorDefinition(module, id);
+        if (actor == null && current == null) {
+            sender.sendMessage("HunterCore actor not found: " + id);
+            return true;
+        }
+        if (args.length == 2) {
+            final String command = current == null ? "" : current.clickCommand();
+            sender.sendMessage("HunterCore actor " + id + " click command: " + (command == null || command.isBlank() ? "not configured" : command));
+            return true;
+        }
+        final String command = String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)).trim();
+        final String savedCommand = List.of("clear", "none", "off", "-").contains(HunterToolsPreferences.normalize(command)) ? "" : sanitizeCommand(command);
+        if (!this.setClickCommand(module, id, savedCommand)) {
+            sender.sendMessage("HunterCore actor not found: " + id);
+            return true;
+        }
+        sender.sendMessage("HunterCore " + module + " actor " + id + " click command " + (savedCommand.isBlank() ? "cleared." : "set."));
         return true;
     }
 
@@ -379,7 +412,8 @@ final class HunterActorManager {
             sender.sendMessage(ChatColor.GOLD + "HunterCore " + module + " actors");
             sender.sendMessage("- Lightweight mannequin/villager entities for display, admin UI and placement tests.");
             sender.sendMessage("- They do not join as real ServerPlayer instances, occupy player slots, load chunks or run Carpet-style use/attack loops.");
-            sender.sendMessage("- Commands: spawn, remove, list, tp, tphere, look, pose, info, clear.");
+            sender.sendMessage("- Commands: spawn, remove, list, tp, tphere, look, pose, click, info, clear.");
+            sender.sendMessage("- Click command placeholders: %player%, %player_uuid%, %actor%, %actor_uuid%, %module%, %world%, %x%, %y%, %z%.");
             return true;
         }
         final String id = HunterToolsPreferences.actorId(args[1]);
@@ -392,13 +426,53 @@ final class HunterActorManager {
         final Location location = actorLocation(actor, definition);
         final String kind = actor == null ? definition.kind() : actor.kind();
         final String pose = actor == null ? definition.pose() : actorPose(actor);
+        final String clickCommand = definition == null ? "" : definition.clickCommand();
         sender.sendMessage(ChatColor.GOLD + "HunterCore actor " + id);
         sender.sendMessage("- module: " + module);
         sender.sendMessage("- kind: " + kind);
         sender.sendMessage("- state: " + (actor == null ? "configured" : "live"));
         sender.sendMessage("- pose: " + pose);
+        sender.sendMessage("- click command: " + (clickCommand == null || clickCommand.isBlank() ? "not configured" : clickCommand));
         sender.sendMessage("- location: " + (location == null ? "not loaded" : locationLine(location)));
         sender.sendMessage("- uuid: " + (actor == null ? definition.uuid() : actor.entityUuid()));
+        return true;
+    }
+
+    boolean setClickCommand(final String module, final String id, final String command) {
+        final String actorId = HunterToolsPreferences.actorId(id);
+        final ManagedActor actor = this.liveActors.get(key(module, actorId));
+        final HunterToolsPreferences.ActorDefinition current = this.preferences.actorDefinition(module, actorId);
+        if (actor == null && current == null) {
+            return false;
+        }
+        final Location location = actorLocation(actor, current);
+        if (location == null) {
+            return false;
+        }
+        final String displayName = current == null ? actorId : current.displayName();
+        final String kind = current == null ? actor.kind() : current.kind();
+        final String pose = current == null ? actorPose(actor) : current.pose();
+        this.preferences.setActorDefinition(module, HunterToolsPreferences.ActorDefinition.of(module, displayName, kind, location, pose, sanitizeCommand(command)));
+        this.save();
+        return true;
+    }
+
+    boolean handleInteract(final Player player, final Entity clicked) {
+        final String module = clicked.getPersistentDataContainer().get(this.moduleKey, PersistentDataType.STRING);
+        final String id = clicked.getPersistentDataContainer().get(this.idKey, PersistentDataType.STRING);
+        if (module == null || id == null || !this.preferences.moduleEnabled(module)) {
+            return false;
+        }
+        final HunterToolsPreferences.ActorDefinition definition = this.preferences.actorDefinition(module, id);
+        final String command = definition == null ? "" : definition.clickCommand();
+        if (command == null || command.isBlank()) {
+            return false;
+        }
+        final String rendered = renderClickCommand(command, player, clicked, module, id);
+        if (rendered.isBlank()) {
+            return false;
+        }
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), rendered);
         return true;
     }
 
@@ -677,6 +751,38 @@ final class HunterActorManager {
         return actor == null ? "standing" : poseName(actor.entity().getPose());
     }
 
+    private static String sanitizeCommand(final String command) {
+        if (command == null) {
+            return "";
+        }
+        String sanitized = command.replace('\n', ' ').replace('\r', ' ').trim();
+        if (sanitized.startsWith("/")) {
+            sanitized = sanitized.substring(1).trim();
+        }
+        return sanitized.length() > 512 ? sanitized.substring(0, 512).trim() : sanitized;
+    }
+
+    private static String renderClickCommand(
+        final String command,
+        final Player player,
+        final Entity actor,
+        final String module,
+        final String id
+    ) {
+        final Location location = actor.getLocation();
+        return sanitizeCommand(command)
+            .replace("%player%", player.getName())
+            .replace("%player_uuid%", player.getUniqueId().toString())
+            .replace("%actor%", id)
+            .replace("%actor_name%", id)
+            .replace("%actor_uuid%", actor.getUniqueId().toString())
+            .replace("%module%", module)
+            .replace("%world%", location.getWorld() == null ? "" : location.getWorld().getName())
+            .replace("%x%", String.format(Locale.ROOT, "%.2f", location.getX()))
+            .replace("%y%", String.format(Locale.ROOT, "%.2f", location.getY()))
+            .replace("%z%", String.format(Locale.ROOT, "%.2f", location.getZ()));
+    }
+
     private static float clampPitch(final float pitch) {
         return Math.max(-90.0F, Math.min(90.0F, pitch));
     }
@@ -721,6 +827,7 @@ final class HunterActorManager {
         float yaw,
         float pitch,
         String pose,
+        String clickCommand,
         boolean live,
         String entityUuid
     ) {

@@ -1,5 +1,6 @@
 package org.huntercore.plugins.tools;
 
+import java.lang.reflect.Field;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -34,9 +36,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.server.ServerListPingEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -49,10 +55,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class HunterToolsPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener {
-    private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs", "web-panel");
+    private static final String CLIENT_BRAND = "\"HunterCraft\" Server";
+    private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "essentials", "management", "fake-players", "real-fake-players", "npcs", "web-panel");
+    private static final String MOTD = "motd";
     private static final String ESSENTIALS = "essentials";
     private static final String MANAGEMENT = "management";
     private static final String FAKE_PLAYERS = "fake-players";
+    private static final String REAL_FAKE_PLAYERS = "real-fake-players";
     private static final String NPCS = "npcs";
     private static final String WEB_PANEL = "web-panel";
     private static final String[] SIDEBAR_KEYS = {
@@ -63,6 +72,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     private final Map<UUID, Location> backLocations = new HashMap<>();
     private HunterToolsPreferences preferences;
     private HunterActorManager actorManager;
+    private HunterRealFakePlayerManager realFakePlayerManager;
     private HunterWebPanelManager webPanelManager;
     private ExecutorService workerExecutor;
     private MetricsSnapshot snapshot = MetricsSnapshot.empty();
@@ -74,8 +84,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     @Override
     public void onEnable() {
         this.preferences = HunterToolsPreferences.loadOrCreate(this);
+        this.applyServerBrand();
         this.workerExecutor = this.createWorkerExecutor();
         this.actorManager = new HunterActorManager(this, this.preferences, this.workerExecutor);
+        this.realFakePlayerManager = new HunterRealFakePlayerManager(this, this.preferences);
         this.webPanelManager = new HunterWebPanelManager(this, this.preferences);
         this.registerCommands();
         this.getServer().getPluginManager().registerEvents(this, this);
@@ -90,6 +102,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         this.cancelTasks();
         if (this.actorManager != null) {
             this.actorManager.shutdown();
+        }
+        if (this.realFakePlayerManager != null) {
+            this.realFakePlayerManager.shutdown();
         }
         if (this.webPanelManager != null) {
             this.webPanelManager.stop();
@@ -129,7 +144,12 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             case "spawn" -> this.spawn(sender, args);
             case "setspawn" -> this.setSpawn(sender);
             case "back" -> this.back(sender);
+            case "hat" -> this.hat(sender);
+            case "craft" -> this.craft(sender);
+            case "enderchest" -> this.enderChest(sender, args);
+            case "trash" -> this.trash(sender);
             case "fakeplayer" -> this.fakePlayer(sender, args);
+            case "hplayer" -> this.realFakePlayer(sender, label, args);
             case "npc" -> this.npc(sender, args);
             default -> false;
         };
@@ -149,6 +169,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         if (name.equals("fakeplayer")) {
             return this.actorManager == null ? List.of() : this.actorManager.completions(FAKE_PLAYERS, args);
         }
+        if (name.equals("hplayer")) {
+            return this.realFakePlayerManager == null ? List.of() : this.realFakePlayerManager.completions(args);
+        }
         if (name.equals("npc")) {
             return this.actorManager == null ? List.of() : this.actorManager.completions(NPCS, args);
         }
@@ -160,6 +183,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         }
         if ((name.equals("day") || name.equals("night") || name.equals("sun") || name.equals("rain") || name.equals("thunder")) && args.length == 1) {
             return matching(args[0], Bukkit.getWorlds().stream().map(World::getName).toList());
+        }
+        if (name.equals("enderchest") && args.length == 1 && sender.hasPermission("huntertools.command.enderchest.other")) {
+            return matching(args[0], this.onlinePlayerNames());
         }
         if (List.of("heal", "feed", "fly", "gm", "gms", "gmc", "gma", "gmsp", "spawn", "speed").contains(name)) {
             final int playerArg = name.equals("speed") ? 1 : args.length - 1;
@@ -200,11 +226,37 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         }
     }
 
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onServerListPing(final ServerListPingEvent event) {
+        if (!this.preferences.moduleEnabled(MOTD)) {
+            return;
+        }
+        final String line1 = this.renderMotdLine(this.preferences.stringValue("modules.motd.line-1", "&b\"HunterCraft\" Server &8| &fHunterCore"), event);
+        final String line2 = this.renderMotdLine(this.preferences.stringValue("modules.motd.line-2", "&7%online%/%max% players &8- &aTPS %tps% &8- &e%version%"), event);
+        event.setMotd(color(line1 + "\n" + line2));
+        final int maxPlayers = this.preferences.intValue("modules.motd.max-players", -1);
+        if (maxPlayers > 0) {
+            event.setMaxPlayers(maxPlayers);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onActorInteract(final PlayerInteractEntityEvent event) {
+        if (this.actorManager != null && this.actorManager.handleInteract(event.getPlayer(), event.getRightClicked())) {
+            event.setCancelled(true);
+            return;
+        }
+        if (this.realFakePlayerManager != null && this.realFakePlayerManager.handleInteract(event.getPlayer(), event.getRightClicked())) {
+            event.setCancelled(true);
+        }
+    }
+
     private void registerCommands() {
         for (final String command : List.of(
             "htps", "hunteradmin", "heal", "feed", "fly", "gm", "gms", "gmc", "gma", "gmsp",
             "day", "night", "sun", "rain", "thunder", "broadcast", "clearchat", "speed", "spawn", "setspawn", "back",
-            "fakeplayer", "npc"
+            "hat", "craft", "enderchest", "trash",
+            "fakeplayer", "hplayer", "npc"
         )) {
             final org.bukkit.command.PluginCommand pluginCommand = this.getCommand(command);
             if (pluginCommand != null) {
@@ -273,6 +325,16 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         );
         if (this.preferences.booleanValue("optimizations.enabled", true) && this.preferences.booleanValue("optimizations.hunter-tools.player-cache", true)) {
             this.cachedPlayerNames = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+        }
+    }
+
+    private void applyServerBrand() {
+        try {
+            final Class<?> purpurConfig = Class.forName("org.purpurmc.purpur.PurpurConfig");
+            final Field f3Name = purpurConfig.getField("f3Name");
+            f3Name.set(null, CLIENT_BRAND);
+        } catch (final ReflectiveOperationException ex) {
+            this.getLogger().fine("Unable to set runtime F3 server brand: " + ex.getMessage());
         }
     }
 
@@ -433,7 +495,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.GOLD + "HunterAdmin: " + ChatColor.YELLOW + "reload, modules, module, command, plugins, memory, gc, threads, optimize, web");
+            sender.sendMessage(ChatColor.GOLD + "HunterAdmin: " + ChatColor.YELLOW + "reload, modules, module, command, plugins, memory, gc, threads, optimize, motd, web");
             return true;
         }
         final String sub = args[0].toLowerCase(Locale.ROOT);
@@ -447,9 +509,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             case "gc" -> this.adminGc(sender);
             case "threads" -> this.adminThreads(sender);
             case "optimize" -> this.adminOptimize(sender);
+            case "motd" -> this.adminMotd(sender, args);
             case "web" -> this.adminWeb(sender, args);
             default -> {
-                sender.sendMessage("Usage: /hunteradmin <reload|modules|module|command|plugins|memory|gc|threads|optimize|web>");
+                sender.sendMessage("Usage: /hunteradmin <reload|modules|module|command|plugins|memory|gc|threads|optimize|motd|web>");
                 yield true;
             }
         };
@@ -464,6 +527,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         if (this.actorManager != null) {
             this.actorManager.setExecutor(this.workerExecutor);
             this.actorManager.reload();
+        }
+        if (this.realFakePlayerManager != null && !this.preferences.moduleEnabled(REAL_FAKE_PLAYERS)) {
+            this.realFakePlayerManager.shutdown();
         }
         if (this.webPanelManager != null) {
             this.webPanelManager.restart();
@@ -502,6 +568,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         if (this.actorManager != null && (module.equals(FAKE_PLAYERS) || module.equals(NPCS))) {
             this.actorManager.reload();
         }
+        if (this.realFakePlayerManager != null && module.equals(REAL_FAKE_PLAYERS) && !enabled) {
+            this.realFakePlayerManager.shutdown();
+        }
         if (this.webPanelManager != null && module.equals(WEB_PANEL)) {
             this.webPanelManager.restart();
         }
@@ -511,13 +580,13 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     private boolean adminToggleCommand(final CommandSender sender, final String[] args) {
         if (args.length != 4) {
-            sender.sendMessage("Usage: /hunteradmin command <essentials|management> <command> <on|off>");
+            sender.sendMessage("Usage: /hunteradmin command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>");
             return true;
         }
         final String module = HunterToolsPreferences.normalize(args[1]);
         final String command = HunterToolsPreferences.normalize(args[2]);
-        if (!module.equals(ESSENTIALS) && !module.equals(MANAGEMENT) && !module.equals(FAKE_PLAYERS) && !module.equals(NPCS)) {
-            sender.sendMessage("Command toggles are available for essentials, management, fake-players, and npcs.");
+        if (!module.equals(ESSENTIALS) && !module.equals(MANAGEMENT) && !module.equals(FAKE_PLAYERS) && !module.equals(REAL_FAKE_PLAYERS) && !module.equals(NPCS)) {
+            sender.sendMessage("Command toggles are available for essentials, management, fake-players, real-fake-players, and npcs.");
             return true;
         }
         final Boolean enabled = parseToggle(args[3]);
@@ -572,6 +641,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         sender.sendMessage(ChatColor.GOLD + "Threads: " + ChatColor.WHITE + bean.getThreadCount() + " live, " + bean.getDaemonThreadCount() + " daemon, peak " + bean.getPeakThreadCount());
         sender.sendMessage(ChatColor.GRAY + "HunterTools render workers: " + ChatColor.WHITE + this.preferences.intValue("optimizations.hunter-tools.render-workers", 4));
         sender.sendMessage(ChatColor.GRAY + "Fake players: " + ChatColor.WHITE + (this.actorManager == null ? 0 : this.actorManager.liveCount(FAKE_PLAYERS)) + " live");
+        sender.sendMessage(ChatColor.GRAY + "Real fake players: " + ChatColor.WHITE + (this.realFakePlayerManager == null ? 0 : this.realFakePlayerManager.liveCount()) + " live");
         sender.sendMessage(ChatColor.GRAY + "NPCs: " + ChatColor.WHITE + (this.actorManager == null ? 0 : this.actorManager.liveCount(NPCS)) + " live");
         return true;
     }
@@ -591,6 +661,58 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         sender.sendMessage(ChatColor.GRAY + "Async/batched actor save: " + ChatColor.WHITE + this.preferences.booleanValue("optimizations.hunter-tools.actor-batch-save", true));
         sender.sendMessage(ChatColor.GRAY + "Web panel workers: " + ChatColor.WHITE + this.preferences.intValue("optimizations.hunter-tools.web-panel-workers", 4));
         sender.sendMessage(ChatColor.GRAY + "Guest status cache: " + ChatColor.WHITE + this.preferences.intValue("modules.web-panel.status-cache-millis", 1000) + "ms");
+        return true;
+    }
+
+    private boolean adminMotd(final CommandSender sender, final String[] args) {
+        if (!this.managementCommandEnabled(sender, "motd")) {
+            return true;
+        }
+        if (args.length < 2 || args.length == 2 && args[1].equalsIgnoreCase("status")) {
+            sender.sendMessage(ChatColor.GOLD + "HunterCore MOTD");
+            sender.sendMessage(ChatColor.GRAY + "Enabled: " + ChatColor.WHITE + this.preferences.moduleEnabled(MOTD));
+            sender.sendMessage(ChatColor.GRAY + "Line 1: " + ChatColor.WHITE + this.preferences.stringValue("modules.motd.line-1", ""));
+            sender.sendMessage(ChatColor.GRAY + "Line 2: " + ChatColor.WHITE + this.preferences.stringValue("modules.motd.line-2", ""));
+            sender.sendMessage(ChatColor.GRAY + "Max players: " + ChatColor.WHITE + this.preferences.intValue("modules.motd.max-players", -1));
+            sender.sendMessage(ChatColor.GRAY + "Placeholders: " + ChatColor.WHITE + "%online%, %max%, %tps%, %mspt%, %version%.");
+            return true;
+        }
+        final String sub = HunterToolsPreferences.normalize(args[1]);
+        if ((sub.equals("line1") || sub.equals("line-1") || sub.equals("line2") || sub.equals("line-2")) && args.length >= 3) {
+            final String key = sub.endsWith("2") || sub.equals("line-2") ? "line-2" : "line-1";
+            final String text = String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)).trim();
+            if (text.length() > 256) {
+                sender.sendMessage("MOTD line must be 256 characters or fewer.");
+                return true;
+            }
+            this.preferences.setValue("modules.motd." + key, text);
+            this.preferences.save(this.workerExecutor);
+            sender.sendMessage("HunterCore MOTD " + key + " updated.");
+            return true;
+        }
+        if (sub.equals("max") && args.length == 3) {
+            if (List.of("default", "off", "reset", "-").contains(HunterToolsPreferences.normalize(args[2]))) {
+                this.preferences.setValue("modules.motd.max-players", -1);
+                this.preferences.save(this.workerExecutor);
+                sender.sendMessage("HunterCore MOTD max players reset to the server default.");
+                return true;
+            }
+            try {
+                final int maxPlayers = Integer.parseInt(args[2]);
+                if (maxPlayers < 1 || maxPlayers > 1_000_000) {
+                    sender.sendMessage("Max players must be between 1 and 1000000, or default.");
+                    return true;
+                }
+                this.preferences.setValue("modules.motd.max-players", maxPlayers);
+                this.preferences.save(this.workerExecutor);
+                sender.sendMessage("HunterCore MOTD max players set to " + maxPlayers + ".");
+                return true;
+            } catch (final NumberFormatException ex) {
+                sender.sendMessage("Max players must be a number, or default.");
+                return true;
+            }
+        }
+        sender.sendMessage("Usage: /hunteradmin motd <status|line1 <text>|line2 <text>|max <number|default>>");
         return true;
     }
 
@@ -1037,11 +1159,89 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         return true;
     }
 
+    private boolean hat(final CommandSender sender) {
+        if (!this.essentialsCommandEnabled(sender, "hat")) {
+            return true;
+        }
+        final Player player = this.self(sender);
+        if (player == null) {
+            return true;
+        }
+        final ItemStack hand = player.getInventory().getItemInMainHand();
+        final ItemStack helmet = player.getInventory().getHelmet();
+        player.getInventory().setHelmet(isAir(hand) ? null : hand.clone());
+        player.getInventory().setItemInMainHand(helmet == null ? new ItemStack(Material.AIR) : helmet.clone());
+        player.updateInventory();
+        player.sendMessage("Swapped your helmet and main hand item.");
+        return true;
+    }
+
+    private boolean craft(final CommandSender sender) {
+        if (!this.essentialsCommandEnabled(sender, "craft")) {
+            return true;
+        }
+        final Player player = this.self(sender);
+        if (player == null) {
+            return true;
+        }
+        player.openWorkbench(player.getLocation(), true);
+        return true;
+    }
+
+    private boolean enderChest(final CommandSender sender, final String[] args) {
+        if (!this.essentialsCommandEnabled(sender, "enderchest")) {
+            return true;
+        }
+        final Player viewer = this.self(sender);
+        if (viewer == null) {
+            return true;
+        }
+        final Player owner;
+        if (args.length == 0) {
+            owner = viewer;
+        } else {
+            if (!sender.hasPermission("huntertools.command.enderchest.other")) {
+                sender.sendMessage(Bukkit.permissionMessage());
+                return true;
+            }
+            owner = this.player(args[0], sender);
+            if (owner == null) {
+                return true;
+            }
+        }
+        viewer.openInventory(owner.getEnderChest());
+        if (!viewer.equals(owner)) {
+            viewer.sendMessage("Opened " + owner.getName() + "'s ender chest.");
+        }
+        return true;
+    }
+
+    private boolean trash(final CommandSender sender) {
+        if (!this.essentialsCommandEnabled(sender, "trash")) {
+            return true;
+        }
+        final Player player = this.self(sender);
+        if (player == null) {
+            return true;
+        }
+        final Inventory inventory = Bukkit.createInventory(null, 54, ChatColor.DARK_GRAY + "Trash");
+        player.openInventory(inventory);
+        player.sendMessage("Items left in this inventory will be discarded when it closes.");
+        return true;
+    }
+
     private boolean fakePlayer(final CommandSender sender, final String[] args) {
         if (!this.require(sender, "huntertools.command.fakeplayer")) {
             return true;
         }
         return this.actorManager != null && this.actorManager.fakePlayerCommand(sender, args);
+    }
+
+    private boolean realFakePlayer(final CommandSender sender, final String label, final String[] args) {
+        if (!this.require(sender, "huntertools.command.hplayer")) {
+            return true;
+        }
+        return this.realFakePlayerManager != null && this.realFakePlayerManager.command(sender, label, args);
     }
 
     private boolean npc(final CommandSender sender, final String[] args) {
@@ -1118,6 +1318,16 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         return Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().getFirst();
     }
 
+    private String renderMotdLine(final String line, final ServerListPingEvent event) {
+        final MetricsSnapshot current = this.snapshot;
+        return line
+            .replace("%online%", Integer.toString(event.getNumPlayers()))
+            .replace("%max%", Integer.toString(event.getMaxPlayers()))
+            .replace("%tps%", MetricsSnapshot.formatTps(current.tps1()))
+            .replace("%mspt%", String.format(Locale.ROOT, "%.1f", current.mspt()))
+            .replace("%version%", Bukkit.getMinecraftVersion());
+    }
+
     private static GameMode parseGameMode(final String input) {
         return switch (input.toLowerCase(Locale.ROOT)) {
             case "0", "s", "survival" -> GameMode.SURVIVAL;
@@ -1138,7 +1348,13 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     private List<String> adminCompletions(final String[] args) {
         if (args.length == 1) {
-            return matching(args[0], List.of("reload", "modules", "module", "command", "plugins", "memory", "gc", "threads", "optimize", "web"));
+            return matching(args[0], List.of("reload", "modules", "module", "command", "plugins", "memory", "gc", "threads", "optimize", "motd", "web"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("motd")) {
+            return matching(args[1], List.of("status", "line1", "line2", "max"));
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("motd") && args[1].equalsIgnoreCase("max")) {
+            return matching(args[2], List.of("default", "100", "500", "1000"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("web")) {
             return matching(args[1], List.of("status", "restart", "bind", "address", "port", "map", "public-map", "user", "remove", "users", "allow", "execution"));
@@ -1168,7 +1384,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             return matching(args[1], MODULES);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("command")) {
-            return matching(args[1], List.of(ESSENTIALS, MANAGEMENT, FAKE_PLAYERS, NPCS));
+            return matching(args[1], List.of(ESSENTIALS, MANAGEMENT, FAKE_PLAYERS, REAL_FAKE_PLAYERS, NPCS));
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("command")) {
             final String module = args[1].toLowerCase(Locale.ROOT);
@@ -1180,6 +1396,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             }
             if (module.equals(FAKE_PLAYERS) || module.equals(NPCS)) {
                 return matching(args[2], HunterToolsPreferences.actorCommands());
+            }
+            if (module.equals(REAL_FAKE_PLAYERS)) {
+                return matching(args[2], HunterToolsPreferences.realFakePlayerCommands());
             }
         }
         if ((args.length == 3 && args[0].equalsIgnoreCase("module")) || (args.length == 4 && args[0].equalsIgnoreCase("command"))) {
@@ -1200,11 +1419,25 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     }
 
     int actorLiveCount(final String module) {
+        if (module.equals(REAL_FAKE_PLAYERS)) {
+            return this.realFakePlayerManager == null ? 0 : this.realFakePlayerManager.liveCount();
+        }
         return this.actorManager == null ? 0 : this.actorManager.liveCount(module);
     }
 
     List<HunterActorManager.ActorView> actorViews(final String module) {
         return this.actorManager == null ? List.of() : this.actorManager.views(module);
+    }
+
+    List<HunterRealFakePlayerManager.RealFakePlayerView> realFakePlayerViews() {
+        return this.realFakePlayerManager == null ? List.of() : this.realFakePlayerManager.views();
+    }
+
+    boolean setActorClickCommand(final String module, final String id, final String command) {
+        if (module.equals(REAL_FAKE_PLAYERS)) {
+            return this.realFakePlayerManager != null && this.realFakePlayerManager.setClickCommand(id, command);
+        }
+        return this.actorManager != null && this.actorManager.setClickCommand(module, id, command);
     }
 
     private static List<String> matching(final String prefix, final Collection<String> values) {
@@ -1230,6 +1463,14 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     private static String normalizeWebCommand(final String command) {
         return command.replaceFirst("^/+", "").trim().split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isAir(final ItemStack item) {
+        return item == null || item.getType().isAir() || item.getAmount() <= 0;
+    }
+
+    private static String color(final String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
 
     private static NamedTextColor tpsColor(final double tps) {

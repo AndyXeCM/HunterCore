@@ -10,7 +10,9 @@ import java.util.Map;
 import org.huntercore.api.HunterBundledPlugin;
 import org.huntercore.api.HunterCommandExtension;
 import org.huntercore.api.HunterCoreApi;
+import org.huntercore.api.fakeplayer.HunterFakePlayerService;
 import org.huntercore.config.HunterPreferences;
+import org.huntercore.fakeplayer.HunterFakePlayerManager;
 import org.huntercore.plugin.HunterBundledPluginInstaller;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,6 +24,7 @@ public final class HunterCoreRuntime implements HunterCoreApi {
     private static final HunterCoreRuntime INSTANCE = new HunterCoreRuntime();
 
     private final Map<String, HunterCommandExtension> commandExtensions = new LinkedHashMap<>();
+    private final HunterFakePlayerService fakePlayers = new HunterFakePlayerManager();
     private volatile List<HunterBundledPlugin> bundledPlugins = List.of();
     private volatile HunterBundledPluginInstaller.InstallReport lastInstallReport = HunterBundledPluginInstaller.InstallReport.empty();
     private volatile HunterPreferences preferences;
@@ -52,6 +55,11 @@ public final class HunterCoreRuntime implements HunterCoreApi {
 
     public void setBundledPlugins(final Collection<? extends HunterBundledPlugin> bundledPlugins) {
         this.bundledPlugins = List.copyOf(bundledPlugins);
+    }
+
+    @Override
+    public @NotNull HunterFakePlayerService fakePlayers() {
+        return this.fakePlayers;
     }
 
     public HunterBundledPluginInstaller.InstallReport lastInstallReport() {

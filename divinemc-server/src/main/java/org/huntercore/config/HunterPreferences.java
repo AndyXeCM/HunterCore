@@ -135,23 +135,37 @@ public final class HunterPreferences {
         changed |= this.setDefault("modules.sidebar.enabled", true);
         changed |= this.setDefault("modules.sidebar.interval-ticks", 40);
         changed |= this.setDefault("modules.sidebar.dirty-updates-only", true);
+        changed |= this.setDefault("modules.motd.enabled", true);
+        changed |= this.setDefault("modules.motd.line-1", "&b\"HunterCraft\" Server &8| &fHunterCore");
+        changed |= this.setDefault("modules.motd.line-2", "&7%online%/%max% players &8- &aTPS %tps% &8- &e%version%");
+        changed |= this.setDefault("modules.motd.max-players", -1);
         changed |= this.setDefault("modules.essentials.enabled", true);
         for (final String command : List.of(
             "heal", "feed", "fly", "gm", "day", "night", "sun", "rain", "thunder",
-            "broadcast", "clearchat", "speed", "spawn", "setspawn", "back"
+            "broadcast", "clearchat", "speed", "spawn", "setspawn", "back", "hat", "craft", "enderchest", "trash"
         )) {
             changed |= this.setDefault("modules.essentials.commands." + command, true);
         }
         changed |= this.setDefault("modules.management.enabled", true);
-        for (final String command : List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "web")) {
+        for (final String command : List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "motd", "web")) {
             changed |= this.setDefault("modules.management.commands." + command, true);
         }
         changed |= this.setDefault("modules.fake-players.enabled", true);
         changed |= this.setDefault("modules.fake-players.max-active", 64);
         changed |= this.setDefault("modules.fake-players.persist", true);
         changed |= this.setDefault("modules.fake-players.remove-on-disable", true);
-        for (final String command : List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "info", "clear")) {
+        for (final String command : List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "click", "info", "clear")) {
             changed |= this.setDefault("modules.fake-players.commands." + command, true);
+        }
+        changed |= this.setDefault("modules.real-fake-players.enabled", true);
+        changed |= this.setDefault("modules.real-fake-players.max-active", 16);
+        changed |= this.setDefault("modules.real-fake-players.remove-on-disable", true);
+        changed |= this.setDefault("modules.real-fake-players.action-interval-ticks", 1);
+        for (final String command : List.of(
+            "spawn", "remove", "kill", "list", "tp", "tphere", "look", "sneak", "sprint", "jump", "use", "attack",
+            "stop", "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "info", "clear"
+        )) {
+            changed |= this.setDefault("modules.real-fake-players.commands." + command, true);
         }
         changed |= this.setDefault("modules.npcs.enabled", true);
         changed |= this.setDefault("modules.npcs.max-active", 64);
@@ -159,7 +173,7 @@ public final class HunterPreferences {
         changed |= this.setDefault("modules.npcs.remove-on-disable", true);
         changed |= this.setDefault("modules.npcs.default-type", "villager");
         changed |= this.setDefault("modules.npcs.villager-ai", false);
-        for (final String command : List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "info", "clear")) {
+        for (final String command : List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "click", "info", "clear")) {
             changed |= this.setDefault("modules.npcs.commands." + command, true);
         }
         changed |= this.setDefault("modules.web-panel.enabled", true);

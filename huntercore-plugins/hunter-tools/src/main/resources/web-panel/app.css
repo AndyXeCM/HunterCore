@@ -805,6 +805,13 @@ pre {
   padding: 0 10px;
 }
 
+.actorCommandInput {
+  width: min(280px, 48vw);
+  min-height: 31px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+}
+
 .pluginWorkspace {
   min-height: calc(100svh - var(--chrome-space) - 120px);
 }

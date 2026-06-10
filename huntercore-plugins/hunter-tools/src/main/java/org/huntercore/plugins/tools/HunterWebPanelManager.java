@@ -68,10 +68,11 @@ final class HunterWebPanelManager {
         .build();
     private static final int HASH_ITERATIONS = 120_000;
     private static final int HASH_BITS = 256;
-    private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs", "web-panel");
+    private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "essentials", "management", "fake-players", "real-fake-players", "npcs", "web-panel");
     private static final Map<String, List<String>> MODULE_COMMANDS = Map.of(
         "essentials", HunterToolsPreferences.essentialsCommands(),
         "management", HunterToolsPreferences.managementCommands(),
+        "real-fake-players", HunterToolsPreferences.realFakePlayerCommands(),
         "fake-players", HunterToolsPreferences.actorCommands(),
         "npcs", HunterToolsPreferences.actorCommands()
     );
@@ -287,6 +288,11 @@ final class HunterWebPanelManager {
                 this.adminActorRemove(exchange);
                 return;
             }
+            if (path.equals("/api/admin/actor/click-command")) {
+                this.requireMethod(exchange, "POST");
+                this.adminActorClickCommand(exchange);
+                return;
+            }
             if (path.equals("/api/admin/web-user/save")) {
                 this.requireMethod(exchange, "POST");
                 this.adminWebUserSave(exchange);
@@ -381,6 +387,7 @@ final class HunterWebPanelManager {
 
         json.append(",\"actors\":{");
         numberField(json, "fakePlayers", this.plugin.actorLiveCount("fake-players")).append(',');
+        numberField(json, "realFakePlayers", this.plugin.actorLiveCount("real-fake-players")).append(',');
         numberField(json, "npcs", this.plugin.actorLiveCount("npcs"));
         json.append('}');
 
@@ -680,10 +687,34 @@ final class HunterWebPanelManager {
                 numberField(json, "yaw", actor.yaw()).append(',');
                 numberField(json, "pitch", actor.pitch()).append(',');
                 field(json, "pose", actor.pose()).append(',');
+                field(json, "clickCommand", actor.clickCommand()).append(',');
                 booleanField(json, "live", actor.live()).append(',');
                 field(json, "entityUuid", actor.entityUuid());
                 json.append('}');
             }
+        }
+        for (final HunterRealFakePlayerManager.RealFakePlayerView actor : this.plugin.realFakePlayerViews()) {
+            if (!first) {
+                json.append(',');
+            }
+            first = false;
+            json.append('{');
+            field(json, "module", actor.module()).append(',');
+            field(json, "id", actor.id()).append(',');
+            field(json, "displayName", actor.displayName()).append(',');
+            field(json, "kind", "server-player").append(',');
+            field(json, "world", actor.world()).append(',');
+            numberField(json, "x", actor.x()).append(',');
+            numberField(json, "y", actor.y()).append(',');
+            numberField(json, "z", actor.z()).append(',');
+            numberField(json, "yaw", actor.yaw()).append(',');
+            numberField(json, "pitch", actor.pitch()).append(',');
+            field(json, "pose", actor.gameMode()).append(',');
+            field(json, "loops", actor.loops()).append(',');
+            field(json, "clickCommand", actor.clickCommand()).append(',');
+            booleanField(json, "live", true).append(',');
+            field(json, "entityUuid", actor.entityUuid());
+            json.append('}');
         }
         json.append(']');
         return json.toString();
@@ -865,7 +896,7 @@ final class HunterWebPanelManager {
             return;
         }
         String kind = HunterToolsPreferences.normalize(body.getOrDefault("kind", "villager"));
-        if (module.equals("fake-players")) {
+        if (module.equals("fake-players") || module.equals("real-fake-players")) {
             kind = "mannequin";
         } else if (!kind.equals("villager") && !kind.equals("mannequin")) {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_actor_kind\"}");
@@ -909,6 +940,40 @@ final class HunterWebPanelManager {
         final CommandResult result = this.dispatchConfiguredCommand(label + " remove " + id);
         this.guestStatusCache = null;
         this.sendCommandResult(exchange, 200, result);
+    }
+
+    private void adminActorClickCommand(final HttpExchange exchange) throws IOException {
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 16 * 1024));
+        final String module = HunterToolsPreferences.normalize(body.getOrDefault("module", ""));
+        final String label = actorCommandLabel(module);
+        if (label == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"unknown_actor_module\"}");
+            return;
+        }
+        final WebSession session = this.adminOperator(exchange, label);
+        if (session == null) {
+            return;
+        }
+        final String id = commandToken(body.getOrDefault("id", ""), 32);
+        if (id.isBlank()) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_actor_id\"}");
+            return;
+        }
+        final String command = actorClickCommand(body.getOrDefault("command", ""));
+        if (command == null) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_click_command\"}");
+            return;
+        }
+        if (!this.plugin.setActorClickCommand(module, id, command)) {
+            this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"actor_not_found\"}");
+            return;
+        }
+        this.guestStatusCache = null;
+        final StringBuilder json = new StringBuilder(96);
+        json.append("{\"ok\":true,");
+        field(json, "message", command.isBlank() ? "Actor click command cleared." : "Actor click command saved.");
+        json.append('}');
+        this.send(exchange, 200, "application/json; charset=utf-8", json.toString());
     }
 
     private void adminWebUserSave(final HttpExchange exchange) throws IOException {
@@ -1512,6 +1577,7 @@ final class HunterWebPanelManager {
     private static String actorCommandLabel(final String module) {
         return switch (module) {
             case "fake-players" -> "fakeplayer";
+            case "real-fake-players" -> "hplayer";
             case "npcs" -> "npc";
             default -> null;
         };
@@ -1539,6 +1605,23 @@ final class HunterWebPanelManager {
         } catch (final NumberFormatException ex) {
             return null;
         }
+    }
+
+    private static String actorClickCommand(final String value) {
+        if (value == null) {
+            return "";
+        }
+        String command = value.trim();
+        if (command.isBlank()) {
+            return "";
+        }
+        if (command.indexOf('\n') >= 0 || command.indexOf('\r') >= 0 || command.length() > 512) {
+            return null;
+        }
+        if (command.startsWith("/")) {
+            command = command.substring(1).trim();
+        }
+        return command;
     }
 
     private static float parseOptionalFloat(final String value, final float fallback) {

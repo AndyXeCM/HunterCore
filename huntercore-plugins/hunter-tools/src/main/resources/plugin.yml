@@ -93,14 +93,38 @@ commands:
     description: Teleport to your previous location.
     usage: /back
     permission: huntertools.command.back
+  hat:
+    description: Swap your helmet with your main hand item.
+    usage: /hat
+    permission: huntertools.command.hat
+  craft:
+    description: Open a crafting table.
+    usage: /craft
+    aliases: [workbench, wb]
+    permission: huntertools.command.craft
+  enderchest:
+    description: Open your ender chest.
+    usage: /enderchest [player]
+    aliases: [ec]
+    permission: huntertools.command.enderchest
+  trash:
+    description: Open a disposable trash inventory.
+    usage: /trash
+    aliases: [disposal]
+    permission: huntertools.command.trash
   fakeplayer:
     description: Manage HunterCore lightweight fake players.
-    usage: /fakeplayer <spawn|remove|list|tp|tphere|look|pose|info|clear>
+    usage: /fakeplayer <spawn|remove|list|tp|tphere|look|pose|click|info|clear>
     aliases: [fp, hfake]
     permission: huntertools.command.fakeplayer
+  hplayer:
+    description: Manage HunterCore real ServerPlayer fake players.
+    usage: /hplayer <spawn|remove|list|tp|tphere|look|sneak|sprint|jump|use|attack|stop|click|drop|dropstack|swap|gm|slot|info|clear>
+    aliases: [playerbot, realfakeplayer]
+    permission: huntertools.command.hplayer
   npc:
     description: Manage HunterCore NPCs.
-    usage: /npc <spawn|remove|list|tp|tphere|look|pose|info|clear>
+    usage: /npc <spawn|remove|list|tp|tphere|look|pose|click|info|clear>
     aliases: [hnpc]
     permission: huntertools.command.npc
 permissions:
@@ -132,7 +156,19 @@ permissions:
     default: op
   huntertools.command.back:
     default: true
+  huntertools.command.hat:
+    default: true
+  huntertools.command.craft:
+    default: true
+  huntertools.command.enderchest:
+    default: true
+  huntertools.command.enderchest.other:
+    default: op
+  huntertools.command.trash:
+    default: true
   huntertools.command.fakeplayer:
+    default: op
+  huntertools.command.hplayer:
     default: op
   huntertools.command.npc:
     default: op

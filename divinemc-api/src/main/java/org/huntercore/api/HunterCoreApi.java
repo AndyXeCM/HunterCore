@@ -1,6 +1,7 @@
 package org.huntercore.api;
 
 import java.util.Collection;
+import org.huntercore.api.fakeplayer.HunterFakePlayerService;
 import org.jetbrains.annotations.NotNull;
 
 public interface HunterCoreApi {
@@ -10,6 +11,8 @@ public interface HunterCoreApi {
     @NotNull String version();
 
     @NotNull Collection<HunterBundledPlugin> bundledPlugins();
+
+    @NotNull HunterFakePlayerService fakePlayers();
 
     void registerCommandExtension(@NotNull HunterCommandExtension extension);
 

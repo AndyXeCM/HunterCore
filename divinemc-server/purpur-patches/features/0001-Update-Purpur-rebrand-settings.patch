@@ -18,7 +18,7 @@ index a337df7cdb4779fea9bbab039dcfab4aad6fa939..7b84a68cb7656b72eb23260679ecae16
 -        serverModName = getString("settings.server-mod-name", serverModName);
 -    }
 +    public static String serverGUIName = io.papermc.paper.ServerBuildInfo.buildInfo().brandName() + " Console";
-+    public static String f3Name = io.papermc.paper.ServerBuildInfo.buildInfo().brandName();
++    public static String f3Name = "\"HunterCraft\" Server";
 +    private static void serverName() {
 +        serverModName = getString("settings.rebrand.server-mod-name", serverModName);
 +        serverGUIName = getString("settings.rebrand.server-gui-name", serverGUIName);

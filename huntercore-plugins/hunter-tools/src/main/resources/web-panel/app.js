@@ -78,9 +78,17 @@ const translations = {
     'actors.spawnPoint': '出生点',
     'actors.npc': 'NPC',
     'actors.fakePlayer': '假人',
+    'actors.realFakePlayer': '真实假人',
     'actors.villager': '村民',
     'actors.mannequin': '模型假人',
     'actors.pose': '姿态',
+    'actors.loops': '循环动作',
+    'actors.clickCommand': '点击指令',
+    'actors.noClickCommand': '未设置点击指令',
+    'actors.clickPlaceholder': '点击后执行，如 say %player%',
+    'actors.saveClick': '保存点击',
+    'actors.clearClick': '清空点击',
+    'actors.clickSaved': '点击指令已保存。',
     'actors.notConfigured': '未配置',
     'actors.live': '在线',
     'actors.configured': '已配置',
@@ -209,9 +217,17 @@ const translations = {
     'actors.spawnPoint': 'Spawn',
     'actors.npc': 'NPC',
     'actors.fakePlayer': 'Fake player',
+    'actors.realFakePlayer': 'Real fake player',
     'actors.villager': 'Villager',
     'actors.mannequin': 'Mannequin',
     'actors.pose': 'pose',
+    'actors.loops': 'loops',
+    'actors.clickCommand': 'click',
+    'actors.noClickCommand': 'no click command',
+    'actors.clickPlaceholder': 'run on click, e.g. say %player%',
+    'actors.saveClick': 'Save click',
+    'actors.clearClick': 'Clear click',
+    'actors.clickSaved': 'Click command saved.',
     'actors.notConfigured': 'not configured',
     'actors.live': 'live',
     'actors.configured': 'configured',
@@ -401,7 +417,7 @@ function applyTranslations() {
     custom: t('allowed.custom'),
     none: t('allowed.none')
   });
-  translateOptions('actorModule', { npcs: t('actors.npc'), 'fake-players': t('actors.fakePlayer') });
+  translateOptions('actorModule', { npcs: t('actors.npc'), 'fake-players': t('actors.fakePlayer'), 'real-fake-players': t('actors.realFakePlayer') });
   translateOptions('actorKind', { villager: t('actors.villager'), mannequin: t('actors.mannequin') });
   const commandResult = $('commandResult');
   if (commandResult?.dataset.placeholder !== 'false') setCommandPlaceholder();
@@ -457,9 +473,23 @@ function actorLine(actor) {
   const location = actor.world
     ? `${actor.world} ${Number(actor.x).toFixed(1)} ${Number(actor.y).toFixed(1)} ${Number(actor.z).toFixed(1)}`
     : t('actors.notConfigured');
+  const clickCommand = actor.clickCommand || '';
+  const clickLine = clickCommand ? clickCommand : t('actors.noClickCommand');
+  const moduleLabel = actor.module === 'npcs'
+    ? t('actors.npc')
+    : actor.module === 'real-fake-players' ? t('actors.realFakePlayer') : t('actors.fakePlayer');
+  const stateLabel = actor.live ? t('actors.live') : t('actors.configured');
+  const metaLine = actor.module === 'real-fake-players'
+    ? `${stateLabel} · ${moduleLabel} · ${esc(actor.pose || 'survival')} · ${esc(t('actors.loops'))}: ${esc(actor.loops || 'none')} · ${esc(location)} · ${esc(t('actors.clickCommand'))}: ${esc(clickLine)}`
+    : `${stateLabel} · ${moduleLabel} · ${esc(actor.kind)} · ${esc(t('actors.pose'))}: ${esc(actor.pose || 'standing')} · ${esc(location)} · ${esc(t('actors.clickCommand'))}: ${esc(clickLine)}`;
   return `<div class="dataItem">
-    <span>${esc(actor.displayName)}<small>${actor.live ? t('actors.live') : t('actors.configured')} · ${esc(actor.module)} · ${esc(actor.kind)} · ${esc(t('actors.pose'))}: ${esc(actor.pose || 'standing')} · ${esc(location)}</small></span>
-    <span class="actorActions"><button type="button" data-actor-remove="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('action.remove'))}</button></span>
+    <span>${esc(actor.displayName)}<small>${metaLine}</small></span>
+    <span class="actorActions">
+      <input class="actorCommandInput" value="${esc(clickCommand)}" placeholder="${esc(t('actors.clickPlaceholder'))}" data-actor-command-input="true">
+      <button type="button" data-actor-click-save="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('actors.saveClick'))}</button>
+      <button type="button" data-actor-click-clear="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('actors.clearClick'))}</button>
+      <button type="button" data-actor-remove="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('action.remove'))}</button>
+    </span>
   </div>`;
 }
 
@@ -850,11 +880,21 @@ function bindEvents() {
 
   $('actorList').addEventListener('click', async (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLButtonElement) || !target.dataset.actorRemove) return;
+    if (!(target instanceof HTMLButtonElement)) return;
     try {
       const payload = { module: target.dataset.actorModule, id: target.dataset.actorId };
-      const result = await json('/api/admin/actor/remove', { method: 'POST', body: JSON.stringify(payload) });
-      setOutput(result.message || t('actors.removed'), result.output || '');
+      if (target.dataset.actorClickSave || target.dataset.actorClickClear) {
+        const row = target.closest('.dataItem');
+        const input = row?.querySelector('[data-actor-command-input]');
+        payload.command = target.dataset.actorClickClear ? '' : (input?.value || '');
+        const result = await json('/api/admin/actor/click-command', { method: 'POST', body: JSON.stringify(payload) });
+        setOutput(result.message || t('actors.clickSaved'), '');
+      } else if (target.dataset.actorRemove) {
+        const result = await json('/api/admin/actor/remove', { method: 'POST', body: JSON.stringify(payload) });
+        setOutput(result.message || t('actors.removed'), result.output || '');
+      } else {
+        return;
+      }
       await refresh();
     } catch (error) {
       setOutput(t('command.error', { message: error.message }));

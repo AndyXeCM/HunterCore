@@ -243,10 +243,14 @@ public final class HunterCoreCommand extends Command {
     }
 
     private static final class PreferencesExtension implements HunterCommandExtension {
-        private static final List<String> MODULES = List.of("tps-display", "sidebar", "essentials", "management", "fake-players", "npcs");
-        private static final List<String> ESSENTIALS_COMMANDS = List.of("heal", "feed", "fly", "gm", "day", "night", "sun", "rain", "thunder", "broadcast", "clearchat", "speed", "spawn", "setspawn", "back");
-        private static final List<String> MANAGEMENT_COMMANDS = List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize");
-        private static final List<String> ACTOR_COMMANDS = List.of("spawn", "remove", "list", "tp", "clear");
+        private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "essentials", "management", "fake-players", "real-fake-players", "npcs");
+        private static final List<String> ESSENTIALS_COMMANDS = List.of("heal", "feed", "fly", "gm", "day", "night", "sun", "rain", "thunder", "broadcast", "clearchat", "speed", "spawn", "setspawn", "back", "hat", "craft", "enderchest", "trash");
+        private static final List<String> MANAGEMENT_COMMANDS = List.of("reload", "modules", "plugins", "memory", "gc", "threads", "command", "module", "optimize", "motd");
+        private static final List<String> ACTOR_COMMANDS = List.of("spawn", "remove", "list", "tp", "tphere", "look", "pose", "click", "info", "clear");
+        private static final List<String> REAL_FAKE_PLAYER_COMMANDS = List.of(
+            "spawn", "remove", "kill", "list", "tp", "tphere", "look", "sneak", "sprint", "jump", "use", "attack",
+            "stop", "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "info", "clear"
+        );
 
         @Override
         public @NotNull String name() {
@@ -308,7 +312,7 @@ public final class HunterCoreCommand extends Command {
                 return CommandUtil.getListMatchingLast(sender, args, MODULES);
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("command")) {
-                return CommandUtil.getListMatchingLast(sender, args, List.of("essentials", "management", "fake-players", "npcs"));
+                return CommandUtil.getListMatchingLast(sender, args, List.of("essentials", "management", "fake-players", "real-fake-players", "npcs"));
             }
             if (args.length == 3 && args[0].equalsIgnoreCase("command")) {
                 final String module = args[1].toLowerCase(Locale.ROOT);
@@ -320,6 +324,9 @@ public final class HunterCoreCommand extends Command {
                 }
                 if (module.equals("fake-players") || module.equals("npcs")) {
                     return CommandUtil.getListMatchingLast(sender, args, ACTOR_COMMANDS);
+                }
+                if (module.equals("real-fake-players")) {
+                    return CommandUtil.getListMatchingLast(sender, args, REAL_FAKE_PLAYER_COMMANDS);
                 }
             }
             if ((args.length == 3 && (args[0].equalsIgnoreCase("bundled") || args[0].equalsIgnoreCase("module")))
@@ -381,12 +388,12 @@ public final class HunterCoreCommand extends Command {
 
         private void toggleCommand(final CommandSender sender, final HunterPreferences preferences, final String[] args) throws IOException {
             if (args.length != 4) {
-                sender.sendMessage("Usage: /huntercore preferences command <essentials|management> <command> <on|off>");
+                sender.sendMessage("Usage: /huntercore preferences command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>");
                 return;
             }
             final String module = HunterPreferences.normalize(args[1]);
-            if (!module.equals("essentials") && !module.equals("management") && !module.equals("fake-players") && !module.equals("npcs")) {
-                sender.sendMessage("Command toggles are available for essentials, management, fake-players, and npcs.");
+            if (!module.equals("essentials") && !module.equals("management") && !module.equals("fake-players") && !module.equals("real-fake-players") && !module.equals("npcs")) {
+                sender.sendMessage("Command toggles are available for essentials, management, fake-players, real-fake-players, and npcs.");
                 return;
             }
             final Boolean enabled = parseToggle(args[3]);

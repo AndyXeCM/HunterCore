@@ -70,17 +70,18 @@ To add another external bundled plugin, extend that script with a download/build
 /huntercore preferences
 /huntercore preferences bundled <plugin-id> <on|off>
 /huntercore preferences module <module> <on|off>
-/huntercore preferences command <essentials|management> <command> <on|off>
+/huntercore preferences command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>
 /huntercore reload
 /hc
 /htps
 /hunteradmin modules
 /hunteradmin module <module> <on|off>
-/hunteradmin command <essentials|management> <command> <on|off>
+/hunteradmin command <essentials|management|fake-players|real-fake-players|npcs> <command> <on|off>
 /hunteradmin memory
 /hunteradmin gc
 /hunteradmin threads
 /hunteradmin optimize
+/hunteradmin motd <status|line1 <text>|line2 <text>|max <number|default>>
 /hunteradmin web status
 /hunteradmin web restart
 /hunteradmin web users
@@ -95,8 +96,29 @@ To add another external bundled plugin, extend that script with a download/build
 /fakeplayer tphere <name>
 /fakeplayer look <name> [yaw pitch|north|south|east|west|up|down]
 /fakeplayer pose <name> <standing|sneaking|swimming|fall-flying|sleeping>
+/fakeplayer click <name> [command|clear]
 /fakeplayer info [name]
 /fakeplayer clear
+/hplayer spawn <name> [world x y z [yaw pitch]]
+/hplayer remove <name>
+/hplayer list
+/hplayer tp <name> [world x y z [yaw pitch]]
+/hplayer tphere <name>
+/hplayer look <name> [yaw pitch|north|south|east|west|up|down]
+/hplayer sneak <name> <on|off>
+/hplayer sprint <name> <on|off>
+/hplayer jump <name> [once|continuous|stop]
+/hplayer use <name> [once|continuous|stop]
+/hplayer attack <name> [once|continuous|stop]
+/hplayer stop <name>
+/hplayer click <name> [command|clear]
+/hplayer drop <name>
+/hplayer dropstack <name>
+/hplayer swap <name>
+/hplayer gm <name> <survival|creative|adventure|spectator>
+/hplayer slot <name> <1-9>
+/hplayer info [name]
+/hplayer clear
 /npc spawn <name> [villager|mannequin] [world x y z [yaw pitch]]
 /npc remove <name>
 /npc list
@@ -104,17 +126,20 @@ To add another external bundled plugin, extend that script with a download/build
 /npc tphere <name>
 /npc look <name> [yaw pitch|north|south|east|west|up|down]
 /npc pose <name> <standing|sneaking|swimming|fall-flying|sleeping>
+/npc click <name> [command|clear]
 /npc info [name]
 /npc clear
 ```
 
 `/about` is HunterCore-specific. `/huntercore system` prints JVM, OS, CPU, memory, uptime, player count, and plugin directory information.
 
-HunterTools provides TPS actionbar/sidebar display plus essentials-style commands such as `/heal`, `/feed`, `/fly`, `/gm`, `/day`, `/night`, `/sun`, `/rain`, `/thunder`, `/broadcast`, `/clearchat`, `/speed`, `/spawn`, `/setspawn`, and `/back`.
+HunterTools provides TPS actionbar/sidebar display, a built-in MOTD module, and essentials-style commands such as `/heal`, `/feed`, `/fly`, `/gm`, `/day`, `/night`, `/sun`, `/rain`, `/thunder`, `/broadcast`, `/clearchat`, `/speed`, `/spawn`, `/setspawn`, `/back`, `/hat`, `/craft`, `/enderchest`, and `/trash`. The client F3 server brand is forced to `"HunterCraft" Server`.
 
-`/fakeplayer` creates lightweight Mannequin-based fake players with placement commands for teleporting, moving to the sender, rotating, fixed poses, and info output. `/npc` creates managed Villager or Mannequin NPCs and shares the same placement/info commands where the entity type supports them. Both are persisted in `plugins/HunterCore/preferences.yml` and rebuilt on startup/reload.
+`/fakeplayer` creates lightweight Mannequin-based fake players with placement commands for teleporting, moving to the sender, rotating, fixed poses, click-command actions, and info output. `/npc` creates managed Villager or Mannequin NPCs and shares the same placement/info/click-command commands where the entity type supports them. Both are persisted in `plugins/HunterCore/preferences.yml` and rebuilt on startup/reload.
 
-These lightweight actors are not real `ServerPlayer` connections, so they do not occupy player slots, load chunks, or run Carpet-style continuous use/attack/jump/sneak actions. A closer Carpet-like fake player should be implemented as a separate real-player simulation module.
+These lightweight actors are not real `ServerPlayer` connections, so they do not occupy player slots, load chunks, or run Carpet-style continuous use/attack/jump/sneak actions.
+
+`/hplayer` is the real `ServerPlayer` fake player module, with `/playerbot` and `/realfakeplayer` aliases. It joins the online player list, fires the normal join/quit flow, participates in chunk loading, and supports Carpet-like continuous `use`, `attack`, and `jump` loops plus sneak, sprint, click-command actions, drop, dropstack, swap hands, game mode changes, and hotbar slot selection. Real fake players are runtime-only and have Bukkit persistence disabled; disabling `real-fake-players` or unloading HunterTools removes them according to preferences.
 
 ## Web Panel And Map
 
@@ -133,7 +158,7 @@ Create web users from console or an op account:
 
 BlueMap is bundled for the web map, and Chunky is bundled for chunk pre-generation/performance prep. BlueMap still requires the server owner to read and set `accept-download` in `plugins/BlueMap/core.conf` on first use because it downloads Mojang client resources for rendering.
 
-PlaceholderAPI, Vault, ProtocolLib, WorldEdit, and WorldGuard are bundled as a common server foundation for placeholders, economy/permission bridging, packet/protocol extensions, map editing, and region protection. Each one can still be disabled under `bundled-plugins.plugins.<plugin-id>`.
+PlaceholderAPI, Vault, ProtocolLib, WorldEdit, and WorldGuard are bundled as a common server foundation for placeholders, economy/permission bridging, packet/protocol extensions, map editing, and region protection. HunterTools provides lightweight built-in MOTD and utility commands without bundling EssentialsX or MiniMOTD. Each bundled plugin can still be disabled under `bundled-plugins.plugins.<plugin-id>`.
 
 ## Optimizations
 
