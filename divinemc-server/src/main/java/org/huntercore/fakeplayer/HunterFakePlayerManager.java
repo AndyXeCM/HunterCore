@@ -25,6 +25,7 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -187,6 +188,38 @@ public final class HunterFakePlayerManager implements HunterFakePlayerService {
     }
 
     @Override
+    public @NotNull FakePlayerActionResult move(
+        @NotNull final String name,
+        final double forward,
+        final double sideways,
+        final boolean jump,
+        final boolean sprinting,
+        final boolean sneaking
+    ) {
+        return this.withPlayer(name, player -> {
+            final double clampedForward = clamp(forward, -1.0D, 1.0D);
+            final double clampedSideways = clamp(sideways, -1.0D, 1.0D);
+            if (Math.abs(clampedForward) < 0.001D && Math.abs(clampedSideways) < 0.001D && !jump) {
+                player.setSprinting(false);
+                return FakePlayerActionResult.ok(player.getGameProfile().name() + " stopped moving.");
+            }
+            player.setShiftKeyDown(sneaking);
+            player.setSprinting(sprinting && clampedForward > 0.0D && !sneaking);
+            if (jump && player.onGround()) {
+                player.jumpFromGround();
+            }
+            final double speed = sneaking ? 0.075D : player.isSprinting() ? 0.34D : 0.22D;
+            final double yaw = Math.toRadians(player.getYRot());
+            final double x = (-Math.sin(yaw) * clampedForward + Math.cos(yaw) * clampedSideways) * speed;
+            final double z = (Math.cos(yaw) * clampedForward + Math.sin(yaw) * clampedSideways) * speed;
+            final Vec3 current = player.getDeltaMovement();
+            player.setDeltaMovement(x, current.y, z);
+            player.hurtMarked = true;
+            return FakePlayerActionResult.ok(player.getGameProfile().name() + " moved forward=" + format(clampedForward) + ", sideways=" + format(clampedSideways) + ".");
+        });
+    }
+
+    @Override
     public @NotNull FakePlayerActionResult jump(@NotNull final String name) {
         return this.withPlayer(name, player -> {
             if (player.onGround()) {
@@ -247,11 +280,16 @@ public final class HunterFakePlayerManager implements HunterFakePlayerService {
             }
             final MiningState current = this.mining.get(id);
             if (current != null && current.pos().equals(pos)) {
+                final FakePlayerActionResult finished = this.finishMiningIfReady(id, player, current);
+                if (finished != null) {
+                    return finished;
+                }
+                player.swing(InteractionHand.MAIN_HAND, true);
                 return FakePlayerActionResult.ok(player.getGameProfile().name() + " is mining " + blockLine(pos) + ".");
             }
             this.abortMining(id, player);
             player.gameMode.handleBlockBreakAction(pos, ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, blockHit.getDirection(), player.level().getMaxY(), this.nextSequence());
-            this.mining.put(id, new MiningState(pos.immutable(), blockHit.getDirection()));
+            this.mining.put(id, new MiningState(pos.immutable(), blockHit.getDirection(), gameTick(player)));
             player.swing(InteractionHand.MAIN_HAND, true);
             return FakePlayerActionResult.ok(player.getGameProfile().name() + " started mining " + blockLine(pos) + ".");
         });
@@ -356,6 +394,23 @@ public final class HunterFakePlayerManager implements HunterFakePlayerService {
         }
     }
 
+    private @Nullable FakePlayerActionResult finishMiningIfReady(final String id, final ServerPlayer player, final MiningState miningState) {
+        final BlockState blockState = player.level().getBlockState(miningState.pos());
+        if (blockState.isAir()) {
+            this.mining.remove(id);
+            return FakePlayerActionResult.ok(player.getGameProfile().name() + " finished mining " + blockLine(miningState.pos()) + ".");
+        }
+        final int ticksSpentDestroying = Math.max(0, gameTick(player) - miningState.startTick());
+        final float destroyProgress = blockState.getDestroyProgress(player, player.level(), miningState.pos()) * (ticksSpentDestroying + 1);
+        if (destroyProgress < 0.7F) {
+            return null;
+        }
+        player.gameMode.handleBlockBreakAction(miningState.pos(), ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, miningState.direction(), player.level().getMaxY(), this.nextSequence());
+        this.mining.remove(id);
+        player.swing(InteractionHand.MAIN_HAND, true);
+        return FakePlayerActionResult.ok(player.getGameProfile().name() + " finished mining " + blockLine(miningState.pos()) + ".");
+    }
+
     private RayTarget rayTarget(final ServerPlayer player) {
         final double blockRange = player.blockInteractionRange();
         final double entityRange = player.entityInteractionRange();
@@ -445,8 +500,20 @@ public final class HunterFakePlayerManager implements HunterFakePlayerService {
         return Math.max(-90.0F, Math.min(90.0F, pitch));
     }
 
+    private static double clamp(final double value, final double min, final double max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static String format(final double value) {
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
     private static String blockLine(final BlockPos pos) {
         return pos.getX() + " " + pos.getY() + " " + pos.getZ();
+    }
+
+    private static int gameTick(final ServerPlayer player) {
+        return (int) player.level().getLagCompensationTick();
     }
 
     private interface PlayerOperation {
@@ -456,7 +523,7 @@ public final class HunterFakePlayerManager implements HunterFakePlayerService {
     private record FakeEntry(String id, String name, UUID uuid) {
     }
 
-    private record MiningState(BlockPos pos, Direction direction) {
+    private record MiningState(BlockPos pos, Direction direction, int startTick) {
     }
 
     private record RayTarget(BlockHitResult blockHit, @Nullable EntityHitResult entityHit) {

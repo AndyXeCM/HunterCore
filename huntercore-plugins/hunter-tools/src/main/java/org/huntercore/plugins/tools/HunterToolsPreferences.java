@@ -386,6 +386,16 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.ai.npc.response-format", "&d%npc% &8> &f%response%");
         changed |= this.setDefault("modules.ai.npc.system-prompt", "You control a HunterCore Minecraft NPC. Reply as the NPC in one or two short chat lines. You may add action lines on their own line: [look], [pose:standing], [pose:sneaking], or [command:say text]. Only use commands when they are helpful and safe.");
         changed |= this.setDefault("modules.ai.npc.command-whitelist", List.of("say", "tell", "msg", "title", "effect", "playsound"));
+        changed |= this.setDefault("modules.ai.fake-players.enabled", true);
+        changed |= this.setDefault("modules.ai.fake-players.interval-seconds", 6);
+        changed |= this.setDefault("modules.ai.fake-players.max-actions", 5);
+        changed |= this.setDefault("modules.ai.fake-players.max-move-ticks", 40);
+        changed |= this.setDefault("modules.ai.fake-players.max-action-ticks", 80);
+        changed |= this.setDefault("modules.ai.fake-players.nearby-radius-blocks", 6);
+        changed |= this.setDefault("modules.ai.fake-players.allow-movement", true);
+        changed |= this.setDefault("modules.ai.fake-players.allow-breaking", true);
+        changed |= this.setDefault("modules.ai.fake-players.allow-interaction", true);
+        changed |= this.setDefault("modules.ai.fake-players.system-prompt", "You control a HunterCore real fake player in Minecraft. Return only bracketed action lines, no prose. Available actions: [look:yaw pitch], [look-at:x y z], [move:forward=1,sideways=0,ticks=20,sprint=true,jump=false,sneak=false], [mine:ticks=40], [use], [attack], [jump], [sneak:on], [sprint:off], [slot:1], [drop], [dropstack], [swap], [stop]. Use small safe steps. Mine only when the goal requires it and the target block is visible.");
         changed |= this.setDefault("modules.web-panel.enabled", true);
         changed |= this.setDefault("modules.web-panel.bind-address", "127.0.0.1");
         changed |= this.setDefault("modules.web-panel.port", 8088);
@@ -464,8 +474,8 @@ final class HunterToolsPreferences {
 
     static List<String> realFakePlayerCommands() {
         return List.of(
-            "spawn", "remove", "kill", "list", "tp", "tphere", "look", "sneak", "sprint", "jump", "use", "attack",
-            "stop", "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "info", "clear"
+            "spawn", "remove", "kill", "list", "tp", "tphere", "look", "move", "sneak", "sprint", "jump", "use", "attack",
+            "stop", "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "ai", "info", "clear"
         );
     }
 

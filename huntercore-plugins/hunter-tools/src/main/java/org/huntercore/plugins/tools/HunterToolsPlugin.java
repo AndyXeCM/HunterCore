@@ -92,8 +92,8 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         this.applyServerBrand();
         this.workerExecutor = this.createWorkerExecutor();
         this.actorManager = new HunterActorManager(this, this.preferences, this.workerExecutor);
-        this.realFakePlayerManager = new HunterRealFakePlayerManager(this, this.preferences);
         this.aiManager = new HunterAiManager(this, this.preferences, this.workerExecutor);
+        this.realFakePlayerManager = new HunterRealFakePlayerManager(this, this.preferences, this.aiManager);
         this.webPanelManager = new HunterWebPanelManager(this, this.preferences);
         this.registerCommands();
         this.getServer().getPluginManager().registerEvents(this, this);
@@ -578,6 +578,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         }
         if (this.aiManager != null) {
             this.aiManager.setExecutor(this.workerExecutor);
+        }
+        if (this.realFakePlayerManager != null) {
+            this.realFakePlayerManager.setAiManager(this.aiManager);
         }
         if (this.realFakePlayerManager != null && !this.preferences.moduleEnabled(REAL_FAKE_PLAYERS)) {
             this.realFakePlayerManager.shutdown();
@@ -1667,6 +1670,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     }
 
     boolean setActorAi(final String module, final String id, final boolean enabled, final String persona) {
+        if (module.equals(REAL_FAKE_PLAYERS)) {
+            return this.realFakePlayerManager != null && this.realFakePlayerManager.setAi(id, enabled, persona);
+        }
         return this.actorManager != null && this.actorManager.setActorAi(module, id, enabled, persona);
     }
 

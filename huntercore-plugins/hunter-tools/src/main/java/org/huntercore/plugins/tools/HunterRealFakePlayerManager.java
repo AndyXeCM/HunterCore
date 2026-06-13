@@ -7,14 +7,19 @@ import java.util.Locale;
 import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
 import org.huntercore.api.HunterCoreProvider;
 import org.huntercore.api.fakeplayer.FakePlayerActionResult;
 import org.huntercore.api.fakeplayer.FakePlayerSnapshot;
@@ -28,13 +33,24 @@ final class HunterRealFakePlayerManager {
     private final HunterToolsPreferences preferences;
     private final Map<String, BukkitTask> loops = new HashMap<>();
     private final Map<String, String> clickCommands = new HashMap<>();
+    private final Map<String, FakeAiProfile> aiProfiles = new HashMap<>();
+    private final Map<String, BukkitTask> aiTasks = new HashMap<>();
+    private final Map<String, String> aiLastActions = new HashMap<>();
+    private final List<String> aiBusy = new ArrayList<>();
+    private HunterAiManager aiManager;
 
-    HunterRealFakePlayerManager(final JavaPlugin plugin, final HunterToolsPreferences preferences) {
+    HunterRealFakePlayerManager(final JavaPlugin plugin, final HunterToolsPreferences preferences, final HunterAiManager aiManager) {
         this.plugin = plugin;
         this.preferences = preferences;
+        this.aiManager = aiManager;
+    }
+
+    void setAiManager(final HunterAiManager aiManager) {
+        this.aiManager = aiManager;
     }
 
     void shutdown() {
+        this.stopAllAi();
         this.stopAllLoops();
         if (this.preferences.booleanValue("modules.real-fake-players.remove-on-disable", true)) {
             this.service().removeAll();
@@ -68,6 +84,7 @@ final class HunterRealFakePlayerManager {
             case "tp" -> this.teleport(sender, label, args);
             case "tphere" -> this.teleportHere(sender, label, args);
             case "look" -> this.look(sender, label, args);
+            case "move" -> this.move(sender, label, args);
             case "sneak" -> this.toggle(sender, label, args, "sneak");
             case "sprint" -> this.toggle(sender, label, args, "sprint");
             case "jump" -> this.repeating(sender, label, args, "jump");
@@ -80,6 +97,7 @@ final class HunterRealFakePlayerManager {
             case "swap" -> this.swap(sender, label, args);
             case "gm", "gamemode" -> this.gameMode(sender, label, args);
             case "slot" -> this.slot(sender, label, args);
+            case "ai" -> this.ai(sender, label, args);
             case "info" -> this.info(sender, label, args);
             case "clear" -> this.clear(sender);
             default -> {
@@ -95,8 +113,8 @@ final class HunterRealFakePlayerManager {
         }
         final String sub = HunterToolsPreferences.normalize(args[0]);
         if (args.length == 2 && List.of(
-            "remove", "kill", "tp", "tphere", "look", "sneak", "sprint", "jump", "use", "attack", "stop",
-            "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "info"
+            "remove", "kill", "tp", "tphere", "look", "move", "sneak", "sprint", "jump", "use", "attack", "stop",
+            "click", "drop", "dropstack", "swap", "gm", "gamemode", "slot", "ai", "info"
         ).contains(sub)) {
             return matching(args[1], this.names());
         }
@@ -114,6 +132,12 @@ final class HunterRealFakePlayerManager {
         }
         if (args.length == 3 && sub.equals("slot")) {
             return matching(args[2], List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"));
+        }
+        if (args.length == 3 && sub.equals("move")) {
+            return matching(args[2], List.of("forward", "back", "left", "right", "stop", "1", "-1"));
+        }
+        if (args.length == 3 && sub.equals("ai")) {
+            return matching(args[2], List.of("status", "on", "off", "goal", "once"));
         }
         if ((sub.equals("spawn") && args.length == 3) || (sub.equals("tp") && args.length == 3)) {
             return matching(args[2], Bukkit.getWorlds().stream().map(World::getName).toList());
@@ -144,6 +168,7 @@ final class HunterRealFakePlayerManager {
             sender.sendMessage("Usage: /" + label + " remove <name>");
             return true;
         }
+        this.stopAi(args[1]);
         this.stopLoops(args[1]);
         this.clickCommands.remove(playerId(args[1]));
         this.send(sender, this.service().remove(args[1]));
@@ -201,6 +226,25 @@ final class HunterRealFakePlayerManager {
             return true;
         }
         this.send(sender, this.service().look(args[1], rotation[0], rotation[1]));
+        return true;
+    }
+
+    private boolean move(final CommandSender sender, final String label, final String[] args) {
+        if (args.length < 3 || args.length > 6) {
+            sender.sendMessage("Usage: /" + label + " move <name> <forward|back|left|right|stop|forwardValue> [sidewaysValue] [ticks] [jump]");
+            return true;
+        }
+        final MovePlan plan = movePlan(String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)));
+        if (plan == null) {
+            sender.sendMessage("Move must be forward/back/left/right/stop or numeric forward/sideways values.");
+            return true;
+        }
+        if (plan.ticks() <= 1) {
+            this.send(sender, this.service().move(args[1], plan.forward(), plan.sideways(), plan.jump(), plan.sprinting(), plan.sneaking()));
+            return true;
+        }
+        this.startMoveLoop(args[1], plan);
+        sender.sendMessage("Started move loop for " + args[1] + " (" + plan.ticks() + " ticks).");
         return true;
     }
 
@@ -327,18 +371,76 @@ final class HunterRealFakePlayerManager {
         return true;
     }
 
+    private boolean ai(final CommandSender sender, final String label, final String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("Usage: /" + label + " ai <name> [status|on|off|goal <text>|once]");
+            return true;
+        }
+        final var snapshot = this.service().snapshot(args[1]);
+        if (snapshot.isEmpty()) {
+            sender.sendMessage("Fake player not found: " + args[1]);
+            return true;
+        }
+        final FakePlayerSnapshot fake = snapshot.get();
+        final FakeAiProfile profile = this.aiProfiles.get(fake.id());
+        if (args.length == 2 || args[2].equalsIgnoreCase("status")) {
+            sender.sendMessage(ChatColor.GOLD + "HunterCore real fake player AI " + fake.name());
+            sender.sendMessage(ChatColor.GRAY + "Enabled: " + ChatColor.WHITE + (profile != null && profile.enabled()));
+            sender.sendMessage(ChatColor.GRAY + "Goal: " + ChatColor.WHITE + (profile == null || profile.goal().isBlank() ? defaultFakeAiGoal(fake.name()) : profile.goal()));
+            sender.sendMessage(ChatColor.GRAY + "Last action: " + ChatColor.WHITE + this.aiLastActions.getOrDefault(fake.id(), "idle"));
+            return true;
+        }
+        final String action = HunterToolsPreferences.normalize(args[2]);
+        switch (action) {
+            case "on", "enable", "enabled", "true" -> {
+                final String goal = args.length >= 4
+                    ? String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length)).trim()
+                    : profile == null || profile.goal().isBlank() ? defaultFakeAiGoal(fake.name()) : profile.goal();
+                this.setAi(fake.name(), true, goal);
+                sender.sendMessage("HunterCore AI control enabled for " + fake.name() + ".");
+                return true;
+            }
+            case "off", "disable", "disabled", "false" -> {
+                this.setAi(fake.name(), false, "");
+                sender.sendMessage("HunterCore AI control disabled for " + fake.name() + ".");
+                return true;
+            }
+            case "goal" -> {
+                if (args.length < 4) {
+                    sender.sendMessage("Usage: /" + label + " ai <name> goal <text>");
+                    return true;
+                }
+                final String goal = String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length)).trim();
+                this.setAi(fake.name(), profile != null && profile.enabled(), goal);
+                sender.sendMessage("HunterCore AI goal updated for " + fake.name() + ".");
+                return true;
+            }
+            case "once" -> {
+                final String goal = profile == null || profile.goal().isBlank() ? defaultFakeAiGoal(fake.name()) : profile.goal();
+                this.aiProfiles.put(fake.id(), new FakeAiProfile(fake.id(), fake.name(), profile != null && profile.enabled(), goal));
+                this.requestAi(fake.id(), true);
+                sender.sendMessage("HunterCore AI one-shot requested for " + fake.name() + ".");
+                return true;
+            }
+            default -> {
+                sender.sendMessage("Usage: /" + label + " ai <name> [status|on|off|goal <text>|once]");
+                return true;
+            }
+        }
+    }
+
     private boolean info(final CommandSender sender, final String label, final String[] args) {
         if (args.length > 2) {
             sender.sendMessage("Usage: /" + label + " info [name]");
             return true;
         }
         if (args.length == 1) {
-        sender.sendMessage(ChatColor.GOLD + "HunterCore real fake players");
-        sender.sendMessage("- True ServerPlayer instances: online list, chunk loading, player events and plugin visibility.");
-        sender.sendMessage("- Commands: spawn, remove, list, tp, tphere, look, sneak, sprint, jump, use, attack, stop, click, drop, dropstack, swap, gm, slot, info, clear.");
-        sender.sendMessage("- use/attack/jump support once, continuous, and stop.");
-        sender.sendMessage("- Click command placeholders: %player%, %player_uuid%, %actor%, %actor_name%, %actor_uuid%, %module%, %world%, %x%, %y%, %z%.");
-        return true;
+            sender.sendMessage(ChatColor.GOLD + "HunterCore real fake players");
+            sender.sendMessage("- True ServerPlayer instances: online list, chunk loading, player events and plugin visibility.");
+            sender.sendMessage("- Commands: spawn, remove, list, tp, tphere, look, move, sneak, sprint, jump, use, attack, stop, click, drop, dropstack, swap, gm, slot, ai, info, clear.");
+            sender.sendMessage("- use/attack/jump support once, continuous, and stop. AI can drive look, move, mine, use, slot and toggles.");
+            sender.sendMessage("- Click command placeholders: %player%, %player_uuid%, %actor%, %actor_name%, %actor_uuid%, %module%, %world%, %x%, %y%, %z%.");
+            return true;
         }
         final String name = args[1];
         final var snapshot = this.service().snapshot(name);
@@ -354,10 +456,15 @@ final class HunterRealFakePlayerManager {
         sender.sendMessage("- sneaking: " + view.sneaking() + ", sprinting: " + view.sprinting() + ", using item: " + view.usingItem());
         sender.sendMessage("- loops: " + this.loopLine(view.name()));
         sender.sendMessage("- click command: " + this.clickCommands.getOrDefault(view.id(), "not configured"));
+        final FakeAiProfile profile = this.aiProfiles.get(view.id());
+        sender.sendMessage("- AI: " + (profile != null && profile.enabled() ? "enabled" : "disabled")
+            + ", goal: " + (profile == null || profile.goal().isBlank() ? defaultFakeAiGoal(view.name()) : profile.goal())
+            + ", last: " + this.aiLastActions.getOrDefault(view.id(), "idle"));
         return true;
     }
 
     private boolean clear(final CommandSender sender) {
+        this.stopAllAi();
         this.stopAllLoops();
         this.clickCommands.clear();
         this.send(sender, this.service().removeAll());
@@ -370,6 +477,7 @@ final class HunterRealFakePlayerManager {
         final List<RealFakePlayerView> views = new ArrayList<>();
         for (final FakePlayerSnapshot snapshot : snapshots) {
             final Location location = snapshot.location();
+            final FakeAiProfile profile = this.aiProfiles.get(snapshot.id());
             views.add(new RealFakePlayerView(
                 MODULE,
                 snapshot.id(),
@@ -383,6 +491,9 @@ final class HunterRealFakePlayerManager {
                 snapshot.gameMode().name().toLowerCase(Locale.ROOT),
                 this.loopLine(snapshot.name()),
                 this.clickCommands.getOrDefault(snapshot.id(), ""),
+                profile != null && profile.enabled(),
+                profile == null ? "" : profile.goal(),
+                this.aiLastActions.getOrDefault(snapshot.id(), "idle"),
                 snapshot.uuid().toString()
             ));
         }
@@ -400,6 +511,31 @@ final class HunterRealFakePlayerManager {
         } else {
             this.clickCommands.put(snapshot.get().id(), sanitized);
         }
+        return true;
+    }
+
+    boolean setAi(final String name, final boolean enabled, final String goal) {
+        final var snapshot = this.service().snapshot(name);
+        if (snapshot.isEmpty()) {
+            return false;
+        }
+        final FakePlayerSnapshot fake = snapshot.get();
+        final String cleanGoal = sanitizeGoal(goal);
+        if (!enabled) {
+            this.stopAi(fake.id());
+            if (!cleanGoal.isBlank()) {
+                this.aiProfiles.put(fake.id(), new FakeAiProfile(fake.id(), fake.name(), false, cleanGoal));
+            }
+            return true;
+        }
+        this.aiProfiles.put(fake.id(), new FakeAiProfile(
+            fake.id(),
+            fake.name(),
+            true,
+            cleanGoal.isBlank() ? defaultFakeAiGoal(fake.name()) : cleanGoal
+        ));
+        this.startAiLoop(fake.id());
+        this.requestAi(fake.id(), true);
         return true;
     }
 
@@ -428,6 +564,258 @@ final class HunterRealFakePlayerManager {
         return false;
     }
 
+    private void startAiLoop(final String id) {
+        this.stopAiTask(id);
+        final FakeAiProfile profile = this.aiProfiles.get(playerId(id));
+        if (profile == null || !profile.enabled()) {
+            return;
+        }
+        final long interval = Math.max(2L, this.preferences.intValue("modules.ai.fake-players.interval-seconds", 6)) * 20L;
+        final BukkitTask task = this.plugin.getServer().getScheduler().runTaskTimer(this.plugin, () -> this.requestAi(profile.id(), false), interval, interval);
+        this.aiTasks.put(profile.id(), task);
+    }
+
+    private void requestAi(final String id, final boolean manual) {
+        final String key = playerId(id);
+        final FakeAiProfile profile = this.aiProfiles.get(key);
+        if (profile == null || this.aiBusy.contains(key)) {
+            return;
+        }
+        if (!manual && (!profile.enabled()
+            || !this.preferences.moduleEnabled("ai")
+            || !this.preferences.booleanValue("modules.ai.fake-players.enabled", true))) {
+            return;
+        }
+        if (this.aiManager == null) {
+            this.aiLastActions.put(key, "AI manager unavailable");
+            return;
+        }
+        final var snapshot = this.service().snapshot(profile.name());
+        if (snapshot.isEmpty()) {
+            this.stopAi(key);
+            return;
+        }
+        final FakePlayerSnapshot fake = snapshot.get();
+        final String system = this.preferences.stringValue("modules.ai.fake-players.system-prompt", defaultFakeAiPrompt());
+        final String prompt = this.fakeAiContext(profile, fake);
+        this.aiBusy.add(key);
+        this.aiLastActions.put(key, "thinking");
+        this.aiManager.completeFakePlayerPlan(system, prompt).whenComplete((response, error) -> {
+            this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+                this.aiBusy.remove(key);
+                if (error != null) {
+                    this.aiLastActions.put(key, "AI failed: " + cleanError(error));
+                    this.plugin.getLogger().warning("HunterCore fake player AI failed for " + fake.name() + ": " + cleanError(error));
+                    return;
+                }
+                this.applyAiPlan(fake.name(), response);
+            });
+        });
+    }
+
+    private String fakeAiContext(final FakeAiProfile profile, final FakePlayerSnapshot snapshot) {
+        final StringBuilder context = new StringBuilder(1024);
+        final Location location = snapshot.location();
+        context.append("Goal: ").append(profile.goal().isBlank() ? defaultFakeAiGoal(snapshot.name()) : profile.goal()).append('\n');
+        context.append("Fake player: ").append(snapshot.name())
+            .append(" mode=").append(snapshot.gameMode().name().toLowerCase(Locale.ROOT))
+            .append(" sneaking=").append(snapshot.sneaking())
+            .append(" sprinting=").append(snapshot.sprinting())
+            .append(" usingItem=").append(snapshot.usingItem())
+            .append(" loops=").append(this.loopLine(snapshot.name())).append('\n');
+        context.append("Location: world=").append(location.getWorld() == null ? "unknown" : location.getWorld().getName())
+            .append(" x=").append(format(location.getX()))
+            .append(" y=").append(format(location.getY()))
+            .append(" z=").append(format(location.getZ()))
+            .append(" yaw=").append(format(location.getYaw()))
+            .append(" pitch=").append(format(location.getPitch())).append('\n');
+
+        final World world = location.getWorld();
+        if (world == null) {
+            return context.append("World is not loaded.\n").toString();
+        }
+        final int radius = Math.max(2, Math.min(12, this.preferences.intValue("modules.ai.fake-players.nearby-radius-blocks", 6)));
+        final Location eye = location.clone().add(0.0D, 1.62D, 0.0D);
+        final RayTraceResult ray = world.rayTraceBlocks(eye, location.getDirection(), Math.max(2.0D, radius), FluidCollisionMode.NEVER, true);
+        if (ray != null && ray.getHitBlock() != null) {
+            context.append("Looking at block: ").append(blockLine(ray.getHitBlock())).append('\n');
+        } else {
+            context.append("Looking at block: none\n");
+        }
+        context.append("Feet: ").append(blockLine(location.getBlock())).append('\n');
+        context.append("Below: ").append(blockLine(location.clone().add(0.0D, -1.0D, 0.0D).getBlock())).append('\n');
+        final Vector direction = location.getDirection().setY(0.0D);
+        if (direction.lengthSquared() > 0.0D) {
+            direction.normalize();
+            context.append("Front: ").append(blockLine(location.clone().add(direction).getBlock())).append('\n');
+        }
+
+        context.append("Nearby blocks:");
+        int blockCount = 0;
+        final int baseX = location.getBlockX();
+        final int baseY = location.getBlockY();
+        final int baseZ = location.getBlockZ();
+        for (int y = -1; y <= 2 && blockCount < 24; y++) {
+            for (int x = -2; x <= 2 && blockCount < 24; x++) {
+                for (int z = -2; z <= 2 && blockCount < 24; z++) {
+                    final Block block = world.getBlockAt(baseX + x, baseY + y, baseZ + z);
+                    final Material type = block.getType();
+                    if (!type.isAir()) {
+                        context.append(' ').append(type.key().value()).append('@').append(x).append(',').append(y).append(',').append(z).append(';');
+                        blockCount++;
+                    }
+                }
+            }
+        }
+        if (blockCount == 0) {
+            context.append(" none");
+        }
+        context.append('\n');
+
+        context.append("Nearby entities:");
+        int entityCount = 0;
+        for (final Entity entity : world.getNearbyEntities(location, radius, radius, radius)) {
+            if (entity.getUniqueId().equals(snapshot.uuid())) {
+                continue;
+            }
+            final Location other = entity.getLocation();
+            context.append(' ')
+                .append(entity.getType().key().value())
+                .append('(').append(entity.getName()).append(')')
+                .append('@')
+                .append(format(other.getX() - location.getX())).append(',')
+                .append(format(other.getY() - location.getY())).append(',')
+                .append(format(other.getZ() - location.getZ())).append(';');
+            entityCount++;
+            if (entityCount >= 12) {
+                break;
+            }
+        }
+        if (entityCount == 0) {
+            context.append(" none");
+        }
+        context.append('\n');
+        context.append("Return only action lines. Prefer small steps and continue mining with [mine:ticks=40] when breaking blocks.");
+        return context.toString();
+    }
+
+    private void applyAiPlan(final String name, final String response) {
+        final int budget = Math.max(1, Math.min(12, this.preferences.intValue("modules.ai.fake-players.max-actions", 5)));
+        final List<String> results = new ArrayList<>();
+        int applied = 0;
+        for (final String rawLine : response.replace("\r\n", "\n").replace('\r', '\n').split("\n")) {
+            if (applied >= budget) {
+                break;
+            }
+            final String line = rawLine.trim();
+            if (!line.startsWith("[") || !line.endsWith("]")) {
+                continue;
+            }
+            final String body = line.substring(1, line.length() - 1).trim();
+            if (body.isBlank()) {
+                continue;
+            }
+            final String action;
+            final String args;
+            final int colon = body.indexOf(':');
+            if (colon >= 0) {
+                action = HunterToolsPreferences.normalize(body.substring(0, colon).trim());
+                args = body.substring(colon + 1).trim();
+            } else {
+                action = HunterToolsPreferences.normalize(body);
+                args = "";
+            }
+            final String result = this.applyAiAction(name, action, args);
+            if (!result.isBlank()) {
+                results.add(result);
+                applied++;
+            }
+        }
+        this.aiLastActions.put(playerId(name), results.isEmpty() ? "no valid action" : String.join("; ", results));
+    }
+
+    private String applyAiAction(final String name, final String action, final String args) {
+        return switch (action) {
+            case "look" -> this.aiLook(name, args);
+            case "look-at", "lookat" -> this.aiLookAt(name, args);
+            case "move", "walk" -> this.aiMove(name, args);
+            case "mine", "dig", "break" -> this.aiTimedAction(name, "attack", args, "mine", true);
+            case "attack", "left-click", "leftclick" -> this.aiTimedAction(name, "attack", args, "attack", true);
+            case "use", "right-click", "rightclick", "interact" -> this.aiTimedAction(name, "use", args, "use", false);
+            case "jump" -> resultLine(this.service().jump(name));
+            case "sneak" -> resultLine(this.service().setSneaking(name, parseOnOff(args, true)));
+            case "sprint" -> resultLine(this.service().setSprinting(name, parseOnOff(args, true)));
+            case "slot" -> this.aiSlot(name, args);
+            case "drop" -> resultLine(this.service().dropSelected(name, false));
+            case "dropstack" -> resultLine(this.service().dropSelected(name, true));
+            case "swap" -> resultLine(this.service().swapHands(name));
+            case "stop" -> {
+                this.stopLoops(name);
+                yield resultLine(this.service().stopActions(name));
+            }
+            default -> "";
+        };
+    }
+
+    private String aiLook(final String name, final String args) {
+        final double[] values = parseNumbers(args, 2);
+        if (values.length < 2) {
+            return "";
+        }
+        return resultLine(this.service().look(name, (float) values[0], (float) values[1]));
+    }
+
+    private String aiLookAt(final String name, final String args) {
+        final var snapshot = this.service().snapshot(name);
+        final double[] values = parseNumbers(args, 3);
+        if (snapshot.isEmpty() || values.length < 3) {
+            return "";
+        }
+        final float[] rotation = rotationTo(snapshot.get().location(), values[0], values[1], values[2]);
+        return resultLine(this.service().look(name, rotation[0], rotation[1]));
+    }
+
+    private String aiMove(final String name, final String args) {
+        if (!this.preferences.booleanValue("modules.ai.fake-players.allow-movement", true)) {
+            return "movement disabled";
+        }
+        final MovePlan plan = movePlan(args);
+        if (plan == null) {
+            return "";
+        }
+        if (plan.ticks() <= 1) {
+            return resultLine(this.service().move(name, plan.forward(), plan.sideways(), plan.jump(), plan.sprinting(), plan.sneaking()));
+        }
+        this.startMoveLoop(name, plan);
+        return "move " + plan.ticks() + " ticks";
+    }
+
+    private String aiTimedAction(final String name, final String action, final String args, final String label, final boolean breaking) {
+        if (breaking && !this.preferences.booleanValue("modules.ai.fake-players.allow-breaking", true)) {
+            return "breaking disabled";
+        }
+        if (!breaking && !this.preferences.booleanValue("modules.ai.fake-players.allow-interaction", true)) {
+            return "interaction disabled";
+        }
+        final int ticks = Math.max(1, Math.min(
+            Math.max(1, this.preferences.intValue("modules.ai.fake-players.max-action-ticks", 80)),
+            intArg(args, "ticks", action.equals("attack") ? 40 : 1)
+        ));
+        if (ticks <= 1) {
+            return resultLine(this.runAction(action, name));
+        }
+        this.startTimedActionLoop(name, action, ticks);
+        return label + " " + ticks + " ticks";
+    }
+
+    private String aiSlot(final String name, final String args) {
+        final int slot = intArg(args, "slot", -1);
+        if (slot < 1 || slot > 9) {
+            return "";
+        }
+        return resultLine(this.service().setSelectedSlot(name, slot));
+    }
+
     private void startLoop(final CommandSender sender, final String name, final String action) {
         this.stopLoop(name, action);
         final String key = loopKey(name, action);
@@ -443,6 +831,34 @@ final class HunterRealFakePlayerManager {
         sender.sendMessage("Started " + action + " loop for " + name + ".");
     }
 
+    private void startTimedActionLoop(final String name, final String action, final int ticks) {
+        this.stopLoop(name, action);
+        final int[] remaining = {Math.max(1, ticks)};
+        final BukkitTask task = this.plugin.getServer().getScheduler().runTaskTimer(this.plugin, () -> {
+            final FakePlayerActionResult result = this.runAction(action, name);
+            if (!result.success() || --remaining[0] <= 0) {
+                this.stopLoop(name, action);
+                if (action.equals("attack")) {
+                    this.service().stopActions(name);
+                }
+            }
+        }, 1L, Math.max(1L, this.preferences.intValue("modules.real-fake-players.action-interval-ticks", 1)));
+        this.loops.put(loopKey(name, action), task);
+    }
+
+    private void startMoveLoop(final String name, final MovePlan plan) {
+        this.stopLoop(name, "move");
+        final int maxTicks = Math.max(1, this.preferences.intValue("modules.ai.fake-players.max-move-ticks", 40));
+        final int[] remaining = {Math.max(1, Math.min(maxTicks, plan.ticks()))};
+        final BukkitTask task = this.plugin.getServer().getScheduler().runTaskTimer(this.plugin, () -> {
+            final FakePlayerActionResult result = this.service().move(name, plan.forward(), plan.sideways(), plan.jump(), plan.sprinting(), plan.sneaking());
+            if (!result.success() || --remaining[0] <= 0) {
+                this.stopLoop(name, "move");
+            }
+        }, 1L, 1L);
+        this.loops.put(loopKey(name, "move"), task);
+    }
+
     private FakePlayerActionResult runAction(final String action, final String name) {
         return switch (action) {
             case "jump" -> this.service().jump(name);
@@ -453,7 +869,7 @@ final class HunterRealFakePlayerManager {
     }
 
     private void stopLoops(final String name) {
-        for (final String action : List.of("jump", "use", "attack")) {
+        for (final String action : List.of("jump", "use", "attack", "move")) {
             this.stopLoop(name, action);
         }
     }
@@ -472,9 +888,34 @@ final class HunterRealFakePlayerManager {
         this.loops.clear();
     }
 
+    private void stopAi(final String nameOrId) {
+        final String id = playerId(nameOrId);
+        this.stopAiTask(id);
+        this.aiProfiles.remove(id);
+        this.aiBusy.remove(id);
+        this.aiLastActions.remove(id);
+    }
+
+    private void stopAiTask(final String id) {
+        final BukkitTask task = this.aiTasks.remove(playerId(id));
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void stopAllAi() {
+        for (final BukkitTask task : this.aiTasks.values()) {
+            task.cancel();
+        }
+        this.aiTasks.clear();
+        this.aiProfiles.clear();
+        this.aiBusy.clear();
+        this.aiLastActions.clear();
+    }
+
     private String loopLine(final String name) {
         final List<String> active = new ArrayList<>();
-        for (final String action : List.of("jump", "use", "attack")) {
+        for (final String action : List.of("jump", "use", "attack", "move")) {
             if (this.loops.containsKey(loopKey(name, action))) {
                 active.add(action);
             }
@@ -544,7 +985,7 @@ final class HunterRealFakePlayerManager {
     }
 
     private void usage(final CommandSender sender, final String label) {
-        sender.sendMessage("Usage: /" + label + " <spawn|remove|list|tp|tphere|look|sneak|sprint|jump|use|attack|stop|click|drop|dropstack|swap|gm|slot|info|clear>");
+        sender.sendMessage("Usage: /" + label + " <spawn|remove|list|tp|tphere|look|move|sneak|sprint|jump|use|attack|stop|click|drop|dropstack|swap|gm|slot|ai|info|clear>");
     }
 
     private void send(final CommandSender sender, final FakePlayerActionResult result) {
@@ -602,6 +1043,215 @@ final class HunterRealFakePlayerManager {
         return sanitized.length() > 512 ? sanitized.substring(0, 512).trim() : sanitized;
     }
 
+    private static String sanitizeGoal(final String goal) {
+        if (goal == null) {
+            return "";
+        }
+        final String sanitized = goal.replace("\r\n", "\n").replace('\r', '\n').trim();
+        return sanitized.length() > 2048 ? sanitized.substring(0, 2048).trim() : sanitized;
+    }
+
+    private static MovePlan movePlan(final String args) {
+        double forward = doubleArg(args, "forward", Double.NaN);
+        double sideways = doubleArg(args, "sideways", doubleArg(args, "strafe", 0.0D));
+        int ticks = intArg(args, "ticks", 20);
+        boolean jump = parseBooleanArg(args, "jump", false);
+        boolean sprint = parseBooleanArg(args, "sprint", false);
+        boolean sneak = parseBooleanArg(args, "sneak", false);
+        for (final String token : tokens(args)) {
+            final String normalized = HunterToolsPreferences.normalize(token);
+            switch (normalized) {
+                case "forward", "ahead" -> forward = 1.0D;
+                case "back", "backward" -> forward = -1.0D;
+                case "left" -> sideways = -1.0D;
+                case "right" -> sideways = 1.0D;
+                case "stop" -> {
+                    forward = 0.0D;
+                    sideways = 0.0D;
+                    ticks = 1;
+                }
+                case "jump" -> jump = true;
+                case "sprint" -> sprint = true;
+                case "sneak", "shift" -> sneak = true;
+                default -> {
+                    if (!token.contains("=") && Double.isNaN(forward)) {
+                        try {
+                            forward = Double.parseDouble(token);
+                        } catch (final NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
+        }
+        if (Double.isNaN(forward)) {
+            forward = 0.0D;
+        }
+        final double[] positional = parseNumbers(args, 3);
+        if (positional.length >= 1 && !hasKey(args, "forward")) {
+            forward = positional[0];
+        }
+        if (positional.length >= 2 && !hasKey(args, "sideways") && !hasKey(args, "strafe")) {
+            sideways = positional[1];
+        }
+        if (positional.length >= 3 && !hasKey(args, "ticks")) {
+            ticks = (int) Math.round(positional[2]);
+        }
+        if (Double.isNaN(forward) || Double.isNaN(sideways)) {
+            return null;
+        }
+        return new MovePlan(clamp(forward, -1.0D, 1.0D), clamp(sideways, -1.0D, 1.0D), Math.max(1, ticks), jump, sprint, sneak);
+    }
+
+    private static String resultLine(final FakePlayerActionResult result) {
+        return (result.success() ? "ok: " : "failed: ") + result.message();
+    }
+
+    private static boolean parseOnOff(final String args, final boolean fallback) {
+        final String value = firstValue(args);
+        if (value.isBlank()) {
+            return fallback;
+        }
+        final Boolean parsed = parseToggle(value);
+        return parsed == null ? fallback : parsed;
+    }
+
+    private static int intArg(final String args, final String key, final int fallback) {
+        final String keyed = valueFor(args, key);
+        final String value = keyed.isBlank() ? firstValue(args) : keyed;
+        if (value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (final NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
+    private static double doubleArg(final String args, final String key, final double fallback) {
+        final String keyed = valueFor(args, key);
+        if (keyed.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Double.parseDouble(keyed.trim());
+        } catch (final NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
+    private static boolean parseBooleanArg(final String args, final String key, final boolean fallback) {
+        final String value = valueFor(args, key);
+        if (value.isBlank()) {
+            return fallback;
+        }
+        final Boolean parsed = parseToggle(value);
+        return parsed == null ? fallback : parsed;
+    }
+
+    private static double[] parseNumbers(final String args, final int max) {
+        final List<Double> values = new ArrayList<>();
+        for (final String token : tokens(args)) {
+            if (token.contains("=")) {
+                continue;
+            }
+            try {
+                values.add(Double.parseDouble(token));
+            } catch (final NumberFormatException ignored) {
+            }
+            if (values.size() >= max) {
+                break;
+            }
+        }
+        final double[] result = new double[values.size()];
+        for (int i = 0; i < values.size(); i++) {
+            result[i] = values.get(i);
+        }
+        return result;
+    }
+
+    private static String valueFor(final String args, final String key) {
+        final String normalizedKey = HunterToolsPreferences.normalize(key);
+        for (final String token : tokens(args)) {
+            final int equals = token.indexOf('=');
+            if (equals <= 0) {
+                continue;
+            }
+            final String left = HunterToolsPreferences.normalize(token.substring(0, equals));
+            if (left.equals(normalizedKey)) {
+                return token.substring(equals + 1).trim();
+            }
+        }
+        return "";
+    }
+
+    private static boolean hasKey(final String args, final String key) {
+        return !valueFor(args, key).isBlank();
+    }
+
+    private static String firstValue(final String args) {
+        for (final String token : tokens(args)) {
+            if (!token.contains("=")) {
+                return token;
+            }
+        }
+        return "";
+    }
+
+    private static List<String> tokens(final String args) {
+        final List<String> values = new ArrayList<>();
+        if (args == null) {
+            return values;
+        }
+        for (final String token : args.replace(',', ' ').split("\\s+")) {
+            final String trimmed = token.trim();
+            if (!trimmed.isBlank()) {
+                values.add(trimmed);
+            }
+        }
+        return values;
+    }
+
+    private static float[] rotationTo(final Location from, final double x, final double y, final double z) {
+        final Location eye = from.clone().add(0.0D, 1.62D, 0.0D);
+        final double dx = x - eye.getX();
+        final double dy = y - eye.getY();
+        final double dz = z - eye.getZ();
+        final double horizontal = Math.sqrt(dx * dx + dz * dz);
+        return new float[] {
+            (float) Math.toDegrees(Math.atan2(-dx, dz)),
+            (float) Math.max(-90.0D, Math.min(90.0D, Math.toDegrees(-Math.atan2(dy, horizontal))))
+        };
+    }
+
+    private static double clamp(final double value, final double min, final double max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static String format(final double value) {
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static String cleanError(final Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        final String message = current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
+        return message.length() > 160 ? message.substring(0, 160) + "..." : message;
+    }
+
+    private static String defaultFakeAiPrompt() {
+        return "You control a HunterCore real fake player in Minecraft. Return only bracketed action lines, no prose. "
+            + "Available actions: [look:yaw pitch], [look-at:x y z], [move:forward=1,sideways=0,ticks=20,sprint=true,jump=false,sneak=false], "
+            + "[mine:ticks=40], [use], [attack], [jump], [sneak:on], [sprint:off], [slot:1], [drop], [dropstack], [swap], [stop]. "
+            + "Use small safe steps. Mine only when the goal requires it and the target block is visible.";
+    }
+
+    private static String defaultFakeAiGoal(final String name) {
+        return "Follow the operator's intent, explore nearby blocks carefully, and use tools only when useful. Fake player name: " + name + ".";
+    }
+
     private static String renderClickCommand(final String command, final Player player, final FakePlayerSnapshot snapshot) {
         final Location location = snapshot.location();
         return sanitizeCommand(command)
@@ -628,6 +1278,10 @@ final class HunterRealFakePlayerManager {
         return matches;
     }
 
+    private static String blockLine(final Block block) {
+        return block.getType().key().value() + "@" + block.getX() + "," + block.getY() + "," + block.getZ();
+    }
+
     record RealFakePlayerView(
         String module,
         String id,
@@ -641,7 +1295,16 @@ final class HunterRealFakePlayerManager {
         String gameMode,
         String loops,
         String clickCommand,
+        boolean aiEnabled,
+        String aiPersona,
+        String aiStatus,
         String entityUuid
     ) {
+    }
+
+    private record FakeAiProfile(String id, String name, boolean enabled, String goal) {
+    }
+
+    private record MovePlan(double forward, double sideways, int ticks, boolean jump, boolean sprinting, boolean sneaking) {
     }
 }

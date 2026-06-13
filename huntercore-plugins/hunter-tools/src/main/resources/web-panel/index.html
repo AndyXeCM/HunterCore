@@ -247,6 +247,15 @@
               <input id="aiNpcCooldownSeconds" inputmode="numeric" placeholder="5" data-i18n-placeholder="ai.npcCooldown">
               <input id="aiNpcResponseRadiusBlocks" inputmode="numeric" placeholder="16" data-i18n-placeholder="ai.npcRadius">
               <input id="aiNpcCommandWhitelist" placeholder="say, tell, msg" data-i18n-placeholder="ai.commandWhitelist">
+              <label class="checkLine"><input id="aiFakePlayersEnabled" type="checkbox"> <span data-i18n="ai.fakePlayersEnabled">Real fake player AI</span></label>
+              <input id="aiFakePlayersIntervalSeconds" inputmode="numeric" placeholder="6" data-i18n-placeholder="ai.fakePlayersInterval">
+              <input id="aiFakePlayersMaxActions" inputmode="numeric" placeholder="5" data-i18n-placeholder="ai.fakePlayersMaxActions">
+              <input id="aiFakePlayersMaxMoveTicks" inputmode="numeric" placeholder="40" data-i18n-placeholder="ai.fakePlayersMaxMoveTicks">
+              <input id="aiFakePlayersMaxActionTicks" inputmode="numeric" placeholder="80" data-i18n-placeholder="ai.fakePlayersMaxActionTicks">
+              <input id="aiFakePlayersNearbyRadiusBlocks" inputmode="numeric" placeholder="6" data-i18n-placeholder="ai.fakePlayersRadius">
+              <label class="checkLine"><input id="aiFakePlayersAllowMovement" type="checkbox"> <span data-i18n="ai.fakePlayersMovement">allow movement</span></label>
+              <label class="checkLine"><input id="aiFakePlayersAllowBreaking" type="checkbox"> <span data-i18n="ai.fakePlayersBreaking">allow breaking</span></label>
+              <label class="checkLine"><input id="aiFakePlayersAllowInteraction" type="checkbox"> <span data-i18n="ai.fakePlayersInteraction">allow interaction</span></label>
             </div>
             <label class="textEditorLabel">
               <span data-i18n="ai.chatPrompt">Chat system prompt</span>
@@ -255,6 +264,10 @@
             <label class="textEditorLabel">
               <span data-i18n="ai.npcPrompt">NPC system prompt</span>
               <textarea id="aiNpcSystemPrompt" rows="4" spellcheck="false"></textarea>
+            </label>
+            <label class="textEditorLabel">
+              <span data-i18n="ai.fakePlayersPrompt">Real fake player system prompt</span>
+              <textarea id="aiFakePlayersSystemPrompt" rows="5" spellcheck="false"></textarea>
             </label>
             <button type="submit" class="primaryButton" data-i18n="ai.save">Save AI settings</button>
           </form>

@@ -91,9 +91,12 @@ const translations = {
     'actors.clickSaved': '点击指令已保存。',
     'actors.aiEnabled': 'AI',
     'actors.aiPersona': 'NPC 人设',
+    'actors.aiGoal': 'AI 目标',
     'actors.aiPersonaPlaceholder': '例如：主城向导，语气温和，知道服务器规则',
+    'actors.aiGoalPlaceholder': '例如：寻找附近树木，挖掘木头并返回出生点',
     'actors.saveAi': '保存 AI',
-    'actors.aiSaved': 'NPC AI 已保存。',
+    'actors.aiSaved': 'AI 设置已保存。',
+    'actors.aiStatus': '最近动作',
     'actors.notConfigured': '未配置',
     'actors.live': '在线',
     'actors.configured': '已配置',
@@ -139,8 +142,18 @@ const translations = {
     'ai.npcCooldown': 'NPC 冷却秒',
     'ai.npcRadius': 'NPC 可见半径',
     'ai.commandWhitelist': 'NPC 命令白名单',
+    'ai.fakePlayersEnabled': '真实假人 AI',
+    'ai.fakePlayersInterval': '假人思考间隔秒',
+    'ai.fakePlayersMaxActions': '每次最多动作',
+    'ai.fakePlayersMaxMoveTicks': '最大移动 ticks',
+    'ai.fakePlayersMaxActionTicks': '最大挖掘/交互 ticks',
+    'ai.fakePlayersRadius': '假人感知半径',
+    'ai.fakePlayersMovement': '允许移动',
+    'ai.fakePlayersBreaking': '允许挖掘',
+    'ai.fakePlayersInteraction': '允许交互/使用工具',
     'ai.chatPrompt': '聊天系统 Prompt',
     'ai.npcPrompt': 'NPC 系统 Prompt',
+    'ai.fakePlayersPrompt': '真实假人系统 Prompt',
     'ai.save': '保存 AI 设置',
     'ai.saved': 'AI 设置已保存。',
     'ai.keyConfigured': 'API key 已配置',
@@ -272,9 +285,12 @@ const translations = {
     'actors.clickSaved': 'Click command saved.',
     'actors.aiEnabled': 'AI',
     'actors.aiPersona': 'NPC persona',
+    'actors.aiGoal': 'AI goal',
     'actors.aiPersonaPlaceholder': 'Example: a calm spawn guide who knows the server rules',
+    'actors.aiGoalPlaceholder': 'Example: find nearby trees, mine logs, then return to spawn',
     'actors.saveAi': 'Save AI',
-    'actors.aiSaved': 'NPC AI saved.',
+    'actors.aiSaved': 'AI settings saved.',
+    'actors.aiStatus': 'last action',
     'actors.notConfigured': 'not configured',
     'actors.live': 'live',
     'actors.configured': 'configured',
@@ -320,8 +336,18 @@ const translations = {
     'ai.npcCooldown': 'NPC cooldown seconds',
     'ai.npcRadius': 'NPC radius',
     'ai.commandWhitelist': 'NPC command whitelist',
+    'ai.fakePlayersEnabled': 'Real fake player AI',
+    'ai.fakePlayersInterval': 'Fake player think interval seconds',
+    'ai.fakePlayersMaxActions': 'Max actions per plan',
+    'ai.fakePlayersMaxMoveTicks': 'Max move ticks',
+    'ai.fakePlayersMaxActionTicks': 'Max mine/use ticks',
+    'ai.fakePlayersRadius': 'Fake player sensing radius',
+    'ai.fakePlayersMovement': 'allow movement',
+    'ai.fakePlayersBreaking': 'allow breaking',
+    'ai.fakePlayersInteraction': 'allow interaction/tools',
     'ai.chatPrompt': 'Chat system prompt',
     'ai.npcPrompt': 'NPC system prompt',
+    'ai.fakePlayersPrompt': 'Real fake player system prompt',
     'ai.save': 'Save AI settings',
     'ai.saved': 'AI settings saved.',
     'ai.keyConfigured': 'API key configured',
@@ -566,15 +592,21 @@ function actorLine(actor) {
     ? t('actors.npc')
     : actor.module === 'real-fake-players' ? t('actors.realFakePlayer') : t('actors.fakePlayer');
   const stateLabel = actor.live ? t('actors.live') : t('actors.configured');
-  const aiMeta = actor.module === 'npcs'
+  const aiCapable = actor.module === 'npcs' || actor.module === 'real-fake-players';
+  const aiMeta = aiCapable
     ? ` · ${esc(t('actors.aiEnabled'))}: ${esc(actor.aiEnabled ? statusLabel('ok') : statusLabel('disabled'))}`
     : '';
+  const aiStatusMeta = actor.module === 'real-fake-players' && actor.aiStatus
+    ? ` · ${esc(t('actors.aiStatus'))}: ${esc(actor.aiStatus)}`
+    : '';
   const metaLine = actor.module === 'real-fake-players'
-    ? `${stateLabel} · ${moduleLabel} · ${esc(actor.pose || 'survival')} · ${esc(t('actors.loops'))}: ${esc(actor.loops || 'none')} · ${esc(location)} · ${esc(t('actors.clickCommand'))}: ${esc(clickLine)}`
+    ? `${stateLabel} · ${moduleLabel} · ${esc(actor.pose || 'survival')} · ${esc(t('actors.loops'))}: ${esc(actor.loops || 'none')} · ${esc(location)} · ${esc(t('actors.clickCommand'))}: ${esc(clickLine)}${aiMeta}${aiStatusMeta}`
     : `${stateLabel} · ${moduleLabel} · ${esc(actor.kind)} · ${esc(t('actors.pose'))}: ${esc(actor.pose || 'standing')} · ${esc(location)} · ${esc(t('actors.clickCommand'))}: ${esc(clickLine)}${aiMeta}`;
-  const npcAiControls = actor.module === 'npcs'
+  const aiLabel = actor.module === 'real-fake-players' ? t('actors.aiGoal') : t('actors.aiPersona');
+  const aiPlaceholder = actor.module === 'real-fake-players' ? t('actors.aiGoalPlaceholder') : t('actors.aiPersonaPlaceholder');
+  const actorAiControls = aiCapable
     ? `<label class="checkLine actorAiToggle"><input type="checkbox" data-actor-ai-enabled="true" ${actor.aiEnabled ? 'checked' : ''}> <span>${esc(t('actors.aiEnabled'))}</span></label>
-      <textarea class="actorPersonaInput" rows="2" data-actor-ai-persona="true" placeholder="${esc(t('actors.aiPersonaPlaceholder'))}">${esc(actor.aiPersona || '')}</textarea>
+      <textarea class="actorPersonaInput" rows="2" data-actor-ai-persona="true" aria-label="${esc(aiLabel)}" placeholder="${esc(aiPlaceholder)}">${esc(actor.aiPersona || '')}</textarea>
       <button type="button" data-actor-ai-save="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('actors.saveAi'))}</button>`
     : '';
   return `<div class="dataItem">
@@ -583,7 +615,7 @@ function actorLine(actor) {
       <input class="actorCommandInput" value="${esc(clickCommand)}" placeholder="${esc(t('actors.clickPlaceholder'))}" data-actor-command-input="true">
       <button type="button" data-actor-click-save="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('actors.saveClick'))}</button>
       <button type="button" data-actor-click-clear="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('actors.clearClick'))}</button>
-      ${npcAiControls}
+      ${actorAiControls}
       <button type="button" data-actor-remove="true" data-actor-module="${esc(actor.module)}" data-actor-id="${esc(actor.id)}">${esc(t('action.remove'))}</button>
     </div>
   </div>`;
@@ -791,8 +823,18 @@ function renderAiSettings(settings) {
   $('aiNpcCooldownSeconds').value = settings.npcCooldownSeconds ?? '';
   $('aiNpcResponseRadiusBlocks').value = settings.npcResponseRadiusBlocks ?? '';
   $('aiNpcCommandWhitelist').value = (settings.npcCommandWhitelist || []).join(', ');
+  $('aiFakePlayersEnabled').checked = Boolean(settings.fakePlayersEnabled);
+  $('aiFakePlayersIntervalSeconds').value = settings.fakePlayersIntervalSeconds ?? '';
+  $('aiFakePlayersMaxActions').value = settings.fakePlayersMaxActions ?? '';
+  $('aiFakePlayersMaxMoveTicks').value = settings.fakePlayersMaxMoveTicks ?? '';
+  $('aiFakePlayersMaxActionTicks').value = settings.fakePlayersMaxActionTicks ?? '';
+  $('aiFakePlayersNearbyRadiusBlocks').value = settings.fakePlayersNearbyRadiusBlocks ?? '';
+  $('aiFakePlayersAllowMovement').checked = Boolean(settings.fakePlayersAllowMovement);
+  $('aiFakePlayersAllowBreaking').checked = Boolean(settings.fakePlayersAllowBreaking);
+  $('aiFakePlayersAllowInteraction').checked = Boolean(settings.fakePlayersAllowInteraction);
   $('aiChatSystemPrompt').value = settings.chatSystemPrompt || '';
   $('aiNpcSystemPrompt').value = settings.npcSystemPrompt || '';
+  $('aiFakePlayersSystemPrompt').value = settings.fakePlayersSystemPrompt || '';
   $('aiKeyStatus').textContent = settings.apiKeyConfigured ? t('ai.keyConfigured') : t('ai.keyMissing');
 }
 
@@ -848,7 +890,7 @@ function editWebUser(id) {
 }
 
 function updateActorKind() {
-  const fake = $('actorModule').value === 'fake-players';
+  const fake = $('actorModule').value === 'fake-players' || $('actorModule').value === 'real-fake-players';
   $('actorKind').disabled = fake;
   if (fake) $('actorKind').value = 'mannequin';
 }
@@ -1136,7 +1178,17 @@ function bindEvents() {
       npcResponseRadiusBlocks: $('aiNpcResponseRadiusBlocks').value,
       npcAllowActions: String($('aiNpcAllowActions').checked),
       npcSystemPrompt: $('aiNpcSystemPrompt').value,
-      npcCommandWhitelist: $('aiNpcCommandWhitelist').value
+      npcCommandWhitelist: $('aiNpcCommandWhitelist').value,
+      fakePlayersEnabled: String($('aiFakePlayersEnabled').checked),
+      fakePlayersIntervalSeconds: $('aiFakePlayersIntervalSeconds').value,
+      fakePlayersMaxActions: $('aiFakePlayersMaxActions').value,
+      fakePlayersMaxMoveTicks: $('aiFakePlayersMaxMoveTicks').value,
+      fakePlayersMaxActionTicks: $('aiFakePlayersMaxActionTicks').value,
+      fakePlayersNearbyRadiusBlocks: $('aiFakePlayersNearbyRadiusBlocks').value,
+      fakePlayersAllowMovement: String($('aiFakePlayersAllowMovement').checked),
+      fakePlayersAllowBreaking: String($('aiFakePlayersAllowBreaking').checked),
+      fakePlayersAllowInteraction: String($('aiFakePlayersAllowInteraction').checked),
+      fakePlayersSystemPrompt: $('aiFakePlayersSystemPrompt').value
     };
     try {
       const result = await json('/api/admin/ai-settings', { method: 'POST', body: JSON.stringify(payload) });

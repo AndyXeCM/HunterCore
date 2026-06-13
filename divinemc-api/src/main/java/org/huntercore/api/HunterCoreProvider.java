@@ -110,6 +110,18 @@ public final class HunterCoreProvider {
         }
 
         @Override
+        public @NotNull FakePlayerActionResult move(
+            @NotNull final String name,
+            final double forward,
+            final double sideways,
+            final boolean jump,
+            final boolean sprinting,
+            final boolean sneaking
+        ) {
+            return unavailable();
+        }
+
+        @Override
         public @NotNull FakePlayerActionResult jump(@NotNull final String name) {
             return unavailable();
         }

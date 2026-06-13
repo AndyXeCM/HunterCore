@@ -140,6 +140,10 @@ final class HunterAiManager {
         return this.complete(system, prompt == null || prompt.isBlank() ? "Say HunterCore AI is ready." : prompt.trim());
     }
 
+    CompletableFuture<String> completeFakePlayerPlan(final String system, final String prompt) {
+        return this.complete(system, prompt);
+    }
+
     boolean apiKeyConfigured() {
         return !this.aiConfig().apiKey().isBlank();
     }

@@ -28,6 +28,8 @@ public interface HunterFakePlayerService {
 
     @NotNull FakePlayerActionResult setSprinting(@NotNull String name, boolean sprinting);
 
+    @NotNull FakePlayerActionResult move(@NotNull String name, double forward, double sideways, boolean jump, boolean sprinting, boolean sneaking);
+
     @NotNull FakePlayerActionResult jump(@NotNull String name);
 
     @NotNull FakePlayerActionResult use(@NotNull String name);
