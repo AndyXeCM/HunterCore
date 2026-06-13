@@ -119,7 +119,7 @@ commands:
     permission: huntertools.command.fakeplayer
   hplayer:
     description: Manage HunterCore real ServerPlayer fake players.
-    usage: /hplayer <spawn|remove|list|tp|tphere|look|sneak|sprint|jump|use|attack|stop|click|drop|dropstack|swap|gm|slot|info|clear>
+    usage: /hplayer <spawn|remove|list|tp|tphere|look|move|sneak|sprint|jump|use|attack|stop|click|drop|dropstack|swap|gm|slot|ai|info|clear>
     aliases: [playerbot, realfakeplayer]
     permission: huntertools.command.hplayer
   npc:
@@ -169,6 +169,8 @@ permissions:
   huntertools.command.fakeplayer:
     default: op
   huntertools.command.hplayer:
+    default: op
+  huntertools.ai.fakeplayer:
     default: op
   huntertools.command.npc:
     default: op

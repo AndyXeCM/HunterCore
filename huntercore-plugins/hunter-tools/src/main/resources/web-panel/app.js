@@ -151,6 +151,11 @@ const translations = {
     'ai.fakePlayersMovement': '允许移动',
     'ai.fakePlayersBreaking': '允许挖掘',
     'ai.fakePlayersInteraction': '允许交互/使用工具',
+    'ai.fakePlayersChatControl': '聊天控制假人',
+    'ai.fakePlayersChatPrefix': '聊天控制前缀，如 @bot',
+    'ai.fakePlayersChatCooldown': '聊天控制冷却秒',
+    'ai.fakePlayersChatPermissionRequired': '需要权限',
+    'ai.fakePlayersChatPermission': '聊天控制权限节点',
     'ai.chatPrompt': '聊天系统 Prompt',
     'ai.npcPrompt': 'NPC 系统 Prompt',
     'ai.fakePlayersPrompt': '真实假人系统 Prompt',
@@ -345,6 +350,11 @@ const translations = {
     'ai.fakePlayersMovement': 'allow movement',
     'ai.fakePlayersBreaking': 'allow breaking',
     'ai.fakePlayersInteraction': 'allow interaction/tools',
+    'ai.fakePlayersChatControl': 'chat control',
+    'ai.fakePlayersChatPrefix': 'Chat control prefix, e.g. @bot',
+    'ai.fakePlayersChatCooldown': 'Chat control cooldown seconds',
+    'ai.fakePlayersChatPermissionRequired': 'require permission',
+    'ai.fakePlayersChatPermission': 'Chat control permission node',
     'ai.chatPrompt': 'Chat system prompt',
     'ai.npcPrompt': 'NPC system prompt',
     'ai.fakePlayersPrompt': 'Real fake player system prompt',
@@ -832,6 +842,11 @@ function renderAiSettings(settings) {
   $('aiFakePlayersAllowMovement').checked = Boolean(settings.fakePlayersAllowMovement);
   $('aiFakePlayersAllowBreaking').checked = Boolean(settings.fakePlayersAllowBreaking);
   $('aiFakePlayersAllowInteraction').checked = Boolean(settings.fakePlayersAllowInteraction);
+  $('aiFakePlayersChatControlEnabled').checked = Boolean(settings.fakePlayersChatControlEnabled);
+  $('aiFakePlayersChatControlPrefix').value = settings.fakePlayersChatControlPrefix || '';
+  $('aiFakePlayersChatControlCooldownSeconds').value = settings.fakePlayersChatControlCooldownSeconds ?? '';
+  $('aiFakePlayersChatControlRequirePermission').checked = Boolean(settings.fakePlayersChatControlRequirePermission);
+  $('aiFakePlayersChatControlPermission').value = settings.fakePlayersChatControlPermission || '';
   $('aiChatSystemPrompt').value = settings.chatSystemPrompt || '';
   $('aiNpcSystemPrompt').value = settings.npcSystemPrompt || '';
   $('aiFakePlayersSystemPrompt').value = settings.fakePlayersSystemPrompt || '';
@@ -1188,6 +1203,11 @@ function bindEvents() {
       fakePlayersAllowMovement: String($('aiFakePlayersAllowMovement').checked),
       fakePlayersAllowBreaking: String($('aiFakePlayersAllowBreaking').checked),
       fakePlayersAllowInteraction: String($('aiFakePlayersAllowInteraction').checked),
+      fakePlayersChatControlEnabled: String($('aiFakePlayersChatControlEnabled').checked),
+      fakePlayersChatControlPrefix: $('aiFakePlayersChatControlPrefix').value,
+      fakePlayersChatControlCooldownSeconds: $('aiFakePlayersChatControlCooldownSeconds').value,
+      fakePlayersChatControlRequirePermission: String($('aiFakePlayersChatControlRequirePermission').checked),
+      fakePlayersChatControlPermission: $('aiFakePlayersChatControlPermission').value,
       fakePlayersSystemPrompt: $('aiFakePlayersSystemPrompt').value
     };
     try {

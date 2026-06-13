@@ -814,6 +814,11 @@ final class HunterWebPanelManager {
         booleanField(json, "fakePlayersAllowMovement", this.preferences.booleanValue("modules.ai.fake-players.allow-movement", true)).append(',');
         booleanField(json, "fakePlayersAllowBreaking", this.preferences.booleanValue("modules.ai.fake-players.allow-breaking", true)).append(',');
         booleanField(json, "fakePlayersAllowInteraction", this.preferences.booleanValue("modules.ai.fake-players.allow-interaction", true)).append(',');
+        booleanField(json, "fakePlayersChatControlEnabled", this.preferences.booleanValue("modules.ai.fake-players.chat-control.enabled", true)).append(',');
+        field(json, "fakePlayersChatControlPrefix", this.preferences.stringValue("modules.ai.fake-players.chat-control.trigger-prefix", "@bot")).append(',');
+        numberField(json, "fakePlayersChatControlCooldownSeconds", this.preferences.intValue("modules.ai.fake-players.chat-control.cooldown-seconds", 3)).append(',');
+        booleanField(json, "fakePlayersChatControlRequirePermission", this.preferences.booleanValue("modules.ai.fake-players.chat-control.require-permission", false)).append(',');
+        field(json, "fakePlayersChatControlPermission", this.preferences.stringValue("modules.ai.fake-players.chat-control.permission", "huntertools.ai.fakeplayer")).append(',');
         field(json, "fakePlayersSystemPrompt", this.preferences.stringValue("modules.ai.fake-players.system-prompt", ""));
         json.append('}');
         return json.toString();
@@ -1301,6 +1306,8 @@ final class HunterWebPanelManager {
         final Boolean fakePlayersAllowMovement = parseBoolean(body.getOrDefault("fakePlayersAllowMovement", String.valueOf(this.preferences.booleanValue("modules.ai.fake-players.allow-movement", true))));
         final Boolean fakePlayersAllowBreaking = parseBoolean(body.getOrDefault("fakePlayersAllowBreaking", String.valueOf(this.preferences.booleanValue("modules.ai.fake-players.allow-breaking", true))));
         final Boolean fakePlayersAllowInteraction = parseBoolean(body.getOrDefault("fakePlayersAllowInteraction", String.valueOf(this.preferences.booleanValue("modules.ai.fake-players.allow-interaction", true))));
+        final Boolean fakePlayersChatControlEnabled = parseBoolean(body.getOrDefault("fakePlayersChatControlEnabled", String.valueOf(this.preferences.booleanValue("modules.ai.fake-players.chat-control.enabled", true))));
+        final Boolean fakePlayersChatControlRequirePermission = parseBoolean(body.getOrDefault("fakePlayersChatControlRequirePermission", String.valueOf(this.preferences.booleanValue("modules.ai.fake-players.chat-control.require-permission", false))));
         final String provider = body.getOrDefault("provider", "openai-compatible").trim();
         final String baseUrl = body.getOrDefault("baseUrl", this.preferences.stringValue("modules.ai.base-url", "https://api.openai.com/v1")).trim();
         final String model = body.getOrDefault("model", this.preferences.stringValue("modules.ai.model", "gpt-4o-mini")).trim();
@@ -1311,6 +1318,8 @@ final class HunterWebPanelManager {
         final String chatPrompt = body.getOrDefault("chatSystemPrompt", this.preferences.stringValue("modules.ai.chat.system-prompt", "")).trim();
         final String npcPrompt = body.getOrDefault("npcSystemPrompt", this.preferences.stringValue("modules.ai.npc.system-prompt", "")).trim();
         final String fakePlayersPrompt = body.getOrDefault("fakePlayersSystemPrompt", this.preferences.stringValue("modules.ai.fake-players.system-prompt", "")).trim();
+        final String fakePlayersChatControlPrefix = body.getOrDefault("fakePlayersChatControlPrefix", this.preferences.stringValue("modules.ai.fake-players.chat-control.trigger-prefix", "@bot")).trim();
+        final String fakePlayersChatControlPermission = body.getOrDefault("fakePlayersChatControlPermission", this.preferences.stringValue("modules.ai.fake-players.chat-control.permission", "huntertools.ai.fakeplayer")).trim();
         final Double temperature = parseDouble(body.getOrDefault("temperature", String.valueOf(this.preferences.doubleValue("modules.ai.temperature", 0.7D))), 0.0D, 2.0D);
         final Integer maxTokens = parseInteger(body.getOrDefault("maxTokens", String.valueOf(this.preferences.intValue("modules.ai.max-tokens", 300))), 16, 4096);
         final Integer timeoutSeconds = parseInteger(body.getOrDefault("timeoutSeconds", String.valueOf(this.preferences.intValue("modules.ai.timeout-seconds", 30))), 1, 120);
@@ -1322,6 +1331,7 @@ final class HunterWebPanelManager {
         final Integer fakePlayersMaxMoveTicks = parseInteger(body.getOrDefault("fakePlayersMaxMoveTicks", String.valueOf(this.preferences.intValue("modules.ai.fake-players.max-move-ticks", 40))), 1, 200);
         final Integer fakePlayersMaxActionTicks = parseInteger(body.getOrDefault("fakePlayersMaxActionTicks", String.valueOf(this.preferences.intValue("modules.ai.fake-players.max-action-ticks", 80))), 1, 400);
         final Integer fakePlayersNearbyRadius = parseInteger(body.getOrDefault("fakePlayersNearbyRadiusBlocks", String.valueOf(this.preferences.intValue("modules.ai.fake-players.nearby-radius-blocks", 6))), 2, 12);
+        final Integer fakePlayersChatControlCooldown = parseInteger(body.getOrDefault("fakePlayersChatControlCooldownSeconds", String.valueOf(this.preferences.intValue("modules.ai.fake-players.chat-control.cooldown-seconds", 3))), 0, 3600);
         final List<String> whitelist = parseCommandList(body.getOrDefault("npcCommandWhitelist", String.join(",", this.preferences.stringList(
             "modules.ai.npc.command-whitelist",
             List.of("say", "tell", "msg", "title", "effect", "playsound")
@@ -1329,12 +1339,15 @@ final class HunterWebPanelManager {
 
         if (enabled == null || chatEnabled == null || chatBroadcast == null || npcEnabled == null || npcAllowActions == null
             || fakePlayersEnabled == null || fakePlayersAllowMovement == null || fakePlayersAllowBreaking == null || fakePlayersAllowInteraction == null
+            || fakePlayersChatControlEnabled == null || fakePlayersChatControlRequirePermission == null
             || clearApiKey == null || temperature == null || maxTokens == null || timeoutSeconds == null || chatCooldown == null
             || npcCooldown == null || npcRadius == null || fakePlayersInterval == null || fakePlayersMaxActions == null
             || fakePlayersMaxMoveTicks == null || fakePlayersMaxActionTicks == null || fakePlayersNearbyRadius == null
-            || whitelist == null || provider.isBlank() || provider.length() > 64
+            || fakePlayersChatControlCooldown == null || whitelist == null || provider.isBlank() || provider.length() > 64
             || !validHttpUrl(baseUrl) || model.isBlank() || model.length() > 128 || apiKey.length() > 512
             || apiKeyEnv.length() > 128 || chatPrefix.isBlank() || chatPrefix.length() > 32
+            || fakePlayersChatControlPrefix.isBlank() || fakePlayersChatControlPrefix.length() > 32
+            || fakePlayersChatControlPermission.length() > 96
             || chatPrompt.length() > 4096 || npcPrompt.length() > 4096 || fakePlayersPrompt.length() > 4096) {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_ai_settings\"}");
             return;
@@ -1373,6 +1386,11 @@ final class HunterWebPanelManager {
         this.preferences.setValue("modules.ai.fake-players.allow-movement", fakePlayersAllowMovement);
         this.preferences.setValue("modules.ai.fake-players.allow-breaking", fakePlayersAllowBreaking);
         this.preferences.setValue("modules.ai.fake-players.allow-interaction", fakePlayersAllowInteraction);
+        this.preferences.setValue("modules.ai.fake-players.chat-control.enabled", fakePlayersChatControlEnabled);
+        this.preferences.setValue("modules.ai.fake-players.chat-control.trigger-prefix", fakePlayersChatControlPrefix);
+        this.preferences.setValue("modules.ai.fake-players.chat-control.cooldown-seconds", fakePlayersChatControlCooldown);
+        this.preferences.setValue("modules.ai.fake-players.chat-control.require-permission", fakePlayersChatControlRequirePermission);
+        this.preferences.setValue("modules.ai.fake-players.chat-control.permission", fakePlayersChatControlPermission);
         this.preferences.setValue("modules.ai.fake-players.system-prompt", fakePlayersPrompt);
         this.savePreferences();
         this.guestStatusCache = null;

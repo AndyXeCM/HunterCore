@@ -395,7 +395,12 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.ai.fake-players.allow-movement", true);
         changed |= this.setDefault("modules.ai.fake-players.allow-breaking", true);
         changed |= this.setDefault("modules.ai.fake-players.allow-interaction", true);
-        changed |= this.setDefault("modules.ai.fake-players.system-prompt", "You control a HunterCore real fake player in Minecraft. Return only bracketed action lines, no prose. Available actions: [look:yaw pitch], [look-at:x y z], [move:forward=1,sideways=0,ticks=20,sprint=true,jump=false,sneak=false], [mine:ticks=40], [use], [attack], [jump], [sneak:on], [sprint:off], [slot:1], [drop], [dropstack], [swap], [stop]. Use small safe steps. Mine only when the goal requires it and the target block is visible.");
+        changed |= this.setDefault("modules.ai.fake-players.chat-control.enabled", true);
+        changed |= this.setDefault("modules.ai.fake-players.chat-control.trigger-prefix", "@bot");
+        changed |= this.setDefault("modules.ai.fake-players.chat-control.cooldown-seconds", 3);
+        changed |= this.setDefault("modules.ai.fake-players.chat-control.require-permission", false);
+        changed |= this.setDefault("modules.ai.fake-players.chat-control.permission", "huntertools.ai.fakeplayer");
+        changed |= this.setDefault("modules.ai.fake-players.system-prompt", "You control a HunterCore real fake player in Minecraft. Return only bracketed action lines, no prose. Available actions: [look:yaw pitch], [look-at:x y z], [turn:yaw pitch], [look-at-player:player=name], [move:forward=1,sideways=0,ticks=20,sprint=true,jump=false,sneak=false], [goto:x y z,ticks=60,sprint=true], [follow:player=name,ticks=80,distance=2.5], [mine:ticks=40], [use], [attack], [jump], [sneak:on], [sprint:off], [slot:1], [say:text], [drop], [dropstack], [swap], [wait:ticks=20], [stop]. Use small safe steps. For player chat work requests, act like a cooperative helper. Mine only when the goal requires it and the target block is visible.");
         changed |= this.setDefault("modules.web-panel.enabled", true);
         changed |= this.setDefault("modules.web-panel.bind-address", "127.0.0.1");
         changed |= this.setDefault("modules.web-panel.port", 8088);

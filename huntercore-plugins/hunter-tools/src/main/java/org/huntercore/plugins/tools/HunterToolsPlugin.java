@@ -275,6 +275,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
+        if (this.realFakePlayerManager != null && this.realFakePlayerManager.handleChatControl(event.getPlayer(), event.getMessage())) {
+            event.setCancelled(true);
+            return;
+        }
         if (this.aiManager != null && this.aiManager.handleChat(event.getPlayer(), event.getMessage())) {
             event.setCancelled(true);
         }
