@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -80,9 +81,10 @@ final class HunterWebPanelManager {
     private final HunterToolsPlugin plugin;
     private final HunterToolsPreferences preferences;
     private final Map<String, WebSession> sessions = new ConcurrentHashMap<>();
+    private final Map<String, CachedResponse> statusCaches = new ConcurrentHashMap<>();
+    private final AtomicLong nextPluginOperationAt = new AtomicLong();
     private HttpServer server;
     private ExecutorService executor;
-    private volatile CachedResponse guestStatusCache;
 
     HunterWebPanelManager(final HunterToolsPlugin plugin, final HunterToolsPreferences preferences) {
         this.plugin = plugin;
@@ -124,7 +126,7 @@ final class HunterWebPanelManager {
             this.executor.shutdownNow();
             this.executor = null;
         }
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
     }
 
     boolean running() {
@@ -135,6 +137,37 @@ final class HunterWebPanelManager {
         final String bindAddress = this.preferences.stringValue("modules.web-panel.bind-address", "127.0.0.1");
         final int port = Math.max(1, Math.min(65535, this.preferences.intValue("modules.web-panel.port", 8088)));
         return "http://" + bindAddress + ":" + port + "/";
+    }
+
+    private void invalidateStatusCaches() {
+        this.statusCaches.clear();
+    }
+
+    private String cacheBucket(final WebSession session) {
+        if (session == null) {
+            return "guest";
+        }
+        return session.admin() ? "admin" : "player";
+    }
+
+    private int cacheMillis(final MetricsSnapshot snapshot, final String bucket) {
+        final AdaptiveBudget adaptiveBudget = snapshot.adaptiveBudget();
+        return switch (bucket) {
+            case "admin" -> adaptiveBudget.adminCacheMillis();
+            case "player" -> adaptiveBudget.playerCacheMillis();
+            default -> adaptiveBudget.guestCacheMillis();
+        };
+    }
+
+    private String pluginOperationRateLimitError() {
+        final long now = System.currentTimeMillis();
+        final int minInterval = Math.max(0, this.preferences.intValue("modules.web-panel.plugin-operation-min-interval-millis", 1500));
+        final long allowedAt = this.nextPluginOperationAt.get();
+        if (allowedAt > now) {
+            return "Plugin operations are cooling down for another " + (allowedAt - now) + " ms.";
+        }
+        this.nextPluginOperationAt.set(now + minInterval);
+        return null;
     }
 
     static String hashPassword(final String password) {
@@ -357,20 +390,17 @@ final class HunterWebPanelManager {
     private String statusJson(final HttpExchange exchange) throws InterruptedException, ExecutionException, TimeoutException {
         final WebSession session = this.session(exchange);
         final boolean detailed = session != null;
-        if (!detailed) {
-            final CachedResponse cached = this.guestStatusCache;
-            if (cached != null && cached.expiresAtMillis() > System.currentTimeMillis()) {
-                return cached.body();
-            }
+        final String bucket = this.cacheBucket(session);
+        final CachedResponse cached = this.statusCaches.get(bucket);
+        if (cached != null && cached.expiresAtMillis() > System.currentTimeMillis()) {
+            return cached.body();
         }
 
         final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
         final String json = Bukkit.getScheduler().callSyncMethod(this.plugin, () -> this.buildStatusJson(session, detailed)).get(timeout, TimeUnit.SECONDS);
-        if (!detailed) {
-            final int cacheMillis = Math.max(0, this.preferences.intValue("modules.web-panel.status-cache-millis", 1000));
-            if (cacheMillis > 0) {
-                this.guestStatusCache = new CachedResponse(json, System.currentTimeMillis() + cacheMillis);
-            }
+        final int cacheMillis = this.cacheMillis(this.plugin.metricsSnapshot(), bucket);
+        if (cacheMillis > 0) {
+            this.statusCaches.put(bucket, new CachedResponse(json, System.currentTimeMillis() + cacheMillis));
         }
         return json;
     }
@@ -412,6 +442,7 @@ final class HunterWebPanelManager {
         json.append('}');
 
         json.append(",\"optimization\":{");
+        field(json, "mode", this.preferences.stringValue("optimizations.cpu.mode", "single-thread")).append(',');
         numberField(json, "cpuThreads", Runtime.getRuntime().availableProcessors()).append(',');
         field(json, "paperWorkers", System.getProperty("Paper.WorkerThreadCount", "auto")).append(',');
         field(json, "divineWorkers", System.getProperty("DivineMC.WorkerThreadCount", "auto")).append(',');
@@ -420,10 +451,51 @@ final class HunterWebPanelManager {
         numberField(json, "hunterToolsWorkers", this.preferences.intValue("optimizations.hunter-tools.render-workers", 4)).append(',');
         booleanField(json, "asyncActorLoad", this.preferences.booleanValue("optimizations.hunter-tools.actor-async-load", true)).append(',');
         booleanField(json, "actorBatchSave", this.preferences.booleanValue("optimizations.hunter-tools.actor-batch-save", true)).append(',');
+        booleanField(json, "experimentalRegionTickingAllowed", this.preferences.booleanValue("optimizations.cpu.allow-experimental-region-ticking", false)).append(',');
+        booleanField(json, "managedThreading", Boolean.parseBoolean(System.getProperty("huntercore.threading.managed", "true"))).append(',');
         numberField(json, "webPanelWorkers", this.preferences.intValue("optimizations.hunter-tools.web-panel-workers", 4)).append(',');
-        numberField(json, "guestStatusCacheMillis", this.preferences.intValue("modules.web-panel.status-cache-millis", 1000)).append(',');
+        field(json, "aiThrottleFactor", snapshot.adaptiveBudget().factorLabel()).append(',');
+        numberField(json, "fakePlayerRuntimeIntervalSeconds", snapshot.adaptiveBudget().fakePlayerIntervalSeconds()).append(',');
+        numberField(json, "guestStatusCacheMillis", snapshot.adaptiveBudget().guestCacheMillis()).append(',');
+        numberField(json, "playerStatusCacheMillis", snapshot.adaptiveBudget().playerCacheMillis()).append(',');
+        numberField(json, "adminStatusCacheMillis", snapshot.adaptiveBudget().adminCacheMillis()).append(',');
+        numberField(json, "pluginOperationMinIntervalMillis", this.preferences.intValue("modules.web-panel.plugin-operation-min-interval-millis", 1500)).append(',');
         numberField(json, "bundledPluginInstallWorkers", this.preferences.intValue("optimizations.bundled-plugin-parallel-install.max-workers", 4));
         json.append('}');
+
+        json.append(",\"queues\":[");
+        boolean firstQueue = true;
+        for (final QueuePressure queue : snapshot.queuePressures()) {
+            if (!firstQueue) {
+                json.append(',');
+            }
+            firstQueue = false;
+            json.append('{');
+            field(json, "name", queue.name()).append(',');
+            booleanField(json, "active", queue.active()).append(',');
+            numberField(json, "queued", queue.queued()).append(',');
+            numberField(json, "activeThreads", queue.activeThreads()).append(',');
+            numberField(json, "maxThreads", queue.maxThreads()).append(',');
+            numberField(json, "remainingCapacity", queue.remainingCapacity()).append(',');
+            field(json, "state", queue.state());
+            json.append('}');
+        }
+        json.append(']');
+
+        json.append(",\"hotPaths\":[");
+        boolean firstHotPath = true;
+        for (final HotPathSample sample : snapshot.hotPathSamples()) {
+            if (!firstHotPath) {
+                json.append(',');
+            }
+            firstHotPath = false;
+            json.append('{');
+            field(json, "category", sample.category()).append(',');
+            numberField(json, "score", sample.score()).append(',');
+            field(json, "detail", sample.detail());
+            json.append('}');
+        }
+        json.append(']');
 
         json.append(",\"health\":").append(this.healthJson(snapshot, worlds, detailed));
 
@@ -938,7 +1010,7 @@ final class HunterWebPanelManager {
             return;
         }
         final CommandResult result = this.dispatchConfiguredCommand("hunteradmin module " + module + " " + onOff(enabled));
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.sendCommandResult(exchange, 200, result);
     }
 
@@ -965,7 +1037,7 @@ final class HunterWebPanelManager {
             return;
         }
         final CommandResult result = this.dispatchConfiguredCommand("hunteradmin command " + module + " " + command + " " + onOff(enabled));
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.sendCommandResult(exchange, 200, result);
     }
 
@@ -1007,7 +1079,7 @@ final class HunterWebPanelManager {
             command.append(' ').append(location);
         }
         final CommandResult result = this.dispatchConfiguredCommand(command.toString());
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.sendCommandResult(exchange, 200, result);
     }
 
@@ -1029,7 +1101,7 @@ final class HunterWebPanelManager {
             return;
         }
         final CommandResult result = this.dispatchConfiguredCommand(label + " remove " + id);
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.sendCommandResult(exchange, 200, result);
     }
 
@@ -1059,7 +1131,7 @@ final class HunterWebPanelManager {
             this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"actor_not_found\"}");
             return;
         }
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         final StringBuilder json = new StringBuilder(96);
         json.append("{\"ok\":true,");
         field(json, "message", command.isBlank() ? "Actor click command cleared." : "Actor click command saved.");
@@ -1089,7 +1161,7 @@ final class HunterWebPanelManager {
             this.send(exchange, 404, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"actor_not_found\"}");
             return;
         }
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"message\":\"Actor AI settings saved.\"}");
     }
 
@@ -1139,7 +1211,7 @@ final class HunterWebPanelManager {
         this.preferences.setWebUserAllowedCommands(username, allowedCommands.commands());
         this.savePreferences();
         this.expireWebUserSessions(username);
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true}");
     }
 
@@ -1161,7 +1233,7 @@ final class HunterWebPanelManager {
         this.preferences.removeWebUser(username);
         this.savePreferences();
         this.expireWebUserSessions(username);
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true}");
     }
 
@@ -1256,7 +1328,7 @@ final class HunterWebPanelManager {
         this.preferences.setValue("modules.web-panel.map-url", mapUrl);
         this.preferences.setValue("modules.web-panel.server-name", serverName);
         this.savePreferences();
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"restart\":" + restart + ",\"settings\":" + this.webSettingsJson() + "}");
         if (restart) {
             CompletableFuture.runAsync(() -> {
@@ -1287,7 +1359,7 @@ final class HunterWebPanelManager {
         this.preferences.setValue("modules.command-overrides.messages.plugins", plugins);
         this.preferences.setValue("modules.command-overrides.messages.op-denied", opDenied);
         this.savePreferences();
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"messages\":" + this.commandMessagesJson() + "}");
     }
 
@@ -1393,7 +1465,7 @@ final class HunterWebPanelManager {
         this.preferences.setValue("modules.ai.fake-players.chat-control.permission", fakePlayersChatControlPermission);
         this.preferences.setValue("modules.ai.fake-players.system-prompt", fakePlayersPrompt);
         this.savePreferences();
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"settings\":" + this.aiSettingsJson() + "}");
     }
 
@@ -1434,12 +1506,18 @@ final class HunterWebPanelManager {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_plugin_action\"}");
             return;
         }
+        final String rateLimited = this.pluginOperationRateLimitError();
+        if (rateLimited != null) {
+            this.send(exchange, 429, "application/json; charset=utf-8",
+                "{\"ok\":false,\"error\":\"plugin_rate_limited\",\"message\":\"" + escapeJson(rateLimited) + "\"}");
+            return;
+        }
 
         final int timeout = Math.max(1, this.preferences.intValue("modules.web-panel.command-timeout-seconds", 10));
         final PluginOperationResult result = Bukkit.getScheduler()
             .callSyncMethod(this.plugin, () -> this.applyPluginAction(pluginName, action))
             .get(timeout, TimeUnit.SECONDS);
-        this.guestStatusCache = null;
+        this.invalidateStatusCaches();
         this.sendPluginOperationResult(exchange, result);
     }
 
@@ -1457,6 +1535,12 @@ final class HunterWebPanelManager {
         }
         if (this.protectedPlugin(pluginName)) {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"self_protection\"}");
+            return;
+        }
+        final String rateLimited = this.pluginOperationRateLimitError();
+        if (rateLimited != null) {
+            this.send(exchange, 429, "application/json; charset=utf-8",
+                "{\"ok\":false,\"error\":\"plugin_rate_limited\",\"message\":\"" + escapeJson(rateLimited) + "\"}");
             return;
         }
 
@@ -1486,7 +1570,7 @@ final class HunterWebPanelManager {
                 return;
             }
             final PluginOperationResult result = this.installDownloadedPlugin(metadata, download);
-            this.guestStatusCache = null;
+            this.invalidateStatusCaches();
             this.sendPluginOperationResult(exchange, result);
         } catch (final IOException ex) {
             Files.deleteIfExists(download);

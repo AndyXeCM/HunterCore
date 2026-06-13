@@ -211,22 +211,23 @@ public final class HunterPreferences {
         changed |= this.setDefault("modules.web-panel.users.player.command-execution", true);
         changed |= this.setDefault("modules.web-panel.users.player.allowed-commands", List.of("help", "list", "me", "msg", "tell", "spawn", "tps", "htps"));
 
-        changed |= this.setDefault("optimizations.enabled", true);
-        changed |= this.setDefault("optimizations.bundled-plugin-parallel-install.enabled", true);
-        changed |= this.setDefault("optimizations.bundled-plugin-parallel-install.max-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
-        changed |= this.setDefault("optimizations.hunter-tools.async-rendering", true);
-        changed |= this.setDefault("optimizations.hunter-tools.async-save", true);
-        changed |= this.setDefault("optimizations.hunter-tools.player-cache", true);
-        changed |= this.setDefault("optimizations.hunter-tools.actor-async-load", true);
-        changed |= this.setDefault("optimizations.hunter-tools.actor-batch-save", true);
-        changed |= this.setDefault("optimizations.hunter-tools.web-panel-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
         changed |= this.setDefault("optimizations.cpu.enabled", true);
-        changed |= this.setDefault("optimizations.cpu.mode", "balanced");
+        changed |= this.setDefault("optimizations.cpu.mode", "single-thread");
         changed |= this.setDefault("optimizations.cpu.prefer-existing-jvm-flags", true);
+        changed |= this.setDefault("optimizations.cpu.allow-experimental-region-ticking", false);
         changed |= this.setDefault("optimizations.cpu.paper-worker-threads", "auto");
         changed |= this.setDefault("optimizations.cpu.divine-worker-threads", "auto");
         changed |= this.setDefault("optimizations.cpu.netty-io-threads", "auto");
         changed |= this.setDefault("optimizations.cpu.common-pool-parallelism", "auto");
+        changed |= this.setDefault("optimizations.enabled", true);
+        changed |= this.setDefault("optimizations.bundled-plugin-parallel-install.enabled", true);
+        changed |= this.setDefault("optimizations.bundled-plugin-parallel-install.max-workers", this.defaultWorkerCount());
+        changed |= this.setDefault("optimizations.hunter-tools.async-rendering", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.async-save", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.player-cache", true);
+        changed |= this.setDefault("optimizations.hunter-tools.actor-async-load", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.actor-batch-save", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.web-panel-workers", this.defaultWorkerCount());
 
         if (changed) {
             this.config.options().header("""
@@ -272,6 +273,26 @@ public final class HunterPreferences {
         }
         this.config.set(path, value);
         return true;
+    }
+
+    private boolean singleThreadMode() {
+        final String mode = this.config.getString("optimizations.cpu.mode", "single-thread");
+        return mode == null || mode.equalsIgnoreCase("single-thread");
+    }
+
+    private int defaultWorkerCount() {
+        final String mode = this.config.getString("optimizations.cpu.mode", "single-thread");
+        if (this.singleThreadMode()) {
+            return 1;
+        }
+        final int cpu = Math.max(1, Runtime.getRuntime().availableProcessors());
+        if ("high-clock".equalsIgnoreCase(mode)) {
+            return Math.min(2, Math.max(1, cpu / 4));
+        }
+        if ("high-core".equalsIgnoreCase(mode)) {
+            return Math.min(6, Math.max(3, cpu / 2));
+        }
+        return Math.min(4, Math.max(2, cpu / 2));
     }
 
     public static String normalize(final String id) {

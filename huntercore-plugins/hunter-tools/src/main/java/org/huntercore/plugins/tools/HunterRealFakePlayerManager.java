@@ -17,7 +17,6 @@ import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -30,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 final class HunterRealFakePlayerManager {
     private static final String MODULE = "real-fake-players";
 
-    private final JavaPlugin plugin;
+    private final HunterToolsPlugin plugin;
     private final HunterToolsPreferences preferences;
     private final Map<String, BukkitTask> loops = new HashMap<>();
     private final Map<String, String> clickCommands = new HashMap<>();
@@ -41,7 +40,7 @@ final class HunterRealFakePlayerManager {
     private final List<String> aiBusy = new ArrayList<>();
     private HunterAiManager aiManager;
 
-    HunterRealFakePlayerManager(final JavaPlugin plugin, final HunterToolsPreferences preferences, final HunterAiManager aiManager) {
+    HunterRealFakePlayerManager(final HunterToolsPlugin plugin, final HunterToolsPreferences preferences, final HunterAiManager aiManager) {
         this.plugin = plugin;
         this.preferences = preferences;
         this.aiManager = aiManager;
@@ -727,7 +726,7 @@ final class HunterRealFakePlayerManager {
         if (profile == null || !profile.enabled()) {
             return;
         }
-        final long interval = Math.max(2L, this.preferences.intValue("modules.ai.fake-players.interval-seconds", 6)) * 20L;
+        final long interval = Math.max(1L, this.runtimeFakePlayerIntervalSeconds()) * 20L;
         final BukkitTask task = this.plugin.getServer().getScheduler().runTaskTimer(this.plugin, () -> this.requestAi(profile.id(), false), interval, interval);
         this.aiTasks.put(profile.id(), task);
     }
@@ -742,6 +741,13 @@ final class HunterRealFakePlayerManager {
             || !this.preferences.moduleEnabled("ai")
             || !this.preferences.booleanValue("modules.ai.fake-players.enabled", true))) {
             return;
+        }
+        if (!manual && this.preferences.booleanValue("modules.ai.adaptive-throttling.enabled", true)) {
+            final double throttleFactor = this.plugin.metricsSnapshot().adaptiveBudget().aiThrottleFactor();
+            if (throttleFactor >= 2.5D && (System.currentTimeMillis() / 1000L) % Math.max(2L, Math.round(throttleFactor)) != 0L) {
+                this.aiLastActions.put(key, "throttled by MSPT " + String.format(Locale.ROOT, "%.1fx", throttleFactor));
+                return;
+            }
         }
         if (this.aiManager == null) {
             this.aiLastActions.put(key, "AI manager unavailable");
@@ -768,6 +774,14 @@ final class HunterRealFakePlayerManager {
                 this.applyAiPlan(fake.name(), response);
             });
         });
+    }
+
+    private int runtimeFakePlayerIntervalSeconds() {
+        final int base = Math.max(1, this.preferences.intValue("modules.ai.fake-players.interval-seconds", 6));
+        if (!this.preferences.booleanValue("modules.ai.adaptive-throttling.enabled", true)) {
+            return base;
+        }
+        return Math.max(base, this.plugin.metricsSnapshot().adaptiveBudget().fakePlayerIntervalSeconds());
     }
 
     private String fakeAiContext(final FakeAiProfile profile, final FakePlayerSnapshot snapshot) {

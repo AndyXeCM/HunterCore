@@ -342,6 +342,8 @@ public final class HunterCoreCommand extends Command {
                 + ", update-existing=" + preferences.updateExistingBundledPlugins()
                 + ", parallel-install=" + preferences.parallelBundledPluginInstall()
                 + " (" + preferences.bundledPluginInstallWorkers() + " workers)");
+            sender.sendMessage("CPU mode: " + preferences.stringValue("optimizations.cpu.mode", "single-thread")
+                + ", experimental-region-ticking=" + preferences.booleanValue("optimizations.cpu.allow-experimental-region-ticking", false));
             sender.sendMessage("Bundled plugins:");
             for (final var plugin : HunterCoreRuntime.get().bundledPlugins()) {
                 sender.sendMessage("- " + plugin.id() + ": " + (preferences.bundledPluginEnabled(plugin.id()) ? "enabled" : "disabled"));

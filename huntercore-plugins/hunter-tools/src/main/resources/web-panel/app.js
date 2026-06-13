@@ -30,6 +30,7 @@ const translations = {
     'server.loading': '正在读取服务器状态...',
     'nav.map': '地图',
     'nav.overview': '总览',
+    'nav.runtime': '运行时',
     'nav.plugins': '插件',
     'nav.tools': '工具',
     'nav.admin': '管理',
@@ -50,6 +51,9 @@ const translations = {
     'plugins.title': '插件',
     'plugins.eyebrow': '插件工作台',
     'optimization.title': '优化',
+    'runtime.eyebrow': '自适应服务器运行时',
+    'runtime.title': '运行时预算',
+    'optimization.mode': '线程模式',
     'players.loginRequired': '登录后查看玩家详情。',
     'plugins.loginRequired': '登录后查看插件详情。',
     'plugins.count': '{count} 个',
@@ -223,12 +227,27 @@ const translations = {
     'optimization.forkJoinParallelism': 'ForkJoin',
     'optimization.hunterToolsWorkers': 'HunterTools 工作线程',
     'optimization.webPanelWorkers': '网页工作线程',
-    'optimization.guestStatusCacheMillis': '访客缓存'
+    'optimization.guestStatusCacheMillis': '访客缓存',
+    'optimization.playerStatusCacheMillis': '玩家缓存',
+    'optimization.adminStatusCacheMillis': '管理缓存',
+    'optimization.aiThrottleFactor': 'AI 自适应降频',
+    'optimization.fakePlayerRuntimeIntervalSeconds': '假人运行间隔',
+    'optimization.pluginOperationMinIntervalMillis': '插件热操作限流',
+    'optimization.experimentalRegionTickingAllowed': '实验区域并行',
+    'optimization.managedThreading': '核心托管线程',
+    'queues.title': '异步队列',
+    'hotpaths.title': 'Tick 热点采样',
+    'runtime.queueThreads': '队列线程预算',
+    'runtime.polling': '前端轮询',
+    'runtime.roleCache': '角色缓存',
+    'runtime.throttle': '自适应 AI',
+    'runtime.none': '当前没有活跃数据'
   },
   en: {
     'server.loading': 'Loading server status...',
     'nav.map': 'Map',
     'nav.overview': 'Overview',
+    'nav.runtime': 'Runtime',
     'nav.plugins': 'Plugins',
     'nav.tools': 'Tools',
     'nav.admin': 'Admin',
@@ -249,6 +268,9 @@ const translations = {
     'plugins.title': 'Plugins',
     'plugins.eyebrow': 'Plugin workspace',
     'optimization.title': 'Optimization',
+    'runtime.eyebrow': 'Adaptive server runtime',
+    'runtime.title': 'Runtime Budgets',
+    'optimization.mode': 'Thread mode',
     'players.loginRequired': 'Login to view player detail.',
     'plugins.loginRequired': 'Login to view plugin detail.',
     'plugins.count': '{count}',
@@ -422,7 +444,21 @@ const translations = {
     'optimization.forkJoinParallelism': 'ForkJoin',
     'optimization.hunterToolsWorkers': 'HunterTools workers',
     'optimization.webPanelWorkers': 'Web workers',
-    'optimization.guestStatusCacheMillis': 'Guest cache'
+    'optimization.guestStatusCacheMillis': 'Guest cache',
+    'optimization.playerStatusCacheMillis': 'Player cache',
+    'optimization.adminStatusCacheMillis': 'Admin cache',
+    'optimization.aiThrottleFactor': 'AI throttle',
+    'optimization.fakePlayerRuntimeIntervalSeconds': 'Fake player interval',
+    'optimization.pluginOperationMinIntervalMillis': 'Plugin op limiter',
+    'optimization.experimentalRegionTickingAllowed': 'Experimental region ticking',
+    'optimization.managedThreading': 'Managed threading',
+    'queues.title': 'Async queues',
+    'hotpaths.title': 'Tick hot paths',
+    'runtime.queueThreads': 'Queue thread budgets',
+    'runtime.polling': 'Frontend polling',
+    'runtime.roleCache': 'Role cache',
+    'runtime.throttle': 'Adaptive AI',
+    'runtime.none': 'No active runtime data'
   }
 };
 
@@ -572,7 +608,7 @@ function setLanguage(lang) {
 
 function pageFromLocation() {
   const value = window.location.hash.replace(/^#\/?/, '');
-  return ['map', 'overview', 'plugins', 'tools', 'admin'].includes(value) ? value : 'map';
+  return ['map', 'overview', 'runtime', 'plugins', 'tools', 'admin'].includes(value) ? value : 'map';
 }
 
 function showPage(page, push = true) {
@@ -736,6 +772,7 @@ function renderOverview(data) {
     .join('') || `<p class="mutedState">${esc(t('worlds.none'))}</p>`;
 
   $('optimizationList').innerHTML = [
+    dataItem(t('optimization.mode'), data.optimization.mode),
     dataItem(t('optimization.cpuThreads'), data.optimization.cpuThreads),
     dataItem(t('optimization.paperWorkers'), data.optimization.paperWorkers),
     dataItem(t('optimization.divineWorkers'), data.optimization.divineWorkers),
@@ -743,8 +780,29 @@ function renderOverview(data) {
     dataItem(t('optimization.forkJoinParallelism'), data.optimization.forkJoinParallelism),
     dataItem(t('optimization.hunterToolsWorkers'), data.optimization.hunterToolsWorkers),
     dataItem(t('optimization.webPanelWorkers'), data.optimization.webPanelWorkers),
-    dataItem(t('optimization.guestStatusCacheMillis'), `${data.optimization.guestStatusCacheMillis}ms`)
+    dataItem(t('optimization.experimentalRegionTickingAllowed'), String(Boolean(data.optimization.experimentalRegionTickingAllowed))),
+    dataItem(t('optimization.managedThreading'), String(Boolean(data.optimization.managedThreading)))
   ].join('');
+
+  $('runtimeBudgetList').innerHTML = [
+    dataItem(t('runtime.throttle'), data.optimization.aiThrottleFactor, `${data.optimization.fakePlayerRuntimeIntervalSeconds}s`),
+    dataItem(t('runtime.roleCache'), `${data.optimization.guestStatusCacheMillis}ms / ${data.optimization.playerStatusCacheMillis}ms / ${data.optimization.adminStatusCacheMillis}ms`, 'guest / player / admin'),
+    dataItem(t('optimization.pluginOperationMinIntervalMillis'), `${data.optimization.pluginOperationMinIntervalMillis}ms`, t('runtime.polling')),
+    dataItem(t('optimization.hunterToolsWorkers'), data.optimization.hunterToolsWorkers, `${t('optimization.webPanelWorkers')} ${data.optimization.webPanelWorkers}`),
+    dataItem(t('runtime.queueThreads'), (data.queues || []).filter((queue) => queue.active).map((queue) => `${queue.name}:${queue.maxThreads}`).join(' · ') || '--')
+  ].join('');
+
+  $('queueList').innerHTML = (data.queues || []).map((queue) => dataItem(
+    queue.name,
+    `${queue.activeThreads}/${queue.maxThreads} · ${queue.queued} queued`,
+    `${queue.state}${queue.remainingCapacity >= 0 ? ` · cap ${queue.remainingCapacity}` : ''}`
+  )).join('') || `<p class="mutedState">${esc(t('runtime.none'))}</p>`;
+
+  $('hotPathList').innerHTML = (data.hotPaths || []).map((sample) => dataItem(
+    sample.category,
+    sample.detail,
+    `score ${Number(sample.score || 0).toFixed(2)}`
+  )).join('') || `<p class="mutedState">${esc(t('runtime.none'))}</p>`;
 
   $('playerList').innerHTML = data.players
     ? data.players.map((player) => dataItem(player.name, `${player.ping}ms`, player.world)).join('') || `<p class="mutedState">${esc(t('players.none'))}</p>`
@@ -874,6 +932,14 @@ async function refresh() {
   renderWebSettings(data.webSettings);
   renderCommandMessages(data.commandMessages);
   renderAiSettings(data.aiSettings);
+  const targetInterval = Math.max(1500, Math.min(15000, Number(data.optimization?.guestStatusCacheMillis || 5000) * 2));
+  if (state.refreshTimer && state.pollMillis !== targetInterval) {
+    clearInterval(state.refreshTimer);
+    state.refreshTimer = setInterval(() => {
+      refresh().catch(() => {});
+    }, targetInterval);
+  }
+  state.pollMillis = targetInterval;
 }
 
 async function refreshMap() {
@@ -1325,3 +1391,4 @@ refreshMap().catch(() => {});
 state.refreshTimer = setInterval(() => {
   refresh().catch(() => {});
 }, 5000);
+state.pollMillis = 5000;

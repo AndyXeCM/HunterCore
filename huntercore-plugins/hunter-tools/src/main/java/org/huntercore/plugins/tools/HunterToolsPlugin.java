@@ -319,7 +319,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     private ExecutorService createWorkerExecutor() {
         final int configured = this.preferences.intValue("optimizations.hunter-tools.render-workers", 4);
-        final int workers = Math.max(1, Math.min(configured, Math.min(8, Runtime.getRuntime().availableProcessors())));
+        final int workers = this.preferences.singleThreadMode()
+            ? 1
+            : Math.max(1, Math.min(configured, Math.min(8, Runtime.getRuntime().availableProcessors())));
         final AtomicInteger id = new AtomicInteger();
         final ThreadFactory factory = task -> {
             final Thread thread = new Thread(task, "HunterTools worker " + id.incrementAndGet());
@@ -363,16 +365,28 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         final Runtime runtime = Runtime.getRuntime();
         final long total = runtime.totalMemory();
         final long free = runtime.freeMemory();
+        final double mspt = Bukkit.getAverageTickTime();
+        final AdaptiveBudget adaptiveBudget = HunterRuntimeSampler.adaptiveBudget(this.preferences, mspt);
+        final List<QueuePressure> queuePressures = HunterRuntimeSampler.queuePressures();
+        final List<HotPathSample> hotPathSamples = HunterRuntimeSampler.hotPathSamples(
+            Bukkit.getWorlds(),
+            Bukkit.getOnlinePlayers().size(),
+            this.realFakePlayerManager == null ? 0 : this.realFakePlayerManager.liveCount(),
+            queuePressures
+        );
         this.snapshot = new MetricsSnapshot(
             tps.length > 0 ? tps[0] : 20.0D,
             tps.length > 1 ? tps[1] : 20.0D,
             tps.length > 2 ? tps[2] : 20.0D,
-            Bukkit.getAverageTickTime(),
+            mspt,
             total - free,
             total,
             runtime.maxMemory(),
             Bukkit.getOnlinePlayers().size(),
-            Bukkit.getMaxPlayers()
+            Bukkit.getMaxPlayers(),
+            adaptiveBudget,
+            queuePressures,
+            hotPathSamples
         );
         if (this.preferences.booleanValue("optimizations.enabled", true) && this.preferences.booleanValue("optimizations.hunter-tools.player-cache", true)) {
             this.cachedPlayerNames = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
@@ -559,7 +573,7 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
             case "memory" -> this.adminMemory(sender);
             case "gc" -> this.adminGc(sender);
             case "threads" -> this.adminThreads(sender);
-            case "optimize" -> this.adminOptimize(sender);
+            case "optimize" -> this.adminOptimize(sender, args);
             case "motd" -> this.adminMotd(sender, args);
             case "web" -> this.adminWeb(sender, args);
             case "ai" -> this.adminAi(sender, args);
@@ -704,11 +718,30 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         return true;
     }
 
-    private boolean adminOptimize(final CommandSender sender) {
+    private boolean adminOptimize(final CommandSender sender, final String[] args) {
         if (!this.managementCommandEnabled(sender, "optimize")) {
             return true;
         }
+        if (args.length >= 2 && !args[1].equalsIgnoreCase("status")) {
+            if (!validCpuMode(args[1])) {
+                sender.sendMessage("Usage: /hunteradmin optimize <single-thread|high-clock|high-core|multi-thread|status>");
+                return true;
+            }
+            final String mode = normalizeCpuMode(args[1]);
+            final boolean asyncEnabled = !mode.equals("single-thread");
+            this.preferences.setValue("optimizations.cpu.mode", mode);
+            this.preferences.setValue("optimizations.hunter-tools.async-rendering", asyncEnabled);
+            this.preferences.setValue("optimizations.hunter-tools.async-save", asyncEnabled);
+            this.preferences.setValue("optimizations.hunter-tools.actor-async-load", asyncEnabled);
+            this.preferences.setValue("optimizations.hunter-tools.actor-batch-save", asyncEnabled);
+            this.preferences.setValue("optimizations.hunter-tools.render-workers", this.preferences.defaultWorkerCount());
+            this.preferences.setValue("optimizations.hunter-tools.web-panel-workers", this.preferences.defaultWorkerCount());
+            this.preferences.save(this.workerExecutor);
+            sender.sendMessage("HunterCore CPU mode saved as " + mode + ". Restart the server to fully apply core thread settings.");
+            return true;
+        }
         sender.sendMessage(ChatColor.GOLD + "HunterCore CPU optimization");
+        sender.sendMessage(ChatColor.GRAY + "Mode: " + ChatColor.WHITE + this.preferences.stringValue("optimizations.cpu.mode", "single-thread"));
         sender.sendMessage(ChatColor.GRAY + "CPU threads: " + ChatColor.WHITE + Runtime.getRuntime().availableProcessors());
         sender.sendMessage(ChatColor.GRAY + "Paper workers: " + ChatColor.WHITE + System.getProperty("Paper.WorkerThreadCount", "auto"));
         sender.sendMessage(ChatColor.GRAY + "DivineMC workers: " + ChatColor.WHITE + System.getProperty("DivineMC.WorkerThreadCount", "auto"));
@@ -718,7 +751,9 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         sender.sendMessage(ChatColor.GRAY + "Async actor load: " + ChatColor.WHITE + this.preferences.booleanValue("optimizations.hunter-tools.actor-async-load", true));
         sender.sendMessage(ChatColor.GRAY + "Async/batched actor save: " + ChatColor.WHITE + this.preferences.booleanValue("optimizations.hunter-tools.actor-batch-save", true));
         sender.sendMessage(ChatColor.GRAY + "Web panel workers: " + ChatColor.WHITE + this.preferences.intValue("optimizations.hunter-tools.web-panel-workers", 4));
+        sender.sendMessage(ChatColor.GRAY + "Experimental region ticking: " + ChatColor.WHITE + this.preferences.booleanValue("optimizations.cpu.allow-experimental-region-ticking", false));
         sender.sendMessage(ChatColor.GRAY + "Guest status cache: " + ChatColor.WHITE + this.preferences.intValue("modules.web-panel.status-cache-millis", 1000) + "ms");
+        sender.sendMessage(ChatColor.DARK_GRAY + "Use /hunteradmin optimize single-thread, high-clock, high-core, or multi-thread, then restart.");
         return true;
     }
 
@@ -1567,12 +1602,43 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         };
     }
 
+    private static boolean validCpuMode(final String input) {
+        if (input == null) {
+            return false;
+        }
+        final String normalized = input.trim().toLowerCase(Locale.ROOT).replace('_', '-');
+        return normalized.equals("single-thread")
+            || normalized.equals("high-clock")
+            || normalized.equals("high-core")
+            || normalized.equals("multi-thread")
+            || normalized.equals("single")
+            || normalized.equals("multi")
+            || normalized.equals("stable")
+            || normalized.equals("performance")
+            || normalized.equals("clock")
+            || normalized.equals("core")
+            || normalized.equals("balanced");
+    }
+
+    private static String normalizeCpuMode(final String input) {
+        final String normalized = input == null ? "" : input.trim().toLowerCase(Locale.ROOT).replace('_', '-');
+        return switch (normalized) {
+            case "high-clock", "clock" -> "high-clock";
+            case "high-core", "core" -> "high-core";
+            case "multi-thread", "multi", "performance" -> "multi-thread";
+            default -> "single-thread";
+        };
+    }
+
     private List<String> adminCompletions(final String[] args) {
         if (args.length == 1) {
             return matching(args[0], List.of("reload", "modules", "module", "command", "plugins", "memory", "gc", "threads", "optimize", "motd", "web", "ai"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("motd")) {
             return matching(args[1], List.of("status", "line1", "line2", "max"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("optimize")) {
+            return matching(args[1], List.of("status", "single-thread", "high-clock", "high-core", "multi-thread"));
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("motd") && args[1].equalsIgnoreCase("max")) {
             return matching(args[2], List.of("default", "100", "500", "1000"));

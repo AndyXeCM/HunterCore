@@ -1,5 +1,6 @@
 package org.huntercore.bootstrap;
 
+import java.nio.file.Path;
 import org.huntercore.api.HunterCoreProvider;
 import org.huntercore.optimization.HunterCoreOptimizer;
 
@@ -14,6 +15,7 @@ public final class HunterCoreBootstrap {
             return;
         }
         HunterCoreOptimizer.applyStartupDefaults();
+        HunterCoreOptimizer.applyEarlyPreferenceDefaults(Path.of("plugins", "HunterCore", "preferences.yml"));
         HunterCoreProvider.register(HunterCoreRuntime.get());
         initialized = true;
     }

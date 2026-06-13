@@ -41,6 +41,7 @@
       <nav class="topNav" aria-label="Panel sections">
         <button type="button" class="navButton isActive" data-page-target="map" data-i18n="nav.map">Map</button>
         <button type="button" class="navButton" data-page-target="overview" data-i18n="nav.overview">Overview</button>
+        <button type="button" class="navButton" data-page-target="runtime" data-i18n="nav.runtime">Runtime</button>
         <button type="button" class="navButton" data-page-target="plugins" data-i18n="nav.plugins">Plugins</button>
         <button type="button" class="navButton" data-page-target="tools" data-i18n="nav.tools">Tools</button>
         <button type="button" class="navButton adminOnly" data-page-target="admin" data-i18n="nav.admin" hidden>Admin</button>
@@ -98,6 +99,29 @@
         <section class="panel">
           <h3 data-i18n="optimization.title">Optimization</h3>
           <div id="optimizationList" class="dataList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="runtime" class="pageView workspace" hidden>
+      <div class="sectionHead">
+        <div>
+          <span class="eyebrow" data-i18n="runtime.eyebrow">Adaptive server runtime</span>
+          <h2 data-i18n="runtime.title">Runtime Budgets</h2>
+        </div>
+      </div>
+      <div class="overviewGrid">
+        <section class="panel">
+          <h3 data-i18n="runtime.title">Runtime Budgets</h3>
+          <div id="runtimeBudgetList" class="dataList"></div>
+        </section>
+        <section class="panel">
+          <h3 data-i18n="queues.title">Async queues</h3>
+          <div id="queueList" class="dataList"></div>
+        </section>
+        <section class="panel">
+          <h3 data-i18n="hotpaths.title">Tick hot paths</h3>
+          <div id="hotPathList" class="dataList"></div>
         </section>
       </div>
     </section>

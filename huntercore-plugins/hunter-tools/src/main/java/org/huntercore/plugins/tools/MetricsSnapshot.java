@@ -1,5 +1,6 @@
 package org.huntercore.plugins.tools;
 
+import java.util.List;
 import java.util.Locale;
 
 record MetricsSnapshot(
@@ -11,10 +12,17 @@ record MetricsSnapshot(
     long totalMemory,
     long maxMemory,
     int onlinePlayers,
-    int maxPlayers
+    int maxPlayers,
+    AdaptiveBudget adaptiveBudget,
+    List<QueuePressure> queuePressures,
+    List<HotPathSample> hotPathSamples
 ) {
     static MetricsSnapshot empty() {
-        return new MetricsSnapshot(20.0D, 20.0D, 20.0D, 0.0D, 0L, 0L, 0L, 0, 0);
+        return new MetricsSnapshot(20.0D, 20.0D, 20.0D, 0.0D, 0L, 0L, 0L, 0, 0,
+            AdaptiveBudget.defaults(0.0D),
+            List.of(),
+            List.of()
+        );
     }
 
     String shortTps() {

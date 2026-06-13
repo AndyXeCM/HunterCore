@@ -401,6 +401,10 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.ai.fake-players.chat-control.require-permission", false);
         changed |= this.setDefault("modules.ai.fake-players.chat-control.permission", "huntertools.ai.fakeplayer");
         changed |= this.setDefault("modules.ai.fake-players.system-prompt", "You control a HunterCore real fake player in Minecraft. Return only bracketed action lines, no prose. Available actions: [look:yaw pitch], [look-at:x y z], [turn:yaw pitch], [look-at-player:player=name], [move:forward=1,sideways=0,ticks=20,sprint=true,jump=false,sneak=false], [goto:x y z,ticks=60,sprint=true], [follow:player=name,ticks=80,distance=2.5], [mine:ticks=40], [use], [attack], [jump], [sneak:on], [sprint:off], [slot:1], [say:text], [drop], [dropstack], [swap], [wait:ticks=20], [stop]. Use small safe steps. For player chat work requests, act like a cooperative helper. Mine only when the goal requires it and the target block is visible.");
+        changed |= this.setDefault("modules.ai.adaptive-throttling.enabled", true);
+        changed |= this.setDefault("modules.ai.adaptive-throttling.warning-mspt", 40.0D);
+        changed |= this.setDefault("modules.ai.adaptive-throttling.critical-mspt", 55.0D);
+        changed |= this.setDefault("modules.ai.adaptive-throttling.severe-mspt", 75.0D);
         changed |= this.setDefault("modules.web-panel.enabled", true);
         changed |= this.setDefault("modules.web-panel.bind-address", "127.0.0.1");
         changed |= this.setDefault("modules.web-panel.port", 8088);
@@ -408,11 +412,14 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.web-panel.public-map", true);
         changed |= this.setDefault("modules.web-panel.map-url", "http://%host%:8100/");
         changed |= this.setDefault("modules.web-panel.status-cache-millis", 1000);
+        changed |= this.setDefault("modules.web-panel.status-cache-player-millis", 700);
+        changed |= this.setDefault("modules.web-panel.status-cache-admin-millis", 400);
         changed |= this.setDefault("modules.web-panel.require-csrf", true);
         changed |= this.setDefault("modules.web-panel.session-minutes", 360);
         changed |= this.setDefault("modules.web-panel.command-timeout-seconds", 10);
         changed |= this.setDefault("modules.web-panel.command-output-lines", 80);
         changed |= this.setDefault("modules.web-panel.command-output-chars", 12000);
+        changed |= this.setDefault("modules.web-panel.plugin-operation-min-interval-millis", 1500);
         changed |= this.setDefault("modules.web-panel.health.enabled", true);
         changed |= this.setDefault("modules.web-panel.health.low-tps-warning", 18.0D);
         changed |= this.setDefault("modules.web-panel.health.low-tps-critical", 15.0D);
@@ -436,21 +443,22 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.web-panel.users.player.password", "");
         changed |= this.setDefault("modules.web-panel.users.player.command-execution", true);
         changed |= this.setDefault("modules.web-panel.users.player.allowed-commands", defaultWebPlayerCommands());
-        changed |= this.setDefault("optimizations.enabled", true);
-        changed |= this.setDefault("optimizations.hunter-tools.async-rendering", true);
-        changed |= this.setDefault("optimizations.hunter-tools.async-save", true);
-        changed |= this.setDefault("optimizations.hunter-tools.player-cache", true);
-        changed |= this.setDefault("optimizations.hunter-tools.render-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
-        changed |= this.setDefault("optimizations.hunter-tools.actor-async-load", true);
-        changed |= this.setDefault("optimizations.hunter-tools.actor-batch-save", true);
-        changed |= this.setDefault("optimizations.hunter-tools.web-panel-workers", Math.min(4, Math.max(2, Runtime.getRuntime().availableProcessors())));
         changed |= this.setDefault("optimizations.cpu.enabled", true);
-        changed |= this.setDefault("optimizations.cpu.mode", "balanced");
+        changed |= this.setDefault("optimizations.cpu.mode", "single-thread");
         changed |= this.setDefault("optimizations.cpu.prefer-existing-jvm-flags", true);
+        changed |= this.setDefault("optimizations.cpu.allow-experimental-region-ticking", false);
         changed |= this.setDefault("optimizations.cpu.paper-worker-threads", "auto");
         changed |= this.setDefault("optimizations.cpu.divine-worker-threads", "auto");
         changed |= this.setDefault("optimizations.cpu.netty-io-threads", "auto");
         changed |= this.setDefault("optimizations.cpu.common-pool-parallelism", "auto");
+        changed |= this.setDefault("optimizations.enabled", true);
+        changed |= this.setDefault("optimizations.hunter-tools.async-rendering", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.async-save", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.player-cache", true);
+        changed |= this.setDefault("optimizations.hunter-tools.render-workers", this.defaultWorkerCount());
+        changed |= this.setDefault("optimizations.hunter-tools.actor-async-load", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.actor-batch-save", !this.singleThreadMode());
+        changed |= this.setDefault("optimizations.hunter-tools.web-panel-workers", this.defaultWorkerCount());
         return changed;
     }
 
@@ -467,6 +475,25 @@ final class HunterToolsPreferences {
             "heal", "feed", "fly", "gm", "day", "night", "sun", "rain", "thunder", "broadcast", "clearchat",
             "speed", "spawn", "setspawn", "back", "hat", "craft", "enderchest", "trash"
         );
+    }
+
+    boolean singleThreadMode() {
+        return "single-thread".equalsIgnoreCase(this.stringValue("optimizations.cpu.mode", "single-thread"));
+    }
+
+    int defaultWorkerCount() {
+        final String mode = this.stringValue("optimizations.cpu.mode", "single-thread");
+        if (this.singleThreadMode()) {
+            return 1;
+        }
+        final int cpu = Math.max(1, Runtime.getRuntime().availableProcessors());
+        if ("high-clock".equalsIgnoreCase(mode)) {
+            return Math.min(2, Math.max(1, cpu / 4));
+        }
+        if ("high-core".equalsIgnoreCase(mode)) {
+            return Math.min(6, Math.max(3, cpu / 2));
+        }
+        return Math.min(4, Math.max(2, cpu / 2));
     }
 
     static List<String> managementCommands() {

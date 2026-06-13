@@ -12,6 +12,7 @@ index d9519c2f39137768174010b04e3cb8acd94b1229..bbfe73ea5f9494d192096436e12b6659
          org.spigotmc.SpigotConfig.init((File) this.console.options.valueOf("spigot-settings")); // Spigot
          this.console.paperConfigurations.reloadConfigs(this.console);
          org.purpurmc.purpur.PurpurConfig.init((File) console.options.valueOf("purpur-settings")); // Purpur - Purpur config files
++        org.huntercore.optimization.HunterCoreOptimizer.applyEarlyPreferenceDefaults(java.nio.file.Path.of("plugins", "HunterCore", "preferences.yml")); // HunterCore - CPU threading mode
 +        org.bxteam.divinemc.config.DivineConfig.init((File) console.options.valueOf("divinemc-settings")); // DivineMC - Configuration
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty

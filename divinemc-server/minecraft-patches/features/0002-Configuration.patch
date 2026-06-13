@@ -12,6 +12,7 @@ index 891df1e27e6f7d6c8b331eb446bb80ceb8f853e0..b85a6ce9029b45a749e0ad8eff39abd4
              this.setLocalIp(properties.serverIp);
          }
  
++        org.huntercore.bootstrap.HunterCoreBootstrap.init(); // HunterCore - initialize threading mode before DivineMC config
 +        org.bxteam.divinemc.config.DivineConfig.init((java.io.File) options.valueOf("divinemc-settings")); // DivineMC - Configuration
 +
          // Spigot start

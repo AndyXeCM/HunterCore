@@ -15,6 +15,7 @@ import org.checkerframework.framework.qual.DefaultQualifier;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
@@ -39,6 +40,7 @@ public final class ReloadCommand extends DivineSubCommandPermission {
 
         MinecraftServer server = ((CraftServer) sender.getServer()).getServer();
 
+        org.huntercore.optimization.HunterCoreOptimizer.applyEarlyPreferenceDefaults(Path.of("plugins", "HunterCore", "preferences.yml"));
         DivineConfig.init((File) server.options.valueOf("divinemc-settings"));
 
         for (ServerLevel level : server.getAllLevels()) {
