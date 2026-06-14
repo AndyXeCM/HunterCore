@@ -2,9 +2,11 @@ package org.huntercore.plugins.tools;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -17,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -28,6 +31,16 @@ import org.jetbrains.annotations.Nullable;
 
 final class HunterRealFakePlayerManager {
     private static final String MODULE = "real-fake-players";
+    private static final Set<Material> HIGH_RISK_MATERIALS = Set.of(
+        Material.TNT,
+        Material.TNT_MINECART,
+        Material.END_CRYSTAL,
+        Material.FLINT_AND_STEEL,
+        Material.FIRE_CHARGE,
+        Material.LAVA_BUCKET,
+        Material.RESPAWN_ANCHOR,
+        Material.WITHER_SKELETON_SKULL
+    );
 
     private final HunterToolsPlugin plugin;
     private final HunterToolsPreferences preferences;
@@ -36,6 +49,7 @@ final class HunterRealFakePlayerManager {
     private final Map<String, FakeAiProfile> aiProfiles = new HashMap<>();
     private final Map<String, BukkitTask> aiTasks = new HashMap<>();
     private final Map<String, String> aiLastActions = new HashMap<>();
+    private final Map<String, PendingRiskApproval> pendingRiskApprovals = new HashMap<>();
     private final Map<String, Long> chatControlCooldowns = new HashMap<>();
     private final List<String> aiBusy = new ArrayList<>();
     private HunterAiManager aiManager;
@@ -138,7 +152,7 @@ final class HunterRealFakePlayerManager {
             return matching(args[2], List.of("forward", "back", "left", "right", "stop", "1", "-1"));
         }
         if (args.length == 3 && sub.equals("ai")) {
-            return matching(args[2], List.of("status", "on", "off", "goal", "once"));
+            return matching(args[2], List.of("status", "on", "off", "goal", "once", "approve", "deny"));
         }
         if ((sub.equals("spawn") && args.length == 3) || (sub.equals("tp") && args.length == 3)) {
             return matching(args[2], Bukkit.getWorlds().stream().map(World::getName).toList());
@@ -418,16 +432,73 @@ final class HunterRealFakePlayerManager {
             }
             case "once" -> {
                 final String goal = profile == null || profile.goal().isBlank() ? defaultFakeAiGoal(fake.name()) : profile.goal();
-                this.aiProfiles.put(fake.id(), new FakeAiProfile(fake.id(), fake.name(), profile != null && profile.enabled(), goal));
+                this.aiProfiles.put(fake.id(), new FakeAiProfile(
+                    fake.id(),
+                    fake.name(),
+                    profile != null && profile.enabled(),
+                    goal,
+                    profile == null ? null : profile.controllerUuid(),
+                    profile == null ? null : profile.controllerName(),
+                    profile == null ? 0L : profile.highRiskAllowedUntilMillis()
+                ));
                 this.requestAi(fake.id(), true);
                 sender.sendMessage("HunterCore AI one-shot requested for " + fake.name() + ".");
                 return true;
             }
+            case "approve" -> {
+                return this.approveRisk(sender, fake.name());
+            }
+            case "deny" -> {
+                return this.denyRisk(sender, fake.name());
+            }
             default -> {
-                sender.sendMessage("Usage: /" + label + " ai <name> [status|on|off|goal <text>|once]");
+                sender.sendMessage("Usage: /" + label + " ai <name> [status|on|off|goal <text>|once|approve|deny]");
                 return true;
             }
         }
+    }
+
+    private boolean approveRisk(final CommandSender sender, final String name) {
+        final var snapshot = this.service().snapshot(name);
+        if (snapshot.isEmpty()) {
+            sender.sendMessage("Fake player not found: " + name);
+            return true;
+        }
+        final String key = snapshot.get().id();
+        final PendingRiskApproval pending = this.pendingRiskApprovals.get(key);
+        if (pending == null || pending.expiresAtMillis() <= System.currentTimeMillis()) {
+            this.pendingRiskApprovals.remove(key);
+            sender.sendMessage("No pending high-risk AI action for " + name + ".");
+            return true;
+        }
+        final FakeAiProfile profile = this.aiProfiles.get(key);
+        final long allowedUntil = System.currentTimeMillis() + Math.max(15, this.preferences.intValue("modules.ai.fake-players.high-risk-approval-window-seconds", 120)) * 1000L;
+        if (profile != null) {
+            this.aiProfiles.put(key, new FakeAiProfile(
+                profile.id(), profile.name(), profile.enabled(), profile.goal(),
+                profile.controllerUuid(), profile.controllerName(), allowedUntil
+            ));
+        }
+        this.pendingRiskApprovals.remove(key);
+        sender.sendMessage(ChatColor.GREEN + "Approved one high-risk AI action for " + name + ".");
+        return true;
+    }
+
+    private boolean denyRisk(final CommandSender sender, final String name) {
+        final var snapshot = this.service().snapshot(name);
+        if (snapshot.isEmpty()) {
+            sender.sendMessage("Fake player not found: " + name);
+            return true;
+        }
+        final PendingRiskApproval removed = this.pendingRiskApprovals.remove(snapshot.get().id());
+        if (removed == null) {
+            sender.sendMessage("No pending high-risk AI action for " + name + ".");
+            return true;
+        }
+        this.stopLoops(name);
+        this.service().stopActions(name);
+        sender.sendMessage(ChatColor.YELLOW + "Denied high-risk AI action for " + name + ".");
+        return true;
     }
 
     private boolean info(final CommandSender sender, final String label, final String[] args) {
@@ -525,7 +596,7 @@ final class HunterRealFakePlayerManager {
         if (!enabled) {
             this.stopAi(fake.id());
             if (!cleanGoal.isBlank()) {
-                this.aiProfiles.put(fake.id(), new FakeAiProfile(fake.id(), fake.name(), false, cleanGoal));
+                this.aiProfiles.put(fake.id(), new FakeAiProfile(fake.id(), fake.name(), false, cleanGoal, null, null, 0L));
             }
             return true;
         }
@@ -533,7 +604,10 @@ final class HunterRealFakePlayerManager {
             fake.id(),
             fake.name(),
             true,
-            cleanGoal.isBlank() ? defaultFakeAiGoal(fake.name()) : cleanGoal
+            cleanGoal.isBlank() ? defaultFakeAiGoal(fake.name()) : cleanGoal,
+            null,
+            null,
+            0L
         ));
         this.startAiLoop(fake.id());
         this.requestAi(fake.id(), true);
@@ -717,6 +791,18 @@ final class HunterRealFakePlayerManager {
             + "For travel tasks use [goto:x y z]. For mining or tool work, look at the target and use [mine:ticks=40] or [use]. "
             + "Stop if the task says stop.";
         this.setAi(fake.name(), true, goal);
+        final FakeAiProfile profile = this.aiProfiles.get(fake.id());
+        if (profile != null) {
+            this.aiProfiles.put(fake.id(), new FakeAiProfile(
+                profile.id(),
+                profile.name(),
+                profile.enabled(),
+                profile.goal(),
+                player.getUniqueId(),
+                player.getName(),
+                profile.highRiskAllowedUntilMillis()
+            ));
+        }
         this.aiLastActions.put(fake.id(), "assigned by " + player.getName() + ": " + truncatePlain(task, 80));
     }
 
@@ -928,6 +1014,10 @@ final class HunterRealFakePlayerManager {
     }
 
     private String applyAiAction(final String name, final String action, final String args) {
+        final String blocked = this.guardHighRiskAction(name, action);
+        if (!blocked.isBlank()) {
+            return blocked;
+        }
         return switch (action) {
             case "look" -> this.aiLook(name, args);
             case "look-at", "lookat" -> this.aiLookAt(name, args);
@@ -954,6 +1044,84 @@ final class HunterRealFakePlayerManager {
             }
             default -> "";
         };
+    }
+
+    private String guardHighRiskAction(final String name, final String action) {
+        if (!this.preferences.booleanValue("modules.ai.fake-players.high-risk-protection", true)) {
+            return "";
+        }
+        final HighRiskAction risk = this.detectHighRiskAction(name, action);
+        if (risk == null) {
+            return "";
+        }
+        final String key = playerId(name);
+        final FakeAiProfile profile = this.aiProfiles.get(key);
+        if (profile != null && profile.highRiskAllowedUntilMillis() > System.currentTimeMillis()) {
+            this.aiProfiles.put(key, new FakeAiProfile(
+                profile.id(), profile.name(), profile.enabled(), profile.goal(),
+                profile.controllerUuid(), profile.controllerName(), 0L
+            ));
+            this.pendingRiskApprovals.remove(key);
+            return "";
+        }
+        final long expiresAt = System.currentTimeMillis() + Math.max(15, this.preferences.intValue("modules.ai.fake-players.high-risk-approval-window-seconds", 120)) * 1000L;
+        final PendingRiskApproval pending = new PendingRiskApproval(
+            key,
+            name,
+            risk.label(),
+            risk.detail(),
+            profile == null ? null : profile.controllerUuid(),
+            profile == null ? "" : profile.controllerName(),
+            expiresAt
+        );
+        this.pendingRiskApprovals.put(key, pending);
+        this.notifyAdminsForRiskApproval(pending);
+        this.stopLoops(name);
+        this.service().stopActions(name);
+        return "awaiting admin approval: " + risk.label();
+    }
+
+    private @Nullable HighRiskAction detectHighRiskAction(final String name, final String action) {
+        if (!(action.equals("use") || action.equals("right-click") || action.equals("rightclick") || action.equals("interact")
+            || action.equals("attack") || action.equals("left-click") || action.equals("leftclick")
+            || action.equals("mine") || action.equals("dig") || action.equals("break"))) {
+            return null;
+        }
+        final var snapshot = this.service().snapshot(name);
+        if (snapshot.isEmpty()) {
+            return null;
+        }
+        final Player player = Bukkit.getPlayer(snapshot.get().uuid());
+        if (player == null) {
+            return null;
+        }
+        final ItemStack mainHand = player.getInventory().getItemInMainHand();
+        if (mainHand != null && HIGH_RISK_MATERIALS.contains(mainHand.getType())) {
+            return new HighRiskAction(mainHand.getType().key().value(), "holding " + mainHand.getType().key().value());
+        }
+        final Location eye = player.getEyeLocation();
+        final RayTraceResult ray = player.getWorld().rayTraceBlocks(eye, eye.getDirection(), 6.0D, FluidCollisionMode.NEVER, true);
+        if (ray != null && ray.getHitBlock() != null) {
+            final Material target = ray.getHitBlock().getType();
+            if (target == Material.TNT || target == Material.RESPAWN_ANCHOR) {
+                return new HighRiskAction(target.key().value(), "targeting " + target.key().value());
+            }
+        }
+        return null;
+    }
+
+    private void notifyAdminsForRiskApproval(final PendingRiskApproval pending) {
+        final String message = ChatColor.RED + "[HunterCore] " + ChatColor.YELLOW + pending.fakePlayerName()
+            + ChatColor.RED + " requested high-risk AI action: " + ChatColor.WHITE + pending.label()
+            + ChatColor.GRAY + " (" + pending.detail() + ")"
+            + (pending.controllerName().isBlank() ? "" : ChatColor.GRAY + " requested by " + pending.controllerName())
+            + ChatColor.DARK_GRAY + " | /hplayer ai " + pending.fakePlayerName() + " approve";
+        for (final Player online : Bukkit.getOnlinePlayers()) {
+            if (online.isOp() || online.hasPermission("huntertools.command.hunteradmin")) {
+                online.sendMessage(message);
+            }
+        }
+        this.plugin.getLogger().warning("High-risk fake player action blocked for " + pending.fakePlayerName() + ": " + pending.label() + " (" + pending.detail() + ")");
     }
 
     private String aiLook(final String name, final String args) {
@@ -1678,6 +1846,30 @@ final class HunterRealFakePlayerManager {
             .replace("%z%", String.format(Locale.ROOT, "%.2f", location.getZ()));
     }
 
+    List<PendingRiskApprovalView> pendingApprovalViews() {
+        final long now = System.currentTimeMillis();
+        final List<PendingRiskApprovalView> views = new ArrayList<>();
+        final Set<String> expired = new HashSet<>();
+        for (final PendingRiskApproval pending : this.pendingRiskApprovals.values()) {
+            if (pending.expiresAtMillis() <= now) {
+                expired.add(pending.id());
+                continue;
+            }
+            views.add(new PendingRiskApprovalView(
+                pending.id(),
+                pending.fakePlayerName(),
+                pending.label(),
+                pending.detail(),
+                pending.controllerName(),
+                Math.max(0L, (pending.expiresAtMillis() - now) / 1000L)
+            ));
+        }
+        for (final String id : expired) {
+            this.pendingRiskApprovals.remove(id);
+        }
+        return views;
+    }
+
     private static List<String> matching(final String prefix, final List<String> values) {
         final String lower = prefix.toLowerCase(Locale.ROOT);
         final List<String> matches = new ArrayList<>();
@@ -1713,12 +1905,44 @@ final class HunterRealFakePlayerManager {
     ) {
     }
 
-    private record FakeAiProfile(String id, String name, boolean enabled, String goal) {
+    private record FakeAiProfile(
+        String id,
+        String name,
+        boolean enabled,
+        String goal,
+        UUID controllerUuid,
+        String controllerName,
+        long highRiskAllowedUntilMillis
+    ) {
     }
 
     private record MovePlan(double forward, double sideways, int ticks, boolean jump, boolean sprinting, boolean sneaking) {
     }
 
     private record TargetTask(FakePlayerSnapshot snapshot, String task) {
+    }
+
+    private record PendingRiskApproval(
+        String id,
+        String fakePlayerName,
+        String label,
+        String detail,
+        UUID controllerUuid,
+        String controllerName,
+        long expiresAtMillis
+    ) {
+    }
+
+    private record HighRiskAction(String label, String detail) {
+    }
+
+    record PendingRiskApprovalView(
+        String id,
+        String fakePlayerName,
+        String label,
+        String detail,
+        String requestedBy,
+        long expiresInSeconds
+    ) {
     }
 }

@@ -112,6 +112,7 @@ const translations = {
     'webSettings.title': '网页面板',
     'webSettings.serverName': '服务器名称',
     'webSettings.cpuMode': '线程模式',
+    'webSettings.f3ServerName': 'F3 服务器名称',
     'webSettings.bind': '绑定地址',
     'webSettings.port': '网页端口',
     'webSettings.mapUrl': '地图地址，例如 http://%host%:8100/',
@@ -120,6 +121,10 @@ const translations = {
     'webSettings.saved': '网页设置已保存。',
     'webSettings.restarting': '网页设置已保存，面板会切换到新地址。',
     'webSettings.threadingSaved': '线程策略已保存，核心线程参数重启后会完全生效。',
+    'ai.approvals': '高危动作授权',
+    'ai.approvalsNone': '当前没有待授权的高危假人动作。',
+    'ai.approve': '批准一次',
+    'ai.deny': '拒绝',
     'commandMessages.title': '命令文案',
     'commandMessages.about': '/about',
     'commandMessages.plugins': '/plugins',
@@ -331,6 +336,7 @@ const translations = {
     'webSettings.title': 'Web panel',
     'webSettings.serverName': 'Server name',
     'webSettings.cpuMode': 'Thread mode',
+    'webSettings.f3ServerName': 'F3 server name',
     'webSettings.bind': 'Bind address',
     'webSettings.port': 'Web port',
     'webSettings.mapUrl': 'Map URL, for example http://%host%:8100/',
@@ -339,6 +345,10 @@ const translations = {
     'webSettings.saved': 'Web settings saved.',
     'webSettings.restarting': 'Web settings saved. Panel is restarting on the new address.',
     'webSettings.threadingSaved': 'Thread policy saved. Core thread parameters fully apply after restart.',
+    'ai.approvals': 'High-risk action approvals',
+    'ai.approvalsNone': 'There are no pending high-risk fake player actions.',
+    'ai.approve': 'Approve once',
+    'ai.deny': 'Deny',
     'commandMessages.title': 'Command text',
     'commandMessages.about': '/about',
     'commandMessages.plugins': '/plugins',
@@ -596,6 +606,7 @@ function rerenderCachedStatus() {
   renderWebUsers(data.webUsers);
   renderWebSettings(data.webSettings);
   renderCommandMessages(data.commandMessages);
+  renderAiApprovals(data.aiApprovals);
   renderAiSettings(data.aiSettings);
 }
 
@@ -682,6 +693,17 @@ function webUserLine(user) {
     <span class="userActions">
       <button type="button" data-user-edit="${esc(user.id)}">${esc(t('action.edit'))}</button>
       <button type="button" data-user-remove="${esc(user.id)}">${esc(t('action.remove'))}</button>
+    </span>
+  </div>`;
+}
+
+function aiApprovalLine(approval) {
+  const who = approval.requestedBy ? approval.requestedBy : '--';
+  return `<div class="dataItem">
+    <span>${esc(approval.fakePlayerName)}<small>${esc(approval.label)} · ${esc(approval.detail)} · ${esc(who)} · ${approval.expiresInSeconds}s</small></span>
+    <span class="userActions">
+      <button type="button" data-ai-approval="${esc(approval.fakePlayerName)}" data-ai-action="approve">${esc(t('ai.approve'))}</button>
+      <button type="button" data-ai-approval="${esc(approval.fakePlayerName)}" data-ai-action="deny">${esc(t('ai.deny'))}</button>
     </span>
   </div>`;
 }
@@ -860,12 +882,21 @@ function renderWebSettings(settings) {
   if (document.activeElement && $('webSettingsForm').contains(document.activeElement)) return;
   $('webServerName').value = settings.serverName || '';
   $('webCpuMode').value = settings.cpuMode || 'single-thread';
+  $('webF3ServerName').value = settings.f3ServerName || '';
   $('webBindAddress').value = settings.bindAddress || '';
   $('webPort').value = settings.port || '';
   $('webMapUrl').value = settings.mapUrl || '';
   $('webPublicMap').checked = Boolean(settings.publicMap);
   $('webAddressLine').textContent = settings.address || '';
-  $('webThreadingLine').textContent = `${t('webSettings.cpuMode')}: ${settings.cpuMode || 'single-thread'} · ${settings.asyncEnabled ? 'async' : 'sync'} · workers ${settings.recommendedWorkers || '--'}`;
+  $('webThreadingLine').textContent = `${t('webSettings.cpuMode')}: ${settings.cpuMode || 'single-thread'} · ${settings.asyncEnabled ? 'async' : 'sync'} · workers ${settings.recommendedWorkers || '--'} · F3 ${settings.f3ServerName || ''}`;
+}
+
+function renderAiApprovals(approvals) {
+  if (!state.session?.admin) return;
+  $('aiApprovalList').classList.remove('mutedState');
+  $('aiApprovalList').innerHTML = approvals?.length
+    ? approvals.map(aiApprovalLine).join('')
+    : `<p class="mutedState">${esc(t('ai.approvalsNone'))}</p>`;
 }
 
 function renderCommandMessages(messages) {
@@ -937,6 +968,7 @@ async function refresh() {
   renderWebUsers(data.webUsers);
   renderWebSettings(data.webSettings);
   renderCommandMessages(data.commandMessages);
+  renderAiApprovals(data.aiApprovals);
   renderAiSettings(data.aiSettings);
   const targetInterval = Math.max(1500, Math.min(15000, Number(data.optimization?.guestStatusCacheMillis || 5000) * 2));
   if (state.refreshTimer && state.pollMillis !== targetInterval) {
@@ -1210,6 +1242,7 @@ function bindEvents() {
     const payload = {
       serverName: $('webServerName').value,
       cpuMode: $('webCpuMode').value,
+      f3ServerName: $('webF3ServerName').value,
       bindAddress: $('webBindAddress').value,
       port: $('webPort').value,
       mapUrl: $('webMapUrl').value,
@@ -1381,6 +1414,24 @@ function bindEvents() {
     } catch (error) {
       setOutput(t('command.error', { message: error.message }));
       await refresh();
+    }
+  });
+
+  $('aiApprovalList')?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-ai-approval]');
+    if (!button) return;
+    try {
+      const result = await json('/api/admin/ai-approval', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: button.dataset.aiApproval,
+          action: button.dataset.aiAction
+        })
+      });
+      setOutput(result.message || t('command.dispatched'), result.output || '');
+      await refresh();
+    } catch (error) {
+      setOutput(t('command.error', { message: error.message }));
     }
   });
 }

@@ -401,6 +401,8 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.ai.fake-players.chat-control.require-permission", false);
         changed |= this.setDefault("modules.ai.fake-players.chat-control.permission", "huntertools.ai.fakeplayer");
         changed |= this.setDefault("modules.ai.fake-players.system-prompt", "You control a HunterCore real fake player in Minecraft. Return only bracketed action lines, no prose. Available actions: [look:yaw pitch], [look-at:x y z], [turn:yaw pitch], [look-at-player:player=name], [move:forward=1,sideways=0,ticks=20,sprint=true,jump=false,sneak=false], [goto:x y z,ticks=60,sprint=true], [follow:player=name,ticks=80,distance=2.5], [mine:ticks=40], [use], [attack], [jump], [sneak:on], [sprint:off], [slot:1], [say:text], [drop], [dropstack], [swap], [wait:ticks=20], [stop]. Use small safe steps. For player chat work requests, act like a cooperative helper. Mine only when the goal requires it and the target block is visible.");
+        changed |= this.setDefault("modules.ai.fake-players.high-risk-protection", true);
+        changed |= this.setDefault("modules.ai.fake-players.high-risk-approval-window-seconds", 120);
         changed |= this.setDefault("modules.ai.adaptive-throttling.enabled", true);
         changed |= this.setDefault("modules.ai.adaptive-throttling.warning-mspt", 40.0D);
         changed |= this.setDefault("modules.ai.adaptive-throttling.critical-mspt", 55.0D);
@@ -430,6 +432,7 @@ final class HunterToolsPreferences {
         changed |= this.setDefault("modules.web-panel.health.loaded-chunks-warning", 12000);
         changed |= this.setDefault("modules.web-panel.health.entities-warning", 4000);
         changed |= this.setDefault("modules.web-panel.health.disabled-plugins-warning", true);
+        changed |= this.setDefault("modules.management.f3-server-name", "\"HunterCraft\" Server");
         changed |= this.setDefault("modules.web-panel.admin-command-execution", true);
         changed |= this.setDefault("modules.web-panel.player-command-execution", true);
         changed |= this.setDefault("modules.web-panel.player-allowed-commands", defaultWebPlayerCommands());

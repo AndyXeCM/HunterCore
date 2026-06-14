@@ -1,6 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.jvm.tasks.Jar
+import org.gradle.kotlin.dsl.register
 
 plugins {
     java
@@ -8,6 +9,10 @@ plugins {
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+val huntercoreVersionName = providers.gradleProperty("huntercoreVersion").get().trim()
+val huntercoreReleaseChannel = providers.gradleProperty("releaseChannel").get().trim()
+val huntercoreMcVersion = providers.gradleProperty("mcVersion").get().trim()
+val huntercoreReleaseJarName = "HunterCore-$huntercoreVersionName-MinecraftServer-$huntercoreMcVersion-$huntercoreReleaseChannel.jar"
 
 paperweight {
     upstreams.register("purpur") {
@@ -149,4 +154,13 @@ tasks.register("printMinecraftVersion") {
     doLast {
         println(providers.gradleProperty("mcVersion").get().trim())
     }
+}
+
+tasks.register<Copy>("packageHunterCoreRelease") {
+    group = "huntercore"
+    description = "Builds the paperclip jar and copies it to the HunterCore release naming scheme."
+    dependsOn(":divinemc-server:createPaperclipJar")
+    from(layout.projectDirectory.file("divinemc-server/build/libs/divinemc-paperclip-${huntercoreMcVersion}.local-SNAPSHOT.jar"))
+    into(layout.projectDirectory.dir("divinemc-server/build/libs"))
+    rename { huntercoreReleaseJarName }
 }

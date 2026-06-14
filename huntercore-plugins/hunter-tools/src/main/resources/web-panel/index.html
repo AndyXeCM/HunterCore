@@ -245,6 +245,7 @@
                 <option value="high-core">high-core</option>
                 <option value="multi-thread">multi-thread</option>
               </select>
+              <input id="webF3ServerName" placeholder="&quot;HunterCraft&quot; Server" data-i18n-placeholder="webSettings.f3ServerName">
               <input id="webBindAddress" placeholder="127.0.0.1" data-i18n-placeholder="webSettings.bind">
               <input id="webPort" inputmode="numeric" placeholder="8088" data-i18n-placeholder="webSettings.port">
               <input id="webMapUrl" placeholder="http://%host%:8100/" data-i18n-placeholder="webSettings.mapUrl">
@@ -258,6 +259,7 @@
 
         <section id="aiSettingsPanel" class="panel">
           <h3 data-i18n="ai.title">Native AI</h3>
+          <div id="aiApprovalList" class="dataList mutedState"></div>
           <form id="aiSettingsForm" class="stackForm aiSettingsForm">
             <div class="formGrid">
               <label class="checkLine"><input id="aiEnabled" type="checkbox"> <span data-i18n="ai.enabled">AI module</span></label>

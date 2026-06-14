@@ -57,7 +57,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class HunterToolsPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener {
-    private static final String CLIENT_BRAND = "\"HunterCraft\" Server";
     private static final List<String> MODULES = List.of("tps-display", "sidebar", "motd", "command-overrides", "essentials", "management", "fake-players", "real-fake-players", "npcs", "ai", "web-panel");
     private static final String MOTD = "motd";
     private static final String COMMAND_OVERRIDES = "command-overrides";
@@ -393,11 +392,14 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
         }
     }
 
-    private void applyServerBrand() {
+    void applyServerBrand() {
         try {
             final Class<?> purpurConfig = Class.forName("org.purpurmc.purpur.PurpurConfig");
             final Field f3Name = purpurConfig.getField("f3Name");
-            f3Name.set(null, CLIENT_BRAND);
+            final String brand = this.preferences == null
+                ? "\"HunterCraft\" Server"
+                : this.preferences.stringValue("modules.management.f3-server-name", "\"HunterCraft\" Server");
+            f3Name.set(null, brand == null || brand.isBlank() ? "\"HunterCraft\" Server" : brand);
         } catch (final ReflectiveOperationException ex) {
             this.getLogger().fine("Unable to set runtime F3 server brand: " + ex.getMessage());
         }
@@ -1730,6 +1732,10 @@ public final class HunterToolsPlugin extends JavaPlugin implements CommandExecut
 
     List<HunterRealFakePlayerManager.RealFakePlayerView> realFakePlayerViews() {
         return this.realFakePlayerManager == null ? List.of() : this.realFakePlayerManager.views();
+    }
+
+    List<HunterRealFakePlayerManager.PendingRiskApprovalView> pendingRiskApprovalViews() {
+        return this.realFakePlayerManager == null ? List.of() : this.realFakePlayerManager.pendingApprovalViews();
     }
 
     boolean setActorClickCommand(final String module, final String id, final String command) {

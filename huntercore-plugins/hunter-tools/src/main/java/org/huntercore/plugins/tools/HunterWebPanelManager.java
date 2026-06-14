@@ -331,6 +331,11 @@ final class HunterWebPanelManager {
                 this.adminActorAi(exchange);
                 return;
             }
+            if (path.equals("/api/admin/ai-approval")) {
+                this.requireMethod(exchange, "POST");
+                this.adminAiApproval(exchange);
+                return;
+            }
             if (path.equals("/api/admin/web-user/save")) {
                 this.requireMethod(exchange, "POST");
                 this.adminWebUserSave(exchange);
@@ -537,6 +542,7 @@ final class HunterWebPanelManager {
         if (session != null && session.admin()) {
             json.append(",\"modules\":").append(this.modulesJson());
             json.append(",\"actorDetails\":").append(this.actorDetailsJson());
+            json.append(",\"aiApprovals\":").append(this.aiApprovalsJson());
             json.append(",\"webUsers\":").append(this.webUsersJson());
             json.append(",\"webSettings\":").append(this.webSettingsJson());
             json.append(",\"commandMessages\":").append(this.commandMessagesJson());
@@ -828,11 +834,34 @@ final class HunterWebPanelManager {
         booleanField(json, "publicMap", this.preferences.booleanValue("modules.web-panel.public-map", true)).append(',');
         field(json, "mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).append(',');
         field(json, "serverName", this.webServerName()).append(',');
+        field(json, "f3ServerName", this.preferences.stringValue("modules.management.f3-server-name", "\"HunterCraft\" Server")).append(',');
         field(json, "cpuMode", cpuMode).append(',');
         booleanField(json, "asyncEnabled", !cpuMode.equals("single-thread")).append(',');
         numberField(json, "recommendedWorkers", this.preferences.defaultWorkerCount()).append(',');
         field(json, "address", this.addressLine());
         json.append('}');
+        return json.toString();
+    }
+
+    private String aiApprovalsJson() {
+        final StringBuilder json = new StringBuilder(256);
+        json.append('[');
+        boolean first = true;
+        for (final HunterRealFakePlayerManager.PendingRiskApprovalView approval : this.plugin.pendingRiskApprovalViews()) {
+            if (!first) {
+                json.append(',');
+            }
+            first = false;
+            json.append('{');
+            field(json, "id", approval.id()).append(',');
+            field(json, "fakePlayerName", approval.fakePlayerName()).append(',');
+            field(json, "label", approval.label()).append(',');
+            field(json, "detail", approval.detail()).append(',');
+            field(json, "requestedBy", approval.requestedBy()).append(',');
+            numberField(json, "expiresInSeconds", approval.expiresInSeconds());
+            json.append('}');
+        }
+        json.append(']');
         return json.toString();
     }
 
@@ -1310,6 +1339,7 @@ final class HunterWebPanelManager {
         final String rawPort = body.getOrDefault("port", String.valueOf(this.preferences.intValue("modules.web-panel.port", 8088))).trim();
         final String mapUrl = body.getOrDefault("mapUrl", this.preferences.stringValue("modules.web-panel.map-url", "http://%host%:8100/")).trim();
         final String serverName = body.getOrDefault("serverName", this.webServerName()).trim();
+        final String f3ServerName = body.getOrDefault("f3ServerName", this.preferences.stringValue("modules.management.f3-server-name", "\"HunterCraft\" Server")).trim();
         final String cpuMode = normalizeCpuMode(body.getOrDefault("cpuMode", this.preferences.stringValue("optimizations.cpu.mode", "single-thread")));
         final Boolean publicMap = parseBoolean(body.getOrDefault("publicMap", String.valueOf(this.preferences.booleanValue("modules.web-panel.public-map", true))));
         final int port;
@@ -1320,7 +1350,8 @@ final class HunterWebPanelManager {
             return;
         }
         if (bindAddress.isBlank() || bindAddress.length() > 128 || bindAddress.contains(" ") || port < 1 || port > 65535
-            || mapUrl.isBlank() || serverName.isBlank() || serverName.length() > 64 || publicMap == null) {
+            || mapUrl.isBlank() || serverName.isBlank() || serverName.length() > 64 || publicMap == null
+            || f3ServerName.isBlank() || f3ServerName.length() > 96) {
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_web_settings\"}");
             return;
         }
@@ -1337,6 +1368,7 @@ final class HunterWebPanelManager {
         this.preferences.setValue("modules.web-panel.public-map", publicMap);
         this.preferences.setValue("modules.web-panel.map-url", mapUrl);
         this.preferences.setValue("modules.web-panel.server-name", serverName);
+        this.preferences.setValue("modules.management.f3-server-name", f3ServerName);
         this.preferences.setValue("optimizations.cpu.mode", cpuMode);
         final boolean asyncEnabled = !cpuMode.equals("single-thread");
         this.preferences.setValue("optimizations.hunter-tools.async-rendering", asyncEnabled);
@@ -1346,6 +1378,7 @@ final class HunterWebPanelManager {
         this.preferences.setValue("optimizations.hunter-tools.render-workers", this.preferences.defaultWorkerCount());
         this.preferences.setValue("optimizations.hunter-tools.web-panel-workers", this.preferences.defaultWorkerCount());
         this.savePreferences();
+        this.plugin.applyServerBrand();
         this.invalidateStatusCaches();
         this.send(exchange, 200, "application/json; charset=utf-8", "{\"ok\":true,\"restart\":" + restart + ",\"threadingChanged\":" + threadingChanged + ",\"settings\":" + this.webSettingsJson() + "}");
         if (restart) {
@@ -1523,6 +1556,22 @@ final class HunterWebPanelManager {
             final Throwable cause = ex.getCause() == null ? ex : ex.getCause();
             this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"ai_test_failed\",\"message\":\"" + escapeJson(cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage()) + "\"}");
         }
+    }
+
+    private void adminAiApproval(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final WebSession session = this.adminOperator(exchange, "hplayer");
+        if (session == null) {
+            return;
+        }
+        final Map<String, String> body = parseJsonObject(this.body(exchange, 8 * 1024));
+        final String name = commandToken(body.getOrDefault("name", ""), 32);
+        final String action = HunterToolsPreferences.normalize(body.getOrDefault("action", ""));
+        if (name.isBlank() || (!action.equals("approve") && !action.equals("deny"))) {
+            this.send(exchange, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"invalid_ai_approval\"}");
+            return;
+        }
+        this.invalidateStatusCaches();
+        this.sendCommandResult(exchange, 200, this.dispatchConfiguredCommand("hplayer ai " + name + " " + action));
     }
 
     private void adminPlugin(final HttpExchange exchange) throws IOException, InterruptedException, ExecutionException, TimeoutException {
